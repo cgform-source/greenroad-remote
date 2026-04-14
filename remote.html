@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GREENROAD Remote Control</title>
+<link rel="apple-touch-icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180"><rect width="180" height="180" fill="%230d1117"/><text x="50%25" y="65%25" font-size="110" text-anchor="middle" fill="%2300ff88">🛡</text></svg>'>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;padding:20px}
+.container{max-width:600px;margin:0 auto}
+h1{font-size:24px;margin-bottom:8px;color:#00ff88;text-align:center}
+.subtitle{text-align:center;color:#8b949e;font-size:13px;margin-bottom:24px}
+.card{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:20px;margin-bottom:16px}
+.card-title{font-size:14px;color:#8b949e;font-weight:600;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px}
+.status-display{display:flex;align-items:center;justify-content:center;flex-direction:column;padding:24px;border-radius:12px;margin-bottom:16px;transition:all 0.3s}
+.status-display.active{background:#0a2a1a;border:2px solid #00ff88}
+.status-display.locked{background:#2a0a0a;border:2px solid #ff3d6b}
+.status-display.unknown{background:#1a1a1a;border:2px solid #555}
+.status-icon{font-size:48px;margin-bottom:8px}
+.status-text{font-size:20px;font-weight:bold}
+.status-text.active{color:#00ff88}
+.status-text.locked{color:#ff3d6b}
+.status-text.unknown{color:#888}
+.status-meta{font-size:12px;color:#8b949e;margin-top:8px;text-align:center}
+.btn{width:100%;padding:18px;border:none;border-radius:12px;font-size:18px;font-weight:bold;cursor:pointer;margin-bottom:12px;transition:all 0.2s;font-family:inherit}
+.btn:active{transform:scale(0.98)}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
+.btn-lock{background:#ff3d6b;color:#fff}
+.btn-lock:hover:not(:disabled){background:#e6325a}
+.btn-unlock{background:#00ff88;color:#060d0f}
+.btn-unlock:hover:not(:disabled){background:#00e077}
+.btn-secondary{background:#21262d;color:#e6edf3;border:1px solid #30363d}
+.btn-secondary:hover:not(:disabled){background:#30363d}
+.btn-danger-soft{background:#3a1a1a;color:#e6edf3}
+input,textarea{width:100%;padding:12px;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:14px;font-family:inherit;margin-bottom:8px}
+input:focus,textarea:focus{outline:none;border-color:#00ff88}
+label{display:block;font-size:13px;color:#8b949e;margin-bottom:4px;margin-top:8px}
+.history{font-family:"SF Mono",Monaco,Consolas,monospace;font-size:11px;background:#0d1117;border-radius:8px;padding:12px;max-height:200px;overflow-y:auto}
+.history-item{padding:4px 0;border-bottom:1px solid #21262d;color:#8b949e}
+.history-item:last-child{border:none}
+.history-item.lock{color:#ff3d6b}
+.history-item.unlock{color:#00ff88}
+.alert{padding:12px;border-radius:8px;font-size:13px;margin-bottom:12px;display:none}
+.alert.show{display:block}
+.alert.error{background:#2a0a0a;border:1px solid #ff3d6b;color:#ff8888}
+.alert.success{background:#0a2a1a;border:1px solid #00ff88;color:#88ffaa}
+.alert.info{background:#0a1a2a;border:1px solid #00d4ff;color:#88ddff}
+.token-status{display:inline-block;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:bold;margin-left:6px}
+.token-status.ok{background:#0a2a1a;color:#00ff88}
+.token-status.missing{background:#2a0a0a;color:#ff3d6b}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid #30363d;border-top-color:#00ff88;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.footer{text-align:center;font-size:11px;color:#6e7681;margin-top:24px}
+details{margin-top:8px}
+summary{cursor:pointer;font-size:13px;color:#58a6ff;padding:4px 0}
+summary:hover{color:#79b8ff}
+.help-content{background:#0d1117;padding:12px;border-radius:8px;margin-top:8px;font-size:12px;line-height:1.6;color:#8b949e}
+.help-content code{background:#161b22;padding:2px 6px;border-radius:4px;color:#00ff88;font-size:11px}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🛡️ GREENROAD Remote</h1>
+  <p class="subtitle">Kill-switch panel · Controle a distance</p>
+  <div id="alert" class="alert"></div>
+
+  <div class="card">
+    <div class="card-title">Etat actuel</div>
+    <div id="status-display" class="status-display unknown">
+      <div class="status-icon">⏳</div>
+      <div class="status-text unknown">Chargement...</div>
+      <div id="status-meta" class="status-meta"></div>
+    </div>
+    <button class="btn btn-secondary" onclick="loadStatus()">🔄 Rafraichir</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Actions</div>
+    <label>Message (optionnel, affiche sur les bots)</label>
+    <input type="text" id="msg-input" placeholder="Ex: Maintenance en cours..." maxlength="200">
+    <button class="btn btn-lock" id="btn-lock" onclick="lockBots()">🔒 VERROUILLER MES BOTS</button>
+    <button class="btn btn-unlock" id="btn-unlock" onclick="unlockBots()">🟢 REACTIVER MES BOTS</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Historique (sur cet appareil)</div>
+    <div id="history" class="history">Aucune action recente</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Token GitHub <span id="token-badge" class="token-status missing">MANQUANT</span></div>
+    <p style="font-size:12px;color:#8b949e;margin-bottom:8px">Necessaire pour modifier le Gist. Stocke uniquement dans ton navigateur.</p>
+    <input type="password" id="token-input" placeholder="github_pat_...">
+    <button class="btn btn-secondary" onclick="saveToken()">💾 Sauvegarder</button>
+    <button class="btn btn-danger-soft" onclick="forgetToken()">🗑️ Oublier le token</button>
+    <details>
+      <summary>📖 Comment generer un token ?</summary>
+      <div class="help-content">
+        1. Va sur <code>github.com/settings/tokens?type=beta</code><br>
+        2. Clique <strong>Generate new token</strong> (fine-grained)<br>
+        3. Token name : <code>GREENROAD Remote</code><br>
+        4. Expiration : <code>No expiration</code> (ou 1 an)<br>
+        5. Resource owner : ton compte<br>
+        6. Repository access : <code>Public Repositories</code> suffit<br>
+        7. <strong>Account permissions</strong> &rarr; <code>Gists</code> &rarr; <code>Read and write</code><br>
+        8. Clique <strong>Generate token</strong> en bas<br>
+        9. <strong>COPIE le token</strong> (commence par <code>github_pat_</code>)<br>
+        10. Reviens ici, colle-le, clique Sauvegarder
+      </div>
+    </details>
+  </div>
+
+  <p class="footer">GREENROAD v4.1 · Dernier check: <span id="last-check">jamais</span></p>
+</div>
+
+<script>
+const GIST_ID = "1c4e2920a94766263d6b729873b1e525";
+const GIST_USER = "cgform-source";
+const FILENAME = "greenroad_license.json";
+const RAW_URL = `https://gist.githubusercontent.com/${GIST_USER}/${GIST_ID}/raw/${FILENAME}`;
+const API_URL = `https://api.github.com/gists/${GIST_ID}`;
+
+let history = JSON.parse(localStorage.getItem('greenroad_history') || '[]');
+
+function showAlert(type, msg, duration) {
+  const el = document.getElementById('alert');
+  el.className = 'alert show ' + type;
+  el.textContent = msg;
+  if (duration === undefined) duration = 4000;
+  if (duration > 0) setTimeout(function(){ el.classList.remove('show'); }, duration);
+}
+
+function getToken() {
+  return localStorage.getItem('greenroad_token') || '';
+}
+
+function saveToken() {
+  const t = document.getElementById('token-input').value.trim();
+  if (!t.startsWith('github_pat_') && !t.startsWith('ghp_')) {
+    showAlert('error', 'Le token doit commencer par github_pat_ ou ghp_');
+    return;
+  }
+  localStorage.setItem('greenroad_token', t);
+  document.getElementById('token-input').value = '';
+  updateTokenBadge();
+  showAlert('success', 'Token sauvegarde dans ce navigateur');
+}
+
+function forgetToken() {
+  if (!confirm('Oublier le token GitHub sur ce navigateur ?')) return;
+  localStorage.removeItem('greenroad_token');
+  updateTokenBadge();
+  showAlert('info', 'Token supprime');
+}
+
+function updateTokenBadge() {
+  const badge = document.getElementById('token-badge');
+  if (getToken()) {
+    badge.textContent = 'OK';
+    badge.className = 'token-status ok';
+  } else {
+    badge.textContent = 'MANQUANT';
+    badge.className = 'token-status missing';
+  }
+}
+
+function addHistory(action, note) {
+  const ts = new Date().toLocaleString('fr-FR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  history.unshift({ ts: ts, action: action, note: note });
+  history = history.slice(0, 20);
+  localStorage.setItem('greenroad_history', JSON.stringify(history));
+  renderHistory();
+}
+
+function renderHistory() {
+  const el = document.getElementById('history');
+  if (!history.length) { el.innerHTML = 'Aucune action recente'; return; }
+  el.innerHTML = history.map(function(h){
+    const cls = h.action === 'LOCK' ? 'lock' : (h.action === 'UNLOCK' ? 'unlock' : '');
+    const icon = h.action === 'LOCK' ? '🔒' : (h.action === 'UNLOCK' ? '🟢' : 'ℹ️');
+    return '<div class="history-item ' + cls + '">' + h.ts + ' · ' + icon + ' ' + h.note + '</div>';
+  }).join('');
+}
+
+async function loadStatus() {
+  const display = document.getElementById('status-display');
+  const meta = document.getElementById('status-meta');
+  display.className = 'status-display unknown';
+  display.querySelector('.status-icon').textContent = '⏳';
+  display.querySelector('.status-text').textContent = 'Chargement...';
+  display.querySelector('.status-text').className = 'status-text unknown';
+  meta.textContent = '';
+  try {
+    const url = RAW_URL + '?_=' + Date.now();
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    const status = (data.status || '').toLowerCase();
+    document.getElementById('last-check').textContent = new Date().toLocaleTimeString('fr-FR');
+    if (status === 'locked') {
+      display.className = 'status-display locked';
+      display.querySelector('.status-icon').textContent = '🔒';
+      display.querySelector('.status-text').textContent = 'BOTS VERROUILLES';
+      display.querySelector('.status-text').className = 'status-text locked';
+      meta.textContent = data.message ? 'Message: "' + data.message + '"' : '(aucun message)';
+    } else {
+      display.className = 'status-display active';
+      display.querySelector('.status-icon').textContent = '🟢';
+      display.querySelector('.status-text').textContent = 'BOTS ACTIFS';
+      display.querySelector('.status-text').className = 'status-text active';
+      meta.textContent = 'Derniere mise a jour: ' + (data.updated_at || '?');
+    }
+  } catch (e) {
+    display.querySelector('.status-text').textContent = 'Erreur';
+    meta.textContent = e.message;
+  }
+}
+
+async function updateGist(newStatus, newMessage) {
+  const token = getToken();
+  if (!token) {
+    showAlert('error', 'Token GitHub manquant. Configure-le en bas de la page.', 8000);
+    return false;
+  }
+  const today = new Date().toISOString().split('T')[0];
+  const content = {
+    "_______COMMENT_______": "======================================================",
+    "_MODE_EMPLOI_1": "Pour VERROUILLER tous mes bots : mets status sur 'locked'",
+    "_MODE_EMPLOI_2": "Pour DEVERROUILLER : remets status sur 'active'",
+    "_MODE_EMPLOI_3": "Le message s'affichera dans l'overlay du bot verrouille",
+    "_MODE_EMPLOI_4": "Changement effectif dans les 5 minutes sur tous les bots",
+    "_MODE_EMPLOI_5": "Modifie depuis la telecommande GitHub Pages",
+    "_______CONFIG________": "======================================================",
+    "status": newStatus,
+    "message": newMessage,
+    "updated_at": today
+  };
+  try {
+    const r = await fetch(API_URL, {
+      method: 'PATCH',
+      headers: {
+        'Accept': 'application/vnd.github+json',
+        'Authorization': 'Bearer ' + token,
+        'X-GitHub-Api-Version': '2022-11-28'
+      },
+      body: JSON.stringify({
+        files: { [FILENAME]: { content: JSON.stringify(content, null, 2) } }
+      })
+    });
+    if (!r.ok) {
+      const err = await r.text();
+      throw new Error('HTTP ' + r.status + ': ' + err.slice(0, 200));
+    }
+    return true;
+  } catch (e) {
+    showAlert('error', 'Erreur API: ' + e.message, 8000);
+    return false;
+  }
+}
+
+async function lockBots() {
+  const msg = document.getElementById('msg-input').value.trim() || 'Verrouillage a distance';
+  if (!confirm('🔒 Verrouiller TOUS les bots ?\n\nMessage : "' + msg + '"\n\nSur chaque bot :\n• Compte a rebours 5 min affiche\n• Puis fermeture de toutes les positions\n• Puis blocage complet\n\nTu peux annuler en remettant status=active avant la fin du countdown.\n\nConfirmer ?')) return;
+  const btn = document.getElementById('btn-lock');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Verrouillage...';
+  const ok = await updateGist('locked', msg);
+  btn.disabled = false;
+  btn.innerHTML = '🔒 VERROUILLER MES BOTS';
+  if (ok) {
+    showAlert('success', 'Verrouillage envoye ! Les bots reagiront sous 5 min (countdown affiche).', 6000);
+    addHistory('LOCK', 'Verrouille: ' + msg);
+    setTimeout(loadStatus, 1500);
+  }
+}
+
+async function unlockBots() {
+  if (!confirm('🟢 Reactiver TOUS les bots ?\n\nIls retrouveront leur autonomie de trading.\nSi un countdown etait en cours sur un bot, il sera annule.')) return;
+  const btn = document.getElementById('btn-unlock');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Reactivation...';
+  const ok = await updateGist('active', '');
+  btn.disabled = false;
+  btn.innerHTML = '🟢 REACTIVER MES BOTS';
+  if (ok) {
+    showAlert('success', 'Reactivation envoyee !', 6000);
+    addHistory('UNLOCK', 'Reactivation');
+    setTimeout(loadStatus, 1500);
+  }
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+  updateTokenBadge();
+  renderHistory();
+  loadStatus();
+  setInterval(loadStatus, 60000);
+});
+</script>
+</body>
+</html>
