@@ -51,6 +51,14 @@ label{display:block;font-size:13px;color:#8b949e;margin-bottom:4px;margin-top:8p
 .token-status.missing{background:#2a0a0a;color:#ff3d6b}
 .spinner{display:inline-block;width:16px;height:16px;border:2px solid #30363d;border-top-color:#00ff88;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes panic-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,0,60,0.7);transform:scale(1)}50%{box-shadow:0 0 24px 8px rgba(255,0,60,0.4);transform:scale(1.02)}}
+.panic-section{margin-top:8px}
+.panic-divider{display:flex;align-items:center;margin:20px 0 12px;color:#8b949e;font-size:11px;font-weight:bold;letter-spacing:2px}
+.panic-divider::before,.panic-divider::after{content:"";flex:1;height:1px;background:#30363d;margin:0 10px}
+.btn-panic{background:linear-gradient(135deg,#ff0030 0%,#8b0000 100%);color:#fff;font-size:20px;padding:26px 18px;border:3px solid #ff0030;animation:panic-pulse 1.8s ease-in-out infinite;text-shadow:0 2px 4px rgba(0,0,0,0.5);box-shadow:0 4px 20px rgba(255,0,60,0.3)}
+.btn-panic:hover:not(:disabled){background:linear-gradient(135deg,#ff1a4a 0%,#a00000 100%)}
+.btn-panic:active{transform:scale(0.96) !important}
+.panic-sub{font-size:11px;font-weight:normal;opacity:0.85;margin-top:4px;display:block;text-transform:none;letter-spacing:0}
 .footer{text-align:center;font-size:11px;color:#6e7681;margin-top:24px}
 details{margin-top:8px}
 summary{cursor:pointer;font-size:13px;color:#58a6ff;padding:4px 0}
@@ -76,11 +84,26 @@ summary:hover{color:#79b8ff}
   </div>
 
   <div class="card">
-    <div class="card-title">Actions</div>
+    <div class="card-title">Actions normales</div>
     <label>Message (optionnel, affiche sur les bots)</label>
     <input type="text" id="msg-input" placeholder="Ex: Maintenance en cours..." maxlength="200">
     <button class="btn btn-lock" id="btn-lock" onclick="lockBots()">🔒 VERROUILLER MES BOTS</button>
     <button class="btn btn-unlock" id="btn-unlock" onclick="unlockBots()">🟢 REACTIVER MES BOTS</button>
+  </div>
+
+  <div class="card panic-section">
+    <div class="panic-divider">— ZONE URGENCE —</div>
+    <div class="card-title" style="color:#ff3d6b">🚨 Black Swan / Panic</div>
+    <p style="font-size:12px;color:#8b949e;margin-bottom:12px;line-height:1.5">
+      A utiliser en cas de <strong style="color:#ff8888">krach brutal</strong>, crash marche, rug pull,
+      ou toute situation d'urgence absolue.<br>
+      <strong style="color:#ff8888">Action immediate (pas de countdown 5 min).</strong>
+      Fermeture des positions dans les 10 secondes sur tous les bots.
+    </p>
+    <button class="btn btn-panic" id="btn-panic" onclick="panicBots()">
+      🚨 BOUTON D'URGENCE
+      <span class="panic-sub">Fermer TOUT maintenant - pas de countdown</span>
+    </button>
   </div>
 
   <div class="card">
@@ -198,7 +221,13 @@ async function loadStatus() {
     const data = await r.json();
     const status = (data.status || '').toLowerCase();
     document.getElementById('last-check').textContent = new Date().toLocaleTimeString('fr-FR');
-    if (status === 'locked') {
+    if (status === 'panic') {
+      display.className = 'status-display locked';
+      display.querySelector('.status-icon').textContent = '🚨';
+      display.querySelector('.status-text').textContent = 'URGENCE ACTIVEE';
+      display.querySelector('.status-text').className = 'status-text locked';
+      meta.textContent = data.message ? 'Raison: "' + data.message + '"' : '(PANIC mode)';
+    } else if (status === 'locked') {
       display.className = 'status-display locked';
       display.querySelector('.status-icon').textContent = '🔒';
       display.querySelector('.status-text').textContent = 'BOTS VERROUILLES';
@@ -228,8 +257,8 @@ async function updateGist(newStatus, newMessage) {
     "_______COMMENT_______": "======================================================",
     "_MODE_EMPLOI_1": "Pour VERROUILLER tous mes bots : mets status sur 'locked'",
     "_MODE_EMPLOI_2": "Pour DEVERROUILLER : remets status sur 'active'",
-    "_MODE_EMPLOI_3": "Le message s'affichera dans l'overlay du bot verrouille",
-    "_MODE_EMPLOI_4": "Changement effectif dans les 5 minutes sur tous les bots",
+    "_MODE_EMPLOI_3": "Pour URGENCE immediate : mets status sur 'panic'",
+    "_MODE_EMPLOI_4": "Le message s'affichera dans l'overlay du bot verrouille",
     "_MODE_EMPLOI_5": "Modifie depuis la telecommande GitHub Pages",
     "_______CONFIG________": "======================================================",
     "status": newStatus,
@@ -286,6 +315,21 @@ async function unlockBots() {
   if (ok) {
     showAlert('success', 'Reactivation envoyee !', 6000);
     addHistory('UNLOCK', 'Reactivation');
+    setTimeout(loadStatus, 1500);
+  }
+}
+
+async function panicBots() {
+  if (!confirm('🚨 URGENCE - FERMER TOUT MAINTENANT ?\n\nAction IMMEDIATE (pas de countdown) sur tous les bots :\n• Fermeture instantanee de toutes les positions\n• Annulation des ordres TP/SL\n• Verrouillage complet des bots\n\nA utiliser uniquement en cas de black swan/crash.\n\nConfirmer ?')) return;
+  const btn = document.getElementById('btn-panic');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> URGENCE EN COURS...';
+  const ok = await updateGist('panic', '🚨 URGENCE - Fermeture black swan');
+  btn.disabled = false;
+  btn.innerHTML = '🚨 BOUTON D\'URGENCE<span class="panic-sub">Fermer TOUT maintenant - pas de countdown</span>';
+  if (ok) {
+    showAlert('success', '🚨 URGENCE envoyee ! Fermeture dans les 10s sur tous les bots.', 8000);
+    addHistory('LOCK', '🚨 PANIC declenche');
     setTimeout(loadStatus, 1500);
   }
 }
