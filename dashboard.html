@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>GREENROAD · Dashboard</title>
+<link rel="apple-touch-icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="%2300ff88"/><stop offset="1" stop-color="%2300d4ff"/></linearGradient></defs><rect width="180" height="180" fill="%23050810"/><text x="50%25" y="66%25" font-size="110" text-anchor="middle" fill="url(%23g)">⬢</text></svg>'>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+html,body{overflow-x:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;background:#050810;color:#e6f1ff;min-height:100vh;padding:20px 18px 40px;background-image:radial-gradient(circle at 20% 10%,rgba(0,255,136,0.08) 0%,transparent 40%),radial-gradient(circle at 80% 80%,rgba(0,212,255,0.06) 0%,transparent 45%),radial-gradient(circle at 50% 50%,rgba(123,47,255,0.04) 0%,transparent 50%);background-attachment:fixed;position:relative}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(0,255,136,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,136,0.03) 1px,transparent 1px);background-size:40px 40px;mask-image:radial-gradient(ellipse at center,rgba(0,0,0,0.8) 0%,transparent 70%);-webkit-mask-image:radial-gradient(ellipse at center,rgba(0,0,0,0.8) 0%,transparent 70%);z-index:0}
+.container{max-width:620px;margin:0 auto;position:relative;z-index:1}
+.header{text-align:center;margin-bottom:20px;padding-top:10px}
+.logo{font-size:52px;line-height:1;background:linear-gradient(135deg,#00ff88 0%,#00d4ff 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;animation:logoGlow 3s ease-in-out infinite;display:inline-block}
+@keyframes logoGlow{0%,100%{filter:drop-shadow(0 0 8px rgba(0,255,136,0.5))}50%{filter:drop-shadow(0 0 18px rgba(0,212,255,0.7))}}
+h1{font-size:22px;font-weight:800;letter-spacing:2px;margin-top:6px;background:linear-gradient(90deg,#00ff88,#00d4ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:#64748b;font-size:11px;letter-spacing:3px;margin-top:4px;text-transform:uppercase}
+.mode-toggle{display:flex;justify-content:center;margin-top:14px;gap:4px;background:rgba(13,17,28,0.6);padding:4px;border-radius:100px;border:1px solid rgba(0,255,136,0.15);max-width:280px;margin-left:auto;margin-right:auto}
+.mode-btn{flex:1;padding:8px 14px;border:none;background:transparent;color:#64748b;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border-radius:100px;transition:all 0.3s;font-family:inherit}
+.mode-btn.active{background:linear-gradient(135deg,#00ff88 0%,#00d4ff 100%);color:#050810;box-shadow:0 2px 12px rgba(0,255,136,0.3)}
+.card{background:rgba(13,17,28,0.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(0,255,136,0.1);border-radius:16px;padding:20px;margin-bottom:14px;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(135deg,rgba(0,255,136,0.2),transparent 40%,rgba(0,212,255,0.1));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.card-title{font-size:10px;color:#64748b;font-weight:700;margin-bottom:14px;text-transform:uppercase;letter-spacing:2.5px;display:flex;align-items:center;gap:8px}
+.card-title::before{content:"";width:6px;height:6px;background:#00ff88;border-radius:50%;box-shadow:0 0 8px #00ff88}
+.card.full-only{display:none}
+body.full-mode .card.full-only{display:block}
+body.full-mode .card.zen-only{display:none}
+.big-status{text-align:center;padding:30px 16px;position:relative;overflow:hidden;border-radius:14px;background:linear-gradient(135deg,rgba(0,255,136,0.08) 0%,rgba(0,212,255,0.04) 100%);border:2px solid rgba(0,255,136,0.3)}
+.big-status.warning{background:linear-gradient(135deg,rgba(255,204,0,0.12) 0%,rgba(255,61,107,0.04) 100%);border-color:#ffd600}
+.big-status.locked{background:linear-gradient(135deg,rgba(255,61,107,0.15) 0%,rgba(139,0,0,0.08) 100%);border-color:#ff3d6b;animation:lockedPulse 2s ease-in-out infinite}
+.big-status.panic{background:linear-gradient(135deg,rgba(255,0,60,0.2) 0%,rgba(60,0,0,0.1) 100%);border-color:#ff0044;animation:panicPulse 0.8s ease-in-out infinite}
+.big-status.unknown{background:rgba(30,35,50,0.4);border-color:#334}
+@keyframes lockedPulse{0%,100%{box-shadow:0 0 30px rgba(255,61,107,0.3)}50%{box-shadow:0 0 50px rgba(255,61,107,0.5)}}
+@keyframes panicPulse{0%,100%{box-shadow:0 0 40px rgba(255,0,60,0.5)}50%{box-shadow:0 0 70px rgba(255,0,60,0.8)}}
+.big-icon{font-size:60px;line-height:1;margin-bottom:12px;filter:drop-shadow(0 0 16px currentColor)}
+.big-status.active .big-icon{color:#00ff88;animation:iconFloat 3s ease-in-out infinite}
+.big-status.warning .big-icon{color:#ffd600}
+.big-status.locked .big-icon{color:#ff3d6b;animation:iconShake 2s ease-in-out infinite}
+.big-status.panic .big-icon{color:#ff0044;animation:iconAlert 0.5s ease-in-out infinite}
+.big-status.unknown .big-icon{color:#94a3b8}
+@keyframes iconFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes iconShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+@keyframes iconAlert{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.1);opacity:0.7}}
+.big-title{font-size:22px;font-weight:800;letter-spacing:1.5px;margin-bottom:4px}
+.big-status.active .big-title{color:#00ff88;text-shadow:0 0 12px rgba(0,255,136,0.5)}
+.big-status.warning .big-title{color:#ffd600}
+.big-status.locked .big-title{color:#ff3d6b;text-shadow:0 0 12px rgba(255,61,107,0.5)}
+.big-status.panic .big-title{color:#ff0044;text-shadow:0 0 14px rgba(255,0,60,0.7)}
+.big-status.unknown .big-title{color:#94a3b8}
+.big-sub{font-size:11px;color:#94a3b8;margin-top:6px;font-family:"SF Mono",Monaco,Consolas,monospace;letter-spacing:0.5px}
+.big-status::after{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,currentColor,transparent);animation:scanLine 3s ease-in-out infinite;opacity:0.5}
+@keyframes scanLine{0%{top:0;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:100%;opacity:0}}
+.stat-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(100,116,139,0.15)}
+.stat-row:last-child{border-bottom:none}
+.stat-label{color:#94a3b8;font-size:12px;font-weight:500;letter-spacing:0.5px}
+.stat-value{color:#e6f1ff;font-size:13px;font-weight:700;font-family:"SF Mono",Monaco,Consolas,monospace}
+.stat-value.green{color:#00ff88}
+.stat-value.red{color:#ff3d6b}
+.stat-value.cyan{color:#00d4ff}
+.stat-value.big{font-size:20px;letter-spacing:0.5px}
+.badge{display:inline-block;padding:3px 9px;border-radius:100px;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+.badge.green{background:rgba(0,255,136,0.15);color:#00ff88;border:1px solid rgba(0,255,136,0.3)}
+.badge.red{background:rgba(255,61,107,0.15);color:#ff3d6b;border:1px solid rgba(255,61,107,0.3)}
+.badge.gray{background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3)}
+.badge.yellow{background:rgba(255,214,0,0.15);color:#ffd600;border:1px solid rgba(255,214,0,0.3)}
+.badge.cyan{background:rgba(0,212,255,0.15);color:#00d4ff;border:1px solid rgba(0,212,255,0.3)}
+.days-strip{display:flex;gap:6px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.day-dot{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.day-dot.positive{background:linear-gradient(135deg,rgba(0,255,136,0.25),rgba(0,255,136,0.1));border:1px solid #00ff88;color:#00ff88}
+.day-dot.negative{background:linear-gradient(135deg,rgba(255,61,107,0.25),rgba(255,61,107,0.1));border:1px solid #ff3d6b;color:#ff3d6b}
+.day-dot.neutral{background:rgba(100,116,139,0.15);border:1px solid #64748b;color:#94a3b8}
+.day-dot.empty{background:transparent;border:1px dashed rgba(100,116,139,0.3);color:#475569}
+.day-label{font-size:9px;color:#64748b;text-align:center;margin-top:4px;letter-spacing:0.5px}
+.chip{display:inline-block;padding:4px 10px;margin:3px;border-radius:8px;background:rgba(0,212,255,0.1);color:#00d4ff;font-size:11px;font-weight:700;letter-spacing:0.5px;border:1px solid rgba(0,212,255,0.2);font-family:"SF Mono",Monaco,monospace}
+.chip.long{background:rgba(0,255,136,0.1);color:#00ff88;border-color:rgba(0,255,136,0.25)}
+.chip.short{background:rgba(255,61,107,0.1);color:#ff3d6b;border-color:rgba(255,61,107,0.25)}
+.btn{width:100%;padding:13px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px;transition:all 0.2s;font-family:inherit;letter-spacing:0.5px;text-transform:uppercase;position:relative;overflow:hidden;background:rgba(30,35,50,0.6);color:#e6f1ff;border:1px solid rgba(0,255,136,0.15)}
+.btn:hover{border-color:rgba(0,255,136,0.4);background:rgba(30,35,50,0.9)}
+.btn:active{transform:scale(0.97)}
+.alert{padding:12px 14px;border-radius:10px;font-size:12px;margin-bottom:12px;display:none;align-items:center;gap:10px;animation:alertSlide 0.3s ease-out}
+@keyframes alertSlide{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.alert.show{display:flex}
+.alert.error{background:rgba(42,10,10,0.8);border:1px solid #ff3d6b;color:#ffaaaa}
+.position-card{padding:18px;border-radius:12px;background:linear-gradient(135deg,rgba(0,255,136,0.08) 0%,rgba(0,212,255,0.04) 100%);border:2px solid rgba(0,255,136,0.25);text-align:center}
+.position-card.long{border-color:rgba(0,255,136,0.4)}
+.position-card.short{border-color:rgba(255,61,107,0.4);background:linear-gradient(135deg,rgba(255,61,107,0.08) 0%,rgba(139,0,0,0.04) 100%)}
+.position-coin{font-size:28px;font-weight:800;letter-spacing:2px;background:linear-gradient(90deg,#00ff88,#00d4ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+.position-side{font-size:14px;font-weight:700;letter-spacing:1px;margin-bottom:12px}
+.position-side.long{color:#00ff88}
+.position-side.short{color:#ff3d6b}
+.position-pnl{font-size:26px;font-weight:800;margin:8px 0;font-family:"SF Mono",Monaco,monospace}
+.position-pnl.profit{color:#00ff88;text-shadow:0 0 12px rgba(0,255,136,0.5)}
+.position-pnl.loss{color:#ff3d6b;text-shadow:0 0 12px rgba(255,61,107,0.5)}
+.position-meta{font-size:11px;color:#94a3b8;font-family:"SF Mono",Monaco,monospace;margin-top:6px}
+.equity-display{text-align:center;padding:22px 14px}
+.equity-value{font-size:38px;font-weight:800;letter-spacing:1px;background:linear-gradient(90deg,#00ff88,#00d4ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-family:"SF Mono",Monaco,monospace;line-height:1}
+.equity-label{font-size:10px;color:#64748b;letter-spacing:2px;text-transform:uppercase;margin-top:6px}
+.pnl-row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.pnl-box{flex:1;min-width:120px;padding:14px;border-radius:10px;text-align:center;background:rgba(13,17,28,0.6);border:1px solid rgba(100,116,139,0.2)}
+.pnl-box.positive{border-color:rgba(0,255,136,0.4);background:rgba(0,255,136,0.05)}
+.pnl-box.negative{border-color:rgba(255,61,107,0.4);background:rgba(255,61,107,0.05)}
+.pnl-box-label{font-size:9px;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
+.pnl-box-value{font-size:18px;font-weight:800;font-family:"SF Mono",Monaco,monospace}
+.pnl-box.positive .pnl-box-value{color:#00ff88}
+.pnl-box.negative .pnl-box-value{color:#ff3d6b}
+.pnl-box-sub{font-size:10px;color:#94a3b8;margin-top:3px}
+.trade-item{padding:10px 0;border-bottom:1px solid rgba(100,116,139,0.1);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.trade-item:last-child{border:none}
+.trade-coin{font-weight:800;color:#00d4ff;font-size:12px;min-width:48px;font-family:"SF Mono",Monaco,monospace}
+.trade-side{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;letter-spacing:0.5px}
+.trade-side.long{background:rgba(0,255,136,0.15);color:#00ff88}
+.trade-side.short{background:rgba(255,61,107,0.15);color:#ff3d6b}
+.trade-pnl{margin-left:auto;font-weight:700;font-family:"SF Mono",Monaco,monospace;font-size:12px}
+.trade-pnl.profit{color:#00ff88}
+.trade-pnl.loss{color:#ff3d6b}
+.trade-time{font-size:10px;color:#64748b;font-family:"SF Mono",Monaco,monospace}
+.seven-day-chart{display:flex;align-items:flex-end;gap:6px;height:80px;padding:10px 0;justify-content:space-around}
+.seven-day-bar{flex:1;background:rgba(100,116,139,0.15);border-radius:4px 4px 0 0;position:relative;transition:all 0.3s;display:flex;align-items:flex-end;justify-content:center;min-width:20px}
+.seven-day-bar.positive{background:linear-gradient(to top,rgba(0,255,136,0.4),rgba(0,255,136,0.15));border-top:2px solid #00ff88}
+.seven-day-bar.negative{background:linear-gradient(to top,rgba(255,61,107,0.4),rgba(255,61,107,0.15));border-top:2px solid #ff3d6b}
+.seven-day-bar.empty{background:rgba(100,116,139,0.08);border-top:1px dashed rgba(100,116,139,0.2)}
+.seven-day-bar-val{position:absolute;top:-18px;font-size:9px;font-weight:700;font-family:"SF Mono",Monaco,monospace;white-space:nowrap}
+.seven-day-bar-val.positive{color:#00ff88}
+.seven-day-bar-val.negative{color:#ff3d6b}
+.seven-day-labels{display:flex;justify-content:space-around;padding-top:4px}
+.seven-day-label{flex:1;text-align:center;font-size:9px;color:#64748b;letter-spacing:0.5px;min-width:20px}
+.footer{text-align:center;font-size:10px;color:#475569;margin-top:24px;letter-spacing:1.5px;text-transform:uppercase}
+.footer .ping-dot{display:inline-block;width:6px;height:6px;background:#00ff88;border-radius:50%;margin-right:6px;vertical-align:middle;box-shadow:0 0 8px #00ff88;animation:dotBlink 2s ease-in-out infinite}
+@keyframes dotBlink{0%,100%{opacity:1}50%{opacity:0.4}}
+.empty-state{text-align:center;color:#64748b;font-style:italic;padding:18px;font-size:12px}
+.remote-link{display:block;text-align:center;margin-top:16px;color:#00d4ff;font-size:12px;text-decoration:none;letter-spacing:0.5px}
+.remote-link:hover{color:#00ff88}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="logo">⬢</div>
+    <h1>GREENROAD</h1>
+    <div class="subtitle">Dashboard · Live Monitoring</div>
+    <div class="mode-toggle">
+      <button id="mode-zen" class="mode-btn active" onclick="setMode('zen')">🙈 Zen</button>
+      <button id="mode-full" class="mode-btn" onclick="setMode('full')">👁️ Full</button>
+    </div>
+  </div>
+
+  <div id="alert" class="alert"></div>
+
+  <div class="card">
+    <div class="card-title">Etat du bot</div>
+    <div id="big-status" class="big-status unknown">
+      <div class="big-icon">⏳</div>
+      <div class="big-title">Connexion...</div>
+      <div id="big-sub" class="big-sub"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Infos bot</div>
+    <div class="stat-row"><span class="stat-label">Mode</span><span id="stat-mode" class="stat-value">—</span></div>
+    <div class="stat-row"><span class="stat-label">Strategie active</span><span id="stat-strategy" class="stat-value">—</span></div>
+    <div class="stat-row"><span class="stat-label">Uptime</span><span id="stat-uptime" class="stat-value">—</span></div>
+    <div class="stat-row"><span class="stat-label">Dernier cycle</span><span id="stat-cycle" class="stat-value">—</span></div>
+  </div>
+
+  <div class="card full-only">
+    <div class="card-title">Capital total</div>
+    <div class="equity-display">
+      <div id="equity-value" class="equity-value">—</div>
+      <div class="equity-label">USDC · Hyperliquid</div>
+    </div>
+    <div class="pnl-row">
+      <div class="pnl-box" id="pnl-today-box">
+        <div class="pnl-box-label">P&L aujourd'hui</div>
+        <div id="pnl-today" class="pnl-box-value">—</div>
+        <div id="pnl-today-pct" class="pnl-box-sub">—</div>
+      </div>
+      <div class="pnl-box" id="pnl-total-box">
+        <div class="pnl-box-label">P&L total</div>
+        <div id="pnl-total" class="pnl-box-value">—</div>
+        <div id="pnl-total-sub" class="pnl-box-sub">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card full-only" id="card-position">
+    <div class="card-title">Position ouverte</div>
+    <div id="position-content" class="empty-state">Aucune position ouverte</div>
+  </div>
+
+  <div class="card full-only">
+    <div class="card-title">7 derniers jours · P&L detaille</div>
+    <div id="seven-day-chart" class="seven-day-chart"></div>
+    <div id="seven-day-labels" class="seven-day-labels"></div>
+  </div>
+
+  <div class="card full-only">
+    <div class="card-title">Statistiques globales</div>
+    <div class="stat-row"><span class="stat-label">Total trades</span><span id="stat-total-trades" class="stat-value">—</span></div>
+    <div class="stat-row"><span class="stat-label">Win rate global</span><span id="stat-total-wr" class="stat-value">—</span></div>
+    <div class="stat-row"><span class="stat-label">Win rate aujourd'hui</span><span id="stat-today-wr" class="stat-value">—</span></div>
+    <div class="stat-row"><span class="stat-label">W / L aujourd'hui</span><span id="stat-today-wl" class="stat-value">—</span></div>
+  </div>
+
+  <div class="card full-only">
+    <div class="card-title">Best & Worst trade</div>
+    <div id="best-trade" class="stat-row"><span class="stat-label">🏆 Meilleur</span><span class="stat-value green">—</span></div>
+    <div id="worst-trade" class="stat-row"><span class="stat-label">💀 Pire</span><span class="stat-value red">—</span></div>
+  </div>
+
+  <div class="card full-only">
+    <div class="card-title">10 derniers trades</div>
+    <div id="recent-trades-list"><div class="empty-state">Aucun trade</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Activite aujourd'hui</div>
+    <div class="stat-row"><span class="stat-label">Niveau d'activite</span><span id="stat-activity" class="stat-value">—</span></div>
+    <div class="stat-row"><span class="stat-label">Trades executes</span><span id="stat-trades" class="stat-value">—</span></div>
+    <div class="stat-row"><span class="stat-label">Resultat</span><span id="stat-result" class="stat-value">—</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Coins tradés aujourd'hui</div>
+    <div id="coins-list" class="empty-state">Aucun coin tradé</div>
+  </div>
+
+  <div class="card zen-only">
+    <div class="card-title">5 derniers jours</div>
+    <div id="days-strip" class="days-strip"></div>
+    <div style="display:flex;gap:6px;justify-content:center;margin-top:4px">
+      <div class="day-label" style="width:28px">J-4</div>
+      <div class="day-label" style="width:28px">J-3</div>
+      <div class="day-label" style="width:28px">J-2</div>
+      <div class="day-label" style="width:28px">J-1</div>
+      <div class="day-label" style="width:28px">AUJ</div>
+    </div>
+  </div>
+
+  <button class="btn" onclick="loadDashboard()">↻ Rafraichir</button>
+  <a href="remote.html" class="remote-link">🛡️ Ouvrir la telecommande Remote →</a>
+
+  <p class="footer">
+    <span class="ping-dot"></span>
+    GREENROAD · Last sync: <span id="last-check">—</span>
+  </p>
+</div>
+
+<script>
+const GIST_ID = "1c4e2920a94766263d6b729873b1e525";
+const GIST_USER = "cgform-source";
+const FILENAME = "greenroad_stats.json";
+const RAW_URL = `https://gist.githubusercontent.com/${GIST_USER}/${GIST_ID}/raw/${FILENAME}`;
+
+let currentMode = localStorage.getItem('dashboard_mode') || 'zen';
+let lastData = null;
+
+function showAlert(type, msg, duration) {
+  const el = document.getElementById('alert');
+  el.className = 'alert show ' + type;
+  el.textContent = msg;
+  if (duration === undefined) duration = 5000;
+  if (duration > 0) setTimeout(() => el.classList.remove('show'), duration);
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  localStorage.setItem('dashboard_mode', mode);
+  document.getElementById('mode-zen').classList.toggle('active', mode === 'zen');
+  document.getElementById('mode-full').classList.toggle('active', mode === 'full');
+  document.body.classList.toggle('full-mode', mode === 'full');
+  if (lastData) renderAll(lastData);
+}
+
+function formatUptime(hours) {
+  if (hours < 1) return 'moins 1h';
+  if (hours < 24) return hours + 'h';
+  const days = Math.floor(hours / 24);
+  const h = hours % 24;
+  return days + 'j ' + h + 'h';
+}
+
+function fmtUSD(n) {
+  if (n === undefined || n === null) return '—';
+  const abs = Math.abs(n);
+  const sign = n > 0 ? '+' : (n < 0 ? '-' : '');
+  if (abs >= 1000) return sign + '$' + abs.toLocaleString('en-US', {maximumFractionDigits: 0});
+  return sign + '$' + abs.toFixed(2);
+}
+
+function fmtUSDBig(n) {
+  if (n === undefined || n === null) return '—';
+  return '$' + Number(n).toLocaleString('en-US', {maximumFractionDigits: 2, minimumFractionDigits: 2});
+}
+
+function fmtPrice(n) {
+  if (n === undefined || n === null || n === 0) return '—';
+  if (n >= 1000) return '$' + Number(n).toLocaleString('en-US', {maximumFractionDigits: 2});
+  if (n >= 1) return '$' + n.toFixed(2);
+  return '$' + n.toFixed(4);
+}
+
+function renderActivityBadge(level) {
+  const map = {
+    'calm':    { text: '😴 Calme',    cls: 'gray'   },
+    'active':  { text: '📊 Active',   cls: 'green'  },
+    'intense': { text: '🚨 Intense',  cls: 'yellow' }
+  };
+  const m = map[level] || { text: '—', cls: 'gray' };
+  return `<span class="badge ${m.cls}">${m.text}</span>`;
+}
+
+function renderResultBadge(result) {
+  const map = {
+    'positive': { text: '💚 Positive', cls: 'green' },
+    'negative': { text: '❤️ Negative', cls: 'red'   },
+    'neutral':  { text: '➡️ Neutre',   cls: 'gray'  }
+  };
+  if (!result) return '<span class="badge gray">— Aucune</span>';
+  const m = map[result] || { text: '—', cls: 'gray' };
+  return `<span class="badge ${m.cls}">${m.text}</span>`;
+}
+
+function renderBigStatus(data) {
+  const el = document.getElementById('big-status');
+  const icon = el.querySelector('.big-icon');
+  const title = el.querySelector('.big-title');
+  const sub = document.getElementById('big-sub');
+  const bot = data.bot || {};
+  if (bot.is_panic) {
+    el.className = 'big-status panic';
+    icon.textContent = '🚨';
+    title.textContent = 'URGENCE';
+    sub.textContent = '// Panic mode active';
+  } else if (bot.locked) {
+    el.className = 'big-status locked';
+    icon.textContent = '🔒';
+    title.textContent = 'Bot verrouille';
+    sub.textContent = '// Locked remotely';
+  } else if (!bot.running) {
+    el.className = 'big-status warning';
+    icon.textContent = '⏸️';
+    title.textContent = 'Bot en pause';
+    sub.textContent = '// Not running';
+  } else if (bot.last_cycle_seconds_ago > 120) {
+    el.className = 'big-status warning';
+    icon.textContent = '⚠️';
+    title.textContent = 'Attention';
+    sub.textContent = '// Dernier cycle il y a ' + bot.last_cycle_seconds_ago + 's';
+  } else {
+    el.className = 'big-status active';
+    icon.textContent = '✅';
+    title.textContent = 'Tout va bien';
+    sub.textContent = '// Bot operationnel';
+  }
+}
+
+function renderDaysStrip(days) {
+  const el = document.getElementById('days-strip');
+  if (!days || !days.length) { el.innerHTML = ''; return; }
+  const symbols = { 'positive': '🟢', 'negative': '🔴', 'neutral': '⚪' };
+  el.innerHTML = days.map(d => {
+    if (d === null || d === undefined) return '<div class="day-dot empty">—</div>';
+    const cls = d === 'positive' ? 'positive' : (d === 'negative' ? 'negative' : 'neutral');
+    const sym = symbols[d] || '—';
+    return `<div class="day-dot ${cls}">${sym}</div>`;
+  }).join('');
+}
+
+function renderCoins(coins) {
+  const el = document.getElementById('coins-list');
+  if (!coins || !coins.length) {
+    el.className = 'empty-state';
+    el.textContent = 'Aucun coin tradé aujourd\'hui';
+    return;
+  }
+  el.className = '';
+  el.innerHTML = coins.map(c => `<span class="chip">${c}</span>`).join('');
+}
+
+function renderPosition(pos) {
+  const el = document.getElementById('position-content');
+  if (!pos) {
+    el.className = 'empty-state';
+    el.textContent = 'Aucune position ouverte';
+    return;
+  }
+  el.className = '';
+  const sideClass = (pos.side || '').toLowerCase();
+  const pnlClass = pos.unrealized_pnl >= 0 ? 'profit' : 'loss';
+  const sign = pos.unrealized_pnl >= 0 ? '+' : '';
+  el.innerHTML = `
+    <div class="position-card ${sideClass}">
+      <div class="position-coin">${pos.coin}</div>
+      <div class="position-side ${sideClass}">${pos.side} · ${Number(pos.size).toFixed(4)}</div>
+      <div class="position-pnl ${pnlClass}">${sign}${fmtUSD(pos.unrealized_pnl)}</div>
+      <div class="position-meta">${sign}${pos.unrealized_pct.toFixed(2)}% · Entree ${fmtPrice(pos.entry_price)} → ${fmtPrice(pos.price_now)}</div>
+    </div>
+  `;
+}
+
+function renderSevenDayChart(days) {
+  const chart = document.getElementById('seven-day-chart');
+  const labels = document.getElementById('seven-day-labels');
+  if (!days || !days.length) {
+    chart.innerHTML = '<div class="empty-state" style="width:100%">Aucune donnee</div>';
+    labels.innerHTML = '';
+    return;
+  }
+  const maxAbs = Math.max(...days.map(d => Math.abs(d.pnl || 0)), 1);
+  chart.innerHTML = days.map(d => {
+    if (!d.trades || d.trades === 0) {
+      return `<div class="seven-day-bar empty" style="height:8px" title="${d.date} · Aucun trade"></div>`;
+    }
+    const pct = (Math.abs(d.pnl) / maxAbs) * 100;
+    const cls = d.pnl > 0 ? 'positive' : (d.pnl < 0 ? 'negative' : 'empty');
+    const h = Math.max(pct, 12);
+    const valCls = d.pnl >= 0 ? 'positive' : 'negative';
+    const sign = d.pnl > 0 ? '+' : '';
+    return `<div class="seven-day-bar ${cls}" style="height:${h}%" title="${d.date} · ${d.trades} trades · ${fmtUSD(d.pnl)}">
+      <div class="seven-day-bar-val ${valCls}">${sign}${fmtUSD(d.pnl).replace('$','').replace('+','')}</div>
+    </div>`;
+  }).join('');
+  labels.innerHTML = days.map(d => `<div class="seven-day-label">${d.day_label || '?'}</div>`).join('');
+}
+
+function renderRecentTrades(trades) {
+  const el = document.getElementById('recent-trades-list');
+  if (!trades || !trades.length) {
+    el.innerHTML = '<div class="empty-state">Aucun trade</div>';
+    return;
+  }
+  el.innerHTML = trades.map(t => {
+    const sideCls = (t.side || '').toLowerCase();
+    const pnlCls = t.pnl >= 0 ? 'profit' : 'loss';
+    const sign = t.pnl >= 0 ? '+' : '';
+    const time = t.time ? t.time.split(' ').pop() || t.time : '';
+    return `<div class="trade-item">
+      <span class="trade-coin">${t.coin}</span>
+      <span class="trade-side ${sideCls}">${t.side}</span>
+      <span class="trade-time">${time}</span>
+      <span class="trade-pnl ${pnlCls}">${sign}${fmtUSD(t.pnl)}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderBestWorst(full) {
+  const best = full.best_trade;
+  const worst = full.worst_trade;
+  if (best) {
+    const sign = best.pnl >= 0 ? '+' : '';
+    document.getElementById('best-trade').querySelector('.stat-value').innerHTML =
+      `${best.coin} ${best.side} · ${sign}${fmtUSD(best.pnl)} <span style="color:#64748b;font-weight:400;font-size:10px">(${best.date})</span>`;
+  }
+  if (worst) {
+    const sign = worst.pnl >= 0 ? '+' : '';
+    document.getElementById('worst-trade').querySelector('.stat-value').innerHTML =
+      `${worst.coin} ${worst.side} · ${sign}${fmtUSD(worst.pnl)} <span style="color:#64748b;font-weight:400;font-size:10px">(${worst.date})</span>`;
+  }
+}
+
+function renderFullData(full) {
+  if (!full) return;
+  document.getElementById('equity-value').textContent = fmtUSDBig(full.capital_usd);
+  const today = full.today || {};
+  const pnlTodayBox = document.getElementById('pnl-today-box');
+  pnlTodayBox.className = 'pnl-box ' + (today.pnl_usd > 0 ? 'positive' : (today.pnl_usd < 0 ? 'negative' : ''));
+  const signT = today.pnl_usd >= 0 ? '+' : '';
+  document.getElementById('pnl-today').textContent = signT + fmtUSD(today.pnl_usd);
+  document.getElementById('pnl-today-pct').textContent = (today.pnl_pct !== undefined ? (signT + today.pnl_pct.toFixed(2) + '%') : '—');
+  const glob = full.global || {};
+  const pnlTotalBox = document.getElementById('pnl-total-box');
+  pnlTotalBox.className = 'pnl-box ' + (glob.total_pnl > 0 ? 'positive' : (glob.total_pnl < 0 ? 'negative' : ''));
+  const signG = glob.total_pnl >= 0 ? '+' : '';
+  document.getElementById('pnl-total').textContent = signG + fmtUSD(glob.total_pnl);
+  document.getElementById('pnl-total-sub').textContent = (glob.total_trades || 0) + ' trades · WR ' + (glob.total_wr || 0).toFixed(0) + '%';
+  renderPosition(full.current_position);
+  renderSevenDayChart(full.last_7_days);
+  document.getElementById('stat-total-trades').textContent = glob.total_trades || 0;
+  document.getElementById('stat-total-wr').innerHTML = `<span class="${(glob.total_wr || 0) >= 50 ? 'green' : 'red'}">${(glob.total_wr || 0).toFixed(1)}%</span>`;
+  document.getElementById('stat-today-wr').innerHTML = `<span class="${(today.win_rate || 0) >= 50 ? 'green' : 'red'}">${(today.win_rate || 0).toFixed(0)}%</span>`;
+  document.getElementById('stat-today-wl').innerHTML = `<span class="green">${today.wins || 0}W</span> / <span class="red">${today.losses || 0}L</span>`;
+  renderBestWorst(full);
+  renderRecentTrades(full.recent_trades);
+}
+
+function renderAll(data) {
+  lastData = data;
+  const bot = data.bot || {};
+  const today = data.today || {};
+  renderBigStatus(data);
+  document.getElementById('stat-mode').innerHTML =
+    bot.mode === 'LIVE' ? '<span class="badge green">LIVE</span>' : '<span class="badge gray">DEMO</span>';
+  document.getElementById('stat-strategy').textContent = bot.strategy || '—';
+  document.getElementById('stat-uptime').textContent = formatUptime(bot.uptime_hours || 0);
+  document.getElementById('stat-cycle').textContent =
+    bot.last_cycle_seconds_ago !== undefined ? (bot.last_cycle_seconds_ago + 's') : '—';
+  document.getElementById('stat-activity').innerHTML = renderActivityBadge(today.activity_level);
+  document.getElementById('stat-trades').textContent = today.trades_count !== undefined ? today.trades_count : '—';
+  document.getElementById('stat-result').innerHTML = renderResultBadge(today.result);
+  renderCoins(today.coins_traded);
+  renderDaysStrip(data.last_5_days);
+  if (data.full) renderFullData(data.full);
+}
+
+async function loadDashboard() {
+  try {
+    const r = await fetch(RAW_URL + '?_=' + Date.now());
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    document.getElementById('last-check').textContent = new Date().toLocaleTimeString('fr-FR');
+    renderAll(data);
+  } catch (e) {
+    showAlert('error', 'Erreur : ' + e.message, 8000);
+    document.getElementById('big-status').className = 'big-status unknown';
+    document.getElementById('big-status').querySelector('.big-icon').textContent = '❓';
+    document.getElementById('big-status').querySelector('.big-title').textContent = 'Sans donnees';
+    document.getElementById('big-sub').textContent = '// ' + e.message;
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  setMode(currentMode);
+  loadDashboard();
+  setInterval(loadDashboard, 60000);
+});
+</script>
+</body>
+</html>
