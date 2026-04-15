@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GREENROAD Bot — Manuel</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+min-height: 100vh;
+background: #060d0f;
+color: #e6edf3;
+font-family: -apple-system, BlinkMacSystemFont, “Segoe UI”, sans-serif;
+padding: 0;
+position: relative;
+overflow-x: hidden;
+}
+
+body::before {
+content: “”;
+position: fixed;
+inset: 0;
+background-image:
+linear-gradient(rgba(197,156,255,0.05) 1px, transparent 1px),
+linear-gradient(90deg, rgba(197,156,255,0.05) 1px, transparent 1px);
+background-size: 50px 50px;
+z-index: 0;
+mask-image: radial-gradient(ellipse at top, black 0%, transparent 60%);
+-webkit-mask-image: radial-gradient(ellipse at top, black 0%, transparent 60%);
+}
+
+.orb {
+position: fixed;
+border-radius: 50%;
+filter: blur(100px);
+opacity: 0.3;
+z-index: 0;
+pointer-events: none;
+}
+.orb1 { width: 500px; height: 500px; background: #c59cff; top: -200px; right: -150px; animation: float1 25s ease-in-out infinite; }
+.orb2 { width: 400px; height: 400px; background: #00d4ff; bottom: -100px; left: -100px; animation: float2 28s ease-in-out infinite; }
+@keyframes float1 { 0%,100% { transform: translate(0,0);} 50% { transform: translate(-100px,150px);} }
+@keyframes float2 { 0%,100% { transform: translate(0,0);} 50% { transform: translate(150px,-100px);} }
+
+/* HEADER STICKY */
+.header {
+position: sticky;
+top: 0;
+z-index: 100;
+background: rgba(6,13,15,0.85);
+backdrop-filter: blur(20px);
+-webkit-backdrop-filter: blur(20px);
+border-bottom: 1px solid rgba(197,156,255,0.2);
+padding: 14px 24px;
+display: flex;
+align-items: center;
+gap: 16px;
+}
+.back-btn {
+display: inline-flex;
+align-items: center;
+gap: 8px;
+padding: 8px 14px;
+background: rgba(197,156,255,0.1);
+border: 1px solid rgba(197,156,255,0.3);
+border-radius: 10px;
+color: #c59cff;
+text-decoration: none;
+font-size: 13px;
+font-weight: 600;
+transition: all 0.3s;
+flex-shrink: 0;
+}
+.back-btn:hover {
+background: rgba(197,156,255,0.2);
+border-color: #c59cff;
+box-shadow: 0 0 20px rgba(197,156,255,0.3);
+transform: translateX(-3px);
+}
+.header-logo {
+font-size: 16px;
+font-weight: 800;
+letter-spacing: 3px;
+background: linear-gradient(135deg, #c59cff 0%, #00d4ff 100%);
+-webkit-background-clip: text;
+background-clip: text;
+-webkit-text-fill-color: transparent;
+}
+.header-version {
+font-size: 11px;
+color: #8b949e;
+letter-spacing: 1px;
+margin-left: auto;
+}
+
+/* LAYOUT */
+.layout {
+position: relative;
+z-index: 2;
+display: grid;
+grid-template-columns: 280px 1fr;
+max-width: 1400px;
+margin: 0 auto;
+gap: 24px;
+padding: 24px;
+}
+
+/* SIDEBAR */
+.sidebar {
+position: sticky;
+top: 80px;
+height: calc(100vh - 100px);
+overflow-y: auto;
+background: linear-gradient(135deg, rgba(14,26,34,0.6), rgba(10,24,36,0.6));
+backdrop-filter: blur(10px);
+border: 1px solid rgba(197,156,255,0.15);
+border-radius: 14px;
+padding: 18px 14px;
+}
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb {
+background: rgba(197,156,255,0.3);
+border-radius: 3px;
+}
+
+.search-box {
+width: 100%;
+padding: 10px 14px;
+background: rgba(6,13,15,0.6);
+border: 1px solid rgba(197,156,255,0.2);
+border-radius: 10px;
+color: #e6edf3;
+font-size: 13px;
+margin-bottom: 16px;
+font-family: inherit;
+outline: none;
+transition: all 0.3s;
+}
+.search-box:focus {
+border-color: #c59cff;
+box-shadow: 0 0 15px rgba(197,156,255,0.2);
+}
+.search-box::placeholder { color: #484f58; }
+
+.sidebar-title {
+font-size: 10px;
+color: #c59cff;
+letter-spacing: 3px;
+font-weight: 700;
+padding: 0 10px 10px;
+border-bottom: 1px solid rgba(197,156,255,0.15);
+margin-bottom: 8px;
+}
+
+.toc-item {
+display: block;
+padding: 10px 12px;
+margin: 2px 0;
+border-radius: 8px;
+color: #c9d1d9;
+text-decoration: none;
+font-size: 13px;
+font-weight: 500;
+transition: all 0.25s;
+border-left: 2px solid transparent;
+}
+.toc-item:hover {
+background: rgba(197,156,255,0.08);
+color: #e6edf3;
+border-left-color: rgba(197,156,255,0.4);
+padding-left: 16px;
+}
+.toc-item.active {
+background: rgba(197,156,255,0.15);
+color: #c59cff;
+border-left-color: #c59cff;
+font-weight: 600;
+}
+.toc-item.hidden { display: none; }
+
+/* CONTENT */
+.content {
+min-width: 0;
+}
+
+.page-title {
+font-size: 42px;
+font-weight: 900;
+letter-spacing: 2px;
+background: linear-gradient(135deg, #c59cff 0%, #00d4ff 100%);
+-webkit-background-clip: text;
+background-clip: text;
+-webkit-text-fill-color: transparent;
+margin-bottom: 6px;
+animation: fadeInUp 0.8s ease-out;
+}
+.page-subtitle {
+color: #8b949e;
+font-size: 13px;
+letter-spacing: 3px;
+text-transform: uppercase;
+margin-bottom: 32px;
+animation: fadeInUp 0.8s ease-out 0.1s backwards;
+}
+@keyframes fadeInUp {
+from { opacity: 0; transform: translateY(20px); }
+to   { opacity: 1; transform: translateY(0); }
+}
+
+/* SECTION CARDS */
+.manual-section {
+background: linear-gradient(135deg, rgba(14,26,34,0.5), rgba(10,24,36,0.5));
+backdrop-filter: blur(8px);
+border: 1px solid rgba(197,156,255,0.15);
+border-radius: 16px;
+padding: 28px 32px;
+margin-bottom: 24px;
+scroll-margin-top: 90px;
+transition: all 0.4s ease;
+}
+.manual-section.hidden { display: none; }
+.manual-section:hover {
+border-color: rgba(197,156,255,0.3);
+box-shadow: 0 10px 40px rgba(197,156,255,0.08);
+}
+
+.section-title {
+font-size: 26px;
+font-weight: 800;
+color: #e6edf3;
+margin-bottom: 8px;
+padding-bottom: 12px;
+border-bottom: 2px solid rgba(197,156,255,0.2);
+letter-spacing: 0.5px;
+}
+.section-desc {
+color: #8b949e;
+font-size: 14px;
+margin-bottom: 24px;
+font-style: italic;
+line-height: 1.6;
+}
+
+.subsection {
+margin-bottom: 22px;
+padding-left: 16px;
+border-left: 2px solid rgba(0,212,255,0.2);
+}
+.subsection:last-child { margin-bottom: 0; }
+
+.subsection-title {
+font-size: 16px;
+font-weight: 700;
+color: #00d4ff;
+margin-bottom: 10px;
+letter-spacing: 0.3px;
+}
+
+.subsection ul {
+list-style: none;
+padding: 0;
+}
+.subsection li {
+color: #c9d1d9;
+font-size: 14px;
+line-height: 1.7;
+padding: 4px 0 4px 20px;
+position: relative;
+}
+.subsection li::before {
+content: “▸”;
+position: absolute;
+left: 0;
+color: #c59cff;
+font-weight: 700;
+}
+
+/* FOOTER NAV */
+.footer-nav {
+margin-top: 40px;
+padding-top: 30px;
+border-top: 1px solid rgba(255,255,255,0.08);
+display: flex;
+gap: 16px;
+}
+.nav-btn {
+flex: 1;
+padding: 16px 20px;
+background: linear-gradient(135deg, rgba(14,26,34,0.8), rgba(10,24,36,0.8));
+border: 1px solid rgba(0,255,136,0.2);
+border-radius: 12px;
+color: #e6edf3;
+text-decoration: none;
+font-weight: 600;
+text-align: center;
+transition: all 0.3s;
+}
+.nav-btn:hover {
+border-color: #00ff88;
+transform: translateY(-2px);
+box-shadow: 0 10px 30px rgba(0,255,136,0.2);
+}
+.nav-btn .label { font-size: 10px; color: #8b949e; letter-spacing: 2px; display: block; margin-bottom: 3px; }
+.nav-btn .name { font-size: 14px; }
+.nav-btn.pilotage:hover { border-color: #00d4ff; box-shadow: 0 10px 30px rgba(0,212,255,0.2); }
+
+.no-results {
+text-align: center;
+padding: 60px 20px;
+color: #8b949e;
+display: none;
+}
+.no-results.show { display: block; }
+.no-results .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+
+/* MOBILE */
+@media (max-width: 900px) {
+.layout {
+grid-template-columns: 1fr;
+padding: 16px;
+}
+.sidebar {
+position: relative;
+top: 0;
+height: auto;
+max-height: 300px;
+}
+.page-title { font-size: 32px; }
+.manual-section { padding: 22px 20px; }
+.section-title { font-size: 22px; }
+.header { padding: 12px 16px; }
+.header-version { display: none; }
+}
+</style>
+
+</head>
+<body>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+
+  <div class="header">
+    <a href="index.html" class="back-btn">← RETOUR</a>
+    <div class="header-logo">GREENROAD</div>
+    <div class="header-version">v4.1 - 14/04/2026 (Kill-switch distant)</div>
+  </div>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">📑 NAVIGATION</div>
+      <input type="text" class="search-box" id="searchBox" placeholder="🔍 Rechercher..." autocomplete="off">
+      <nav id="toc">
+        <a href="#sec-00_quickstart" class="toc-item" data-key="00_quickstart"><span class="toc-title-txt">🚀 Demarrage rapide</span></a>
+        <a href="#sec-01_dashboard" class="toc-item" data-key="01_dashboard"><span class="toc-title-txt">📊 Dashboard</span></a>
+        <a href="#sec-02_strategies" class="toc-item" data-key="02_strategies"><span class="toc-title-txt">🧠 Strategies</span></a>
+        <a href="#sec-03_config" class="toc-item" data-key="03_config"><span class="toc-title-txt">⚙️ Config</span></a>
+        <a href="#sec-04_logs" class="toc-item" data-key="04_logs"><span class="toc-title-txt">📋 Logs</span></a>
+        <a href="#sec-05_perf" class="toc-item" data-key="05_perf"><span class="toc-title-txt">📈 Perf</span></a>
+        <a href="#sec-06_heatmap" class="toc-item" data-key="06_heatmap"><span class="toc-title-txt">🔥 Heatmap</span></a>
+        <a href="#sec-07_spot" class="toc-item" data-key="07_spot"><span class="toc-title-txt">💎 Spot Analyzer</span></a>
+        <a href="#sec-08_historique" class="toc-item" data-key="08_historique"><span class="toc-title-txt">📜 Historique</span></a>
+        <a href="#sec-09_calendrier" class="toc-item" data-key="09_calendrier"><span class="toc-title-txt">📅 Calendrier economique</span></a>
+        <a href="#sec-10_planificateur" class="toc-item" data-key="10_planificateur"><span class="toc-title-txt">⏰ Planificateur</span></a>
+        <a href="#sec-11_backtest" class="toc-item" data-key="11_backtest"><span class="toc-title-txt">📊 Backtest</span></a>
+        <a href="#sec-12_btc_filtre" class="toc-item" data-key="12_btc_filtre"><span class="toc-title-txt">₿ BTC Filtre</span></a>
+        <a href="#sec-13_ranges" class="toc-item" data-key="13_ranges"><span class="toc-title-txt">📐 Ranges</span></a>
+        <a href="#sec-14_scanner" class="toc-item" data-key="14_scanner"><span class="toc-title-txt">🔭 Scanner</span></a>
+        <a href="#sec-15_journal" class="toc-item" data-key="15_journal"><span class="toc-title-txt">🎙️ Journal Live</span></a>
+        <a href="#sec-16_securite" class="toc-item" data-key="16_securite"><span class="toc-title-txt">🛡️ Securite (Kill-switch distant)</span></a>
+        <a href="#sec-98_scenarios" class="toc-item" data-key="98_scenarios"><span class="toc-title-txt">🎬 Scenarios pratiques</span></a>
+        <a href="#sec-99_concepts" class="toc-item" data-key="99_concepts"><span class="toc-title-txt">🎓 Concepts cles</span></a>
+      </nav>
+    </aside>
+
+```
+<main class="content">
+  <h1 class="page-title">MANUEL</h1>
+  <div class="page-subtitle">Documentation complète · GREENROAD Bot</div>
+
+  <div id="sections">
+<section class="manual-section" id="sec-00_quickstart" data-key="00_quickstart">
+  <h2 class="section-title">🚀 Demarrage rapide</h2>
+  <p class="section-desc">Premiere fois avec GREENROAD ? Suis ces 5 etapes.</p>
+  <div class="subsection">
+    <h3 class="subsection-title">1. Mode DEMO d&#x27;abord</h3>
+    <ul>
+    <li>Va dans Config -&gt; Risque et verifie que &#x27;Mode DEMO&#x27; est coche.</li>
+    <li>Ca te permet de tester sans risque : aucun ordre reel n&#x27;est envoye.</li>
+    <li>Fais au moins une journee complete en DEMO avant de passer en LIVE.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">2. Choisir une strategie</h3>
+    <ul>
+    <li>Onglet Strategies : une quinzaine de strategies disponibles, classees par categorie.</li>
+    <li>Pour debuter, SCALP_EMA_RSI ou RANGE_TRADER sont de bons choix.</li>
+    <li>Clique sur une carte pour voir sa description puis &#x27;ACTIVER&#x27;.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">3. Configurer les parametres risque</h3>
+    <ul>
+    <li>Config -&gt; Risque : taille de position (5-10% recommande), levier (1 au debut).</li>
+    <li>Active SL et TP avec des valeurs raisonnables (SL 1%, TP 2% par exemple).</li>
+    <li>Active le budget quotidien ($50 max par exemple) pour limiter les pertes.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">4. Demarrer</h3>
+    <ul>
+    <li>Retour Dashboard, clique sur &#x27;DEMARRER&#x27;.</li>
+    <li>Observe le bandeau Live Reasoning qui te raconte ce que fait le bot.</li>
+    <li>Les 15 premieres minutes : surveille les logs pour verifier que tout roule.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">5. Passer en LIVE (quand tu es pret)</h3>
+    <ul>
+    <li>Decoche &#x27;Mode DEMO&#x27; dans Config -&gt; Risque.</li>
+    <li>Le bot va maintenant envoyer des ORDRES REELS sur Hyperliquid.</li>
+    <li>Commence avec des petites tailles, augmente progressivement selon tes resultats.</li>
+    </ul>
+  </div>
+</section>
+<section class="manual-section" id="sec-01_dashboard" data-key="01_dashboard">
+  <h2 class="section-title">📊 Dashboard</h2>
+  <p class="section-desc">Vue d&#x27;ensemble en temps reel : prix, position, capital, narration, boutons principaux.</p>
+  <div class="subsection">
+    <h3 class="subsection-title">Barre superieure - Marches mondiaux</h3>
+    <ul>
+    <li>Affiche en temps reel : BTC, S&amp;P 500, Or, Argent, Petrole Brent.</li>
+    <li>Rafraichi toutes les 5 minutes via Yahoo Finance.</li>
+    <li>Les 3 horloges a cote montrent l&#x27;heure de Paris, New York, Tokyo.</li>
+    <li>&#x27;Wall Street&#x27; indique si les marches US sont ouverts ou fermes.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Hero Section - Prix coin principal</h3>
+    <ul>
+    <li>Affiche le coin selectionne (defaut ETH) avec son prix en gros.</li>
+    <li>Couleur : vert si hausse 24h, rouge si baisse.</li>
+    <li>La phrase &#x27;tendance xxx&#x27; est le resume naturel de la tendance actuelle.</li>
+    <li>Strategie active affichee en dessous.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Bouton [USER] MANUEL / [SEMI-AUTO] / [FULL-AUTO]</h3>
+    <ul>
+    <li>Choix du mode de pilotage du bot. Cliquer ouvre une popup detaillee.</li>
+    <li>MANUEL : toute decision passe par ta validation (popup).</li>
+    <li>SEMI-AUTO : &gt;=75% confiance passe seul, 60-75% demande validation.</li>
+    <li>FULL-AUTO : &gt;=75% passe seul, 60-75% est refuse automatiquement, aucune popup.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Bouton [SCAN] ON / OFF</h3>
+    <ul>
+    <li>Active ou desactive le scanner multi-tokens. Cliquer ouvre une popup explicative.</li>
+    <li>ON : le bot cherche les meilleures opportunites parmi plusieurs coins de ta watchlist.</li>
+    <li>OFF : le bot trade uniquement le coin choisi dans Config.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Badge de sante</h3>
+    <ul>
+    <li>[OK] TOUT VA BIEN : tout tourne correctement.</li>
+    <li>[!] SURVEILLANCE : alerte mineure (par exemple latence API elevee).</li>
+    <li>[X] PROBLEME : erreur critique, verifier immediatement.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Bandeau Live Reasoning</h3>
+    <ul>
+    <li>Le &#x27;narrateur&#x27; du bot qui commente ce qu&#x27;il voit toutes les 3 minutes.</li>
+    <li>Couleur selon la situation : gris (observation), vert (gain), rouge (perte), jaune (action).</li>
+    <li>Le texte change automatiquement selon le contexte (position, patterns, regime de marche).</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Cartes AUJOURD&#x27;HUI / POSITION / CAPITAL</h3>
+    <ul>
+    <li>AUJOURD&#x27;HUI : nombre de trades du jour + P&amp;L journalier en %.</li>
+    <li>POSITION : infos sur ta position ouverte (side, qty, entree, prix actuel, SL/TP).</li>
+    <li>CAPITAL : montant en USDC sur Hyperliquid + mode LIVE/DEMO.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Boutons DEMARRER / STOP / Cloturer tout</h3>
+    <ul>
+    <li>DEMARRER : lance le bot (cycles d&#x27;analyse toutes les X secondes).</li>
+    <li>STOP : arrete le bot mais garde la position ouverte avec ses SL/TP.</li>
+    <li>Cloturer tout : ferme IMMEDIATEMENT toute position au marche (fee taker 0.0432%).</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Bouton Analyser</h3>
+    <ul>
+    <li>Lance une analyse complete du marche avec recommandation de strategie.</li>
+    <li>Ouvre une popup avec le top 3 des opportunites (si scanner actif), la strategie suggeree, SL/TP proposes.</li>
+    <li>Tu peux accepter ou refuser. Si accepte, le bot switche automatiquement.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">💡 Conseils</h3>
+    <ul>
+    <li>Consulte regulierement le bandeau Live Reasoning : il t&#x27;aide a comprendre la logique du bot.</li>
+    <li>La carte POSITION te permet de modifier manuellement ton SL/TP via les boutons ✏.</li>
+    <li>Le graphique en bas affiche les bougies + EMA + zones SL/TP + marqueurs de trades passes.</li>
+    </ul>
+  </div>
+</section>
+<section class="manual-section" id="sec-02_strategies" data-key="02_strategies">
+  <h2 class="section-title">🧠 Strategies</h2>
+  <p class="section-desc">Catalogue des 15+ strategies disponibles, regroupees par categorie (Scalping, Niveaux, Avancees, Classiques, Outils).</p>
+  <div class="subsection">
+    <h3 class="subsection-title">Navigation</h3>
+    <ul>
+    <li>Chaque carte represente une strategie. Clique dessus pour voir les details a droite.</li>
+    <li>Carte selectionnee = bordure coloree. Strategie ACTIVE = fond plus sombre.</li>
+    <li>La strategie active est celle utilisee par le bot pour trader.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Bouton &#x27;ACTIVER CETTE STRATEGIE&#x27;</h3>
+    <ul>
+    <li>Selectionne la strategie pour le bot.</li>
+    <li>Notification Telegram automatique du changement.</li>
+    <li>La strategie precedente est desactivee (une seule active a la fois).</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Strategies Scalping (SCALP)</h3>
+    <ul>
+    <li>Trades rapides, plusieurs par heure. SL et TP serres (0.3-0.8%).</li>
+    <li>SCALP_EMA_RSI : entree sur croisement EMA + RSI. Bonne en tendance.</li>
+    <li>Falskt Breakout / Liquidity Sweep : entre apres un piege des sweeps de liquidite.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Strategies Niveaux S/R</h3>
+    <ul>
+    <li>Base sur TES niveaux personnels (supports/resistances).</li>
+    <li>Configurer les niveaux dans Config ou via l&#x27;onglet Ranges.</li>
+    <li>Range Trader : achete au support, vend a la resistance.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Strategies Avancees</h3>
+    <ul>
+    <li>Volatility Spike Reversal : capte les rebonds apres spike de volatilite.</li>
+    <li>Trend Following Breakout + Pullback : suit la tendance apres confirmation EMA50/200.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Bouton &#x27;Re-armer SL/TP TEST&#x27; (visible uniquement pour la strat Test SL/TP)</h3>
+    <ul>
+    <li>Cette strategie est un outil de diagnostic qui ouvre UNE position test puis bloque.</li>
+    <li>Le bouton reset le flag pour pouvoir relancer un test (apres avoir ferme la position).</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Bouton &#x27;Nettoyer ordres orphelins&#x27;</h3>
+    <ul>
+    <li>Annule tous les ordres TP/SL reduceOnly en attente sur Hyperliquid pour le coin courant.</li>
+    <li>Utile si tu vois des ordres residuels dans le portfolio HL alors qu&#x27;il n&#x27;y a pas de position.</li>
+    <li>Le bot fait ce cleanup automatiquement toutes les 30s, ce bouton est pour un nettoyage immediat.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">💡 Conseils</h3>
+    <ul>
+    <li>En marche range : utilise RANGE_TRADER ou SCALP_EMA_RSI.</li>
+    <li>En marche tendance : utilise TREND_FOLLOWING ou BREAKOUT.</li>
+    <li>Debute avec 1 strategie, teste-la sur plusieurs jours avant d&#x27;en changer.</li>
+    </ul>
+  </div>
+</section>
+<section class="manual-section" id="sec-03_config" data-key="03_config">
+  <h2 class="section-title">⚙️ Config</h2>
+  <p class="section-desc">6 sous-onglets pour tout parametrer : General, Automatisation, Risque, Strategies, Narration, Connexion.</p>
+  <div class="subsection">
+    <h3 class="subsection-title">Sous-onglet General</h3>
+    <ul>
+    <li>Coin : le token trade par defaut (ETH, BTC, SOL, etc.).</li>
+    <li>Timeframe : unite temporelle des bougies (1m, 5m, 15m, 1h, 4h).</li>
+    <li>Verification toutes les X secondes : cadence du cycle d&#x27;analyse (10 sec par defaut).</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Sous-onglet Automatisation</h3>
+    <ul>
+    <li>Mode Auto-Pilot : active le pilotage automatique.</li>
+    <li>Seuils de confiance : threshold (default 75%) et ask_min (default 60%).</li>
+    <li>Scanner : active le scan multi-tokens + watchlist + nombre max de switches par jour.</li>
+    <li>Re-analyse toutes les X minutes : frequence de reanalyse automatique.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Sous-onglet Risque</h3>
+    <ul>
+    <li>Taille position (%) : pourcentage du capital mis en jeu par trade.</li>
+    <li>Levier : effet de levier Hyperliquid (1-40). Debuter a 1 ou 2 max.</li>
+    <li>Mode DEMO : simulation sans ordre reel.</li>
+    <li>Autoriser SHORT : autorise les positions a la baisse.</li>
+    <li>Kill switches : perte quotidienne max, pertes consecutives max, drawdown max.</li>
+    <li>Budget quotidien en $ : nouveau systeme plus intuitif que le % (defaut $50).</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Sous-onglet Strategies</h3>
+    <ul>
+    <li>Parametres techniques de chaque strategie (EMA fast/slow, RSI seuils, ATR multipliers, etc.).</li>
+    <li>A modifier uniquement si tu sais ce que tu fais.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Sous-onglet Narration</h3>
+    <ul>
+    <li>Active/desactive le narrateur.</li>
+    <li>Frequence d&#x27;observation (3 min par defaut).</li>
+    <li>Story du jour : resume quotidien automatique.</li>
+    <li>Notifications Telegram : choisir quoi envoyer (entrees, sorties, switches, etc.).</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Sous-onglet Connexion</h3>
+    <ul>
+    <li>Wallet principal (compte Hyperliquid).</li>
+    <li>Cle API (private key) chiffree avec mot de passe.</li>
+    <li>Telegram bot token + chat ID.</li>
+    <li>Fees Hyperliquid (taker 0.0432% / maker 0.0144%).</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">💡 Conseils</h3>
+    <ul>
+    <li>Toute modification est sauvegardee automatiquement dans bot_config.json.</li>
+    <li>Le bouton &#x27;Defaut&#x27; sur chaque section remet les valeurs d&#x27;usine.</li>
+    <li>Si tu changes d&#x27;avis : Ctrl+Z ne marche pas. Note les valeurs avant de les changer.</li>
+    </ul>
+  </div>
+</section>
+<section class="manual-section" id="sec-04_logs" data-key="04_logs">
+  <h2 class="section-title">📋 Logs</h2>
+  <p class="section-desc">Journal complet des actions du bot avec filtres par type (INFO, WARN, ERROR, OK).</p>
+  <div class="subsection">
+    <h3 class="subsection-title">Lecture des logs</h3>
+    <ul>
+    <li>Chaque ligne : [HH:MM:SS] MESSAGE, avec couleur selon le niveau.</li>
+    <li>OK (vert) : tout va bien. INFO (blanc) : info neutre.</li>
+    <li>WARN (jaune) : attention mais non bloquant. ERROR (rouge) : erreur.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Bouton Effacer</h3>
+    <ul>
+    <li>Vide l&#x27;affichage. Les logs disques (fichier) ne sont PAS effaces.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">💡 Conseils</h3>
+    <ul>
+    <li>En cas de probleme, les logs te diront exactement ce qui s&#x27;est passe.</li>
+    <li>Cherche les lignes ERROR ou WARN pour diagnostiquer.</li>
+    <li>Les logs avec [has_protective_sl] te montrent la structure des ordres HL.</li>
+    </ul>
+  </div>
+</section>
+<section class="manual-section" id="sec-05_perf" data-key="05_perf">
+  <h2 class="section-title">📈 Perf</h2>
+  <p class="section-desc">Courbe d&#x27;evolution du capital + statistiques globales (WR, P&amp;L, drawdown).</p>
+  <div class="subsection">
+    <h3 class="subsection-title">Graphique equity</h3>
+    <ul>
+    <li>Evolution de ton capital au fil du temps.</li>
+    <li>Les descentes marquees representent tes drawdowns.</li>
+    <li>Ideal pour voir si ton bot te fait gagner ou perdre globalement.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Stats globales</h3>
+    <ul>
+    <li>Nombre total de trades, win rate, P&amp;L total, drawdown maximal.</li>
+    <li>Meilleur / pire trade avec date.</li>
+    <li>Repartition par strategie : quelle strat a le meilleur rendement.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">💡 Conseils</h3>
+    <ul>
+    <li>Un bon bot : equity monte regulierement avec peu de drawdowns.</li>
+    <li>Si ton drawdown max &gt; 2x ton P&amp;L total, ton bot prend trop de risques.</li>
+    <li>Un win rate de 45-55% est tres correct si ton ratio R/R est &gt;1.5.</li>
+    </ul>
+  </div>
+</section>
+<section class="manual-section" id="sec-06_heatmap" data-key="06_heatmap">
+  <h2 class="section-title">🔥 Heatmap</h2>
+  <p class="section-desc">Calendrier style GitHub : chaque case represente un jour, la couleur indique le P&amp;L.</p>
+  <div class="subsection">
+    <h3 class="subsection-title">Lecture de la heatmap</h3>
+    <ul>
+    <li>365 jours representes en grille 7 lignes (jours) x 53 colonnes (semaines).</li>
+    <li>Vert clair -&gt; vert fonce : gain de plus en plus important.</li>
+    <li>Rouge : perte. Gris fonce : aucun trade ce jour-la.</li>
+    <li>Labels mois en haut, initiales jours a gauche (L/M/V/D).</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Tooltip</h3>
+    <ul>
+    <li>Passe ta souris sur une case pour voir : date + nombre de trades + P&amp;L exact.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Stats globales</h3>
+    <ul>
+    <li>Sous la heatmap : total trades, P&amp;L 365 jours, nombre jours positifs/negatifs.</li>
+    <li>Meilleur jour et pire jour de la periode.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">💡 Conseils</h3>
+    <ul>
+    <li>Cherche des patterns : tu trades mieux le mardi ? Mal le vendredi ?</li>
+    <li>Une ligne rouge consecutive = serie de mauvais jours, prends du recul.</li>
+    <li>Une zone verte dense = periode tres productive, analyse ce qui marchait bien.</li>
+    </ul>
+  </div>
+</section>
+<section class="manual-section" id="sec-07_spot" data-key="07_spot">
+  <h2 class="section-title">💎 Spot Analyzer</h2>
+  <p class="section-desc">Analyse pure (aucun trade) long-terme de 16 actifs : crypto, indices actions, matieres premieres, forex.</p>
+  <div class="subsection">
+    <h3 class="subsection-title">Bouton &#x27;Analyser tous les actifs&#x27;</h3>
+    <ul>
+    <li>Lance le scan de BTC/ETH/SOL/HYPE + S&amp;P500/Nasdaq/Dow + Or/Argent/Brent/WTI/Gaz/Cuivre + EUR/GBP/JPY.</li>
+    <li>Prend 15-30 secondes (telechargement historiques 6 mois pour chaque).</li>
+    <li>Necessite &#x27;pip install yfinance&#x27; pour les actifs non-crypto.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Lecture des cartes</h3>
+    <ul>
+    <li>Une carte par actif, bordure coloree selon le score.</li>
+    <li>Ligne 1 : nom + prix + score/verdict (EXCELLENT / BON / MOYEN / FAIBLE / EVITER).</li>
+    <li>Ligne 2 : variations 24h / 7j / 30j, drawdown depuis ATH, RSI.</li>
+    <li>Ligne SETUP : plage d&#x27;entree suggeree + SL + TP + ratio R/R.</li>
+    <li>Narratif en italique : explication en francais naturel.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Score et verdict</h3>
+    <ul>
+    <li>&gt;= 75 : EXCELLENT MOMENT. Setup tres favorable.</li>
+    <li>60-74 : BON MOMENT. Setup acceptable.</li>
+    <li>45-59 : MOMENT MOYEN. Attendre mieux.</li>
+    <li>30-44 : MOMENT FAIBLE. Risque eleve.</li>
+    <li>&lt; 30 : EVITER. Tres defavorable.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Base de calcul</h3>
+    <ul>
+    <li>RSI 14 daily, MA200, distance au support/resistance, drawdown depuis ATH.</li>
+    <li>ATR 14 pour dimensionner SL/TP.</li>
+    <li>Score final combine ces metriques.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">💡 Conseils</h3>
+    <ul>
+    <li>C&#x27;est une analyse TECHNIQUE pure, pas de fondamentaux ni news.</li>
+    <li>Utilise-la comme aide a la decision pour tes investissements spot.</li>
+    <li>Re-analyse une fois par semaine pour suivre l&#x27;evolution.</li>
+    <li>Les setups sont indicatifs, confirme toujours avec ton jugement.</li>
+    </ul>
+  </div>
+</section>
+<section class="manual-section" id="sec-08_historique" data-key="08_historique">
+  <h2 class="section-title">📜 Historique</h2>
+  <p class="section-desc">Tableau de tous les trades passes (LIVE + DEMO + importes depuis Hyperliquid).</p>
+  <div class="subsection">
+    <h3 class="subsection-title">Colonnes du tableau</h3>
+    <ul>
+    <li>Date, Mode, Coin, Side, Entree, Sortie, Qty, P&amp;L, Strategie, Duree.</li>
+    <li>Tri possible en cliquant sur les entetes de colonnes.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Import depuis Hyperliquid</h3>
+    <ul>
+    <li>Au demarrage, le bot recupere automatiquement ton historique HL.</li>
+    <li>Bouton &#x27;Rafraichir&#x27; pour synchroniser manuellement.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">💡 Conseils</h3>
+    <ul>
+    <li>Analyse les trades perdants : quelles strategies, quels coins, quelles heures ?</li>
+    <li>Exporte en CSV pour ta comptabilite ou declaration fiscale.</li>
+    </ul>
+  </div>
+</section>
+<section class="manual-section" id="sec-09_calendrier" data-key="09_calendrier">
+  <h2 class="section-title">📅 Calendrier economique</h2>
+  <p class="section-desc">Liste des evenements economiques majeurs qui peuvent impacter les marches (FOMC, CPI, NFP, etc.).</p>
+  <div class="subsection">
+    <h3 class="subsection-title">Lecture du calendrier</h3>
+    <ul>
+    <li>Liste chronologique des events a venir.</li>
+    <li>Niveau d&#x27;impact : bas / moyen / eleve.</li>
+    <li>Pauses automatiques du bot : X min avant et Y min apres les events a fort impact.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Configuration</h3>
+    <ul>
+    <li>Dans Config -&gt; Automatisation : regler les durees de pause.</li>
+    <li>Desactivation possible de la pause auto.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">💡 Conseils</h3>
+    <ul>
+    <li>Les events a fort impact (FOMC, CPI US) peuvent causer des mouvements de 2-5% en quelques minutes.</li>
+    <li>Il vaut mieux pauser le bot pendant ces periodes.</li>
+    <li>Attention aux spreads qui s&#x27;elargissent fortement pendant les annonces.</li>
+    </ul>
+  </div>
+</section>
+<section class="manual-section" id="sec-10_planificateur" data-key="10_planificateur">
+  <h2 class="section-title">⏰ Planificateur</h2>
+  <p class="section-desc">Permet de programmer des sessions de trading (demarrage / arret automatique a des horaires precis).</p>
+  <div class="subsection">
+    <h3 class="subsection-title">Ajouter une session</h3>
+    <ul>
+    <li>Jours de la semaine + heure de debut + heure de fin.</li>
+    <li>Le bot demarre et s&#x27;arrete automatiquement a ces horaires.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">💡 Conseils</h3>
+    <ul>
+    <li>Utile si tu veux trader uniquement pendant les heures US (14h-22h Paris).</li>
+    <li>Eviter la nuit europeenne (faible liquidite) en programmant 08h-22h.</li>
+    </ul>
+  </div>
+</section>
+<section class="manual-section" id="sec-11_backtest" data-key="11_backtest">
+  <h2 class="section-title">📊 Backtest</h2>
+  <p class="section-desc">Teste une strategie sur des donnees historiques pour voir ce qu&#x27;elle aurait donne.</p>
+  <div class="subsection">
+    <h3 class="subsection-title">Utilisation</h3>
+    <ul>
+    <li>Choisis un coin, une strategie, une periode.</li>
+    <li>Le bot rejoue les bougies historiques et simule les trades.</li>
+    <li>Affiche le resultat : nombre de trades, WR, P&amp;L total, drawdown.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">💡 Conseils</h3>
+    <ul>
+    <li>Teste au moins 30 jours d&#x27;historique pour des resultats significatifs.</li>
+    <li>Un bon backtest n&#x27;est PAS une garantie de performance future.</li>
+    <li>Teste plusieurs strategies et compare.</li>
+    </ul>
+  </div>
+</section>
+<section class="manual-section" id="sec-12_btc_filtre" data-key="12_btc_filtre">
+  <h2 class="section-title">₿ BTC Filtre</h2>
+  <p class="section-desc">Conditionne les trades sur alts au comportement de BTC (evite de trader contre BTC).</p>
+  <div class="subsection">
+    <h3 class="subsection-title">Principe</h3>
+    <ul>
+    <li>Ne pas acheter un alt si BTC est en chute.</li>
+    <li>Ne pas shorter un alt si BTC est en rally.</li>
+    <li>Affiche la tendance BTC actuelle et si le filtre est actif.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">💡 Conseils</h3>
+    <ul>
+    <li>Active ce filtre si tu trades des alts (SOL, ETH, HYPE, etc.).</li>
+    <li>Desactive si tu trades uniquement BTC (inutile).</li>
+    </ul>
+  </div>
+</section>
+<section class="manual-section" id="sec-13_ranges" data-key="13_ranges">
+  <h2 class="section-title">📐 Ranges</h2>
+  <p class="section-desc">Configuration manuelle de tes niveaux de support / resistance pour la strategie RANGE_TRADER.</p>
+  <div class="subsection">
+    <h3 class="subsection-title">Ajouter un range</h3>
+    <ul>
+    <li>Coin + support (prix bas) + resistance (prix haut).</li>
+    <li>Le bot achete pres du support et vend pres de la resistance.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">💡 Conseils</h3>
+    <ul>
+    <li>Verifie tes ranges chaque semaine, les niveaux evoluent.</li>
+    <li>Un range trop etroit (&lt; 1%) n&#x27;est pas rentable apres frais.</li>
+    </ul>
+  </div>
+</section>
+<section class="manual-section" id="sec-14_scanner" data-key="14_scanner">
+  <h2 class="section-title">🔭 Scanner</h2>
+  <p class="section-desc">Configuration et etat du scanner multi-tokens (le meme bouton [SCAN] du Dashboard).</p>
+  <div class="subsection">
+    <h3 class="subsection-title">Watchlist</h3>
+    <ul>
+    <li>Liste des tokens scannes (BTC, ETH, SOL, HYPE, AVAX, LINK, ARB, SUI, DOGE par defaut).</li>
+    <li>Modifiable dans Config -&gt; Automatisation.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Parametres</h3>
+    <ul>
+    <li>Score minimum : score requis pour qu&#x27;un coin soit considere comme opportunite (70 par defaut).</li>
+    <li>Volume minimum 24h : filtre les coins a faible liquidite ($10M par defaut).</li>
+    <li>Max switches par jour : evite les changements incessants (4 par defaut).</li>
+    <li>Cooldown entre switches : delai minimum entre 2 changements (30 min par defaut).</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">💡 Conseils</h3>
+    <ul>
+    <li>Trop de switches = frais cumules elevees. Respecte le cooldown.</li>
+    <li>Pour une approche mono-coin : SCAN OFF.</li>
+    </ul>
+  </div>
+</section>
+<section class="manual-section" id="sec-15_journal" data-key="15_journal">
+  <h2 class="section-title">🎙️ Journal Live</h2>
+  <p class="section-desc">Archive chronologique des narrations du bot avec filtres par categorie.</p>
+  <div class="subsection">
+    <h3 class="subsection-title">Categories</h3>
+    <ul>
+    <li>Observe : commentaires de fond (marche calme, ranging, etc.).</li>
+    <li>Entry/Exit : entrees et sorties de position.</li>
+    <li>Switch : changements de coin/strategie.</li>
+    <li>Pause : mises en pause (events, kill switches).</li>
+    <li>Story : resume quotidien.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Filtres</h3>
+    <ul>
+    <li>Boutons en haut pour filtrer par categorie.</li>
+    <li>Bouton Vider : efface l&#x27;affichage (pas les logs disque).</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">💡 Conseils</h3>
+    <ul>
+    <li>Consulte regulierement pour comprendre la logique du bot.</li>
+    <li>Les narrations sont aussi diffusees sur Telegram selon ta config.</li>
+    </ul>
+  </div>
+</section>
+<section class="manual-section" id="sec-16_securite" data-key="16_securite">
+  <h2 class="section-title">🛡️ Securite (Kill-switch distant)</h2>
+  <p class="section-desc">Systeme de protection a distance : tu peux desactiver TOUS tes bots en quelques minutes via GitHub.</p>
+  <div class="subsection">
+    <h3 class="subsection-title">Principe</h3>
+    <ul>
+    <li>Le bot interroge toutes les 5 minutes un fichier JSON sur GitHub (Gist).</li>
+    <li>Si tu passes le statut sur &#x27;locked&#x27; depuis ton telephone -&gt; tous les bots se verrouillent.</li>
+    <li>Utile en cas de vol, fuite du bot, ou urgence (desactivation massive).</li>
+    <li>Aucune dependance autre que GitHub (service fiable, gratuit, permanent).</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Badge visuel permanent</h3>
+    <ul>
+    <li>En haut a droite du Dashboard, a cote des autres badges.</li>
+    <li>🟢 &#x27;PROTECTION ACTIVE&#x27; : tout OK, serveur contacte regulierement.</li>
+    <li>🟡 &#x27;ALERTE RESEAU&#x27; : plus de contact depuis &gt;24h mais &lt;72h (tolerance).</li>
+    <li>🔴 &#x27;VERROUILLE&#x27; : bot bloque par commande distante.</li>
+    <li>Clic sur le badge -&gt; ouvre l&#x27;onglet Securite.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Ecran de demarrage</h3>
+    <ul>
+    <li>A chaque lancement du bot, un ecran de verification s&#x27;affiche 3 secondes.</li>
+    <li>Montre : contact serveur + statut recu + confirmation.</li>
+    <li>Rassurant : tu vois que le bot s&#x27;est authentifie correctement.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Pour verrouiller a distance</h3>
+    <ul>
+    <li>1. Va sur ton Gist GitHub (bouton &#x27;Ouvrir mon Gist&#x27; dans l&#x27;onglet Securite).</li>
+    <li>2. Clique &#x27;Edit&#x27; en haut a droite.</li>
+    <li>3. Change  &quot;status&quot;: &quot;active&quot;  en  &quot;status&quot;: &quot;locked&quot;</li>
+    <li>4. Clique &#x27;Update secret gist&#x27;.</li>
+    <li>5. Dans les 5 minutes, TOUS tes bots se verrouillent.</li>
+    <li>Pour deverrouiller : repasse &#x27;status&#x27; sur &#x27;active&#x27;.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Effet du verrouillage</h3>
+    <ul>
+    <li>Overlay plein ecran rouge avec cadenas.</li>
+    <li>Toutes les positions sont fermees automatiquement au marche.</li>
+    <li>Ordres TP/SL orphelins annules.</li>
+    <li>Bouton DEMARRER bloque (impossible de lancer le trading).</li>
+    <li>Notification Telegram urgente.</li>
+    <li>Les onglets restent consultables (historique, manuel).</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Fail-secure 72h</h3>
+    <ul>
+    <li>Si le bot ne peut pas joindre GitHub pendant plus de 72h -&gt; verrouillage auto.</li>
+    <li>Raison : empeche qu&#x27;un voleur contourne en coupant simplement internet.</li>
+    <li>Couper internet = se couper soi-meme.</li>
+    <li>En usage normal tu ne rencontreras jamais ce verrouillage.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Onglet Securite</h3>
+    <ul>
+    <li>Etat actuel avec couleur (vert/jaune/rouge).</li>
+    <li>Derniere verification + dernier contact reussi + prochaine verification.</li>
+    <li>Bouton &#x27;Verifier maintenant&#x27; pour forcer un check immediat.</li>
+    <li>Mode d&#x27;emploi inline pour verrouiller/deverrouiller.</li>
+    <li>Historique des 12 dernieres verifications.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">💡 Conseils</h3>
+    <ul>
+    <li>Bookmark l&#x27;URL de ton Gist sur ton telephone : c&#x27;est ta telecommande.</li>
+    <li>Teste une fois le verrouillage et le deverrouillage pour voir comment ca marche.</li>
+    <li>Garde l&#x27;URL du Gist secrete (ne la partage pas, meme si elle n&#x27;est pas modifiable sans ton compte).</li>
+    <li>En cas de vol, verrouille immediatement : tes positions seront fermees proprement.</li>
+    </ul>
+  </div>
+</section>
+<section class="manual-section" id="sec-98_scenarios" data-key="98_scenarios">
+  <h2 class="section-title">🎬 Scenarios pratiques</h2>
+  <p class="section-desc">Configurations recommandees selon ton usage.</p>
+  <div class="subsection">
+    <h3 class="subsection-title">Scenario 1 : Je pars toute la journee</h3>
+    <ul>
+    <li>Mode : FULL-AUTO (cliquer sur le bouton MANUEL et choisir FULL-AUTO).</li>
+    <li>Scanner : ON.</li>
+    <li>Budget quotidien : $50 max (modifiable selon ton capital).</li>
+    <li>Kill switches : actives avec valeurs par defaut.</li>
+    <li>Tu recevras uniquement les trades executes et les alertes critiques sur Telegram.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Scenario 2 : Je debute, je veux apprendre</h3>
+    <ul>
+    <li>Mode : MANUEL (default).</li>
+    <li>Mode DEMO active (simulation).</li>
+    <li>Strategie : SCALP_EMA_RSI (simple a comprendre).</li>
+    <li>Narration : activee, observations toutes les 3 min.</li>
+    <li>Consulte le bandeau Live Reasoning et le Journal Live regulierement.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Scenario 3 : Grosse perte, que faire ?</h3>
+    <ul>
+    <li>1. Clique STOP pour arreter les nouvelles entrees.</li>
+    <li>2. Verifie la position via le bouton Portfolio (Hyperliquid direct).</li>
+    <li>3. Si besoin, Cloturer tout pour fermer immediatement.</li>
+    <li>4. Analyse dans l&#x27;Historique / Logs ce qui s&#x27;est passe.</li>
+    <li>5. Active le budget quotidien pour limiter la prochaine fois.</li>
+    <li>6. Pause la journee, reflechis, reviens demain avec les idees claires.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Scenario 4 : Je veux maximiser les gains</h3>
+    <ul>
+    <li>Mode : SEMI-AUTO (tu valides les signaux moyens).</li>
+    <li>Scanner : ON avec watchlist elargie.</li>
+    <li>MTF confirm : ON mode souple.</li>
+    <li>Patterns : actif avec alertes Telegram &gt;=80%.</li>
+    <li>Surveille le bandeau Live Reasoning pour saisir les opportunites.</li>
+    </ul>
+  </div>
+</section>
+<section class="manual-section" id="sec-99_concepts" data-key="99_concepts">
+  <h2 class="section-title">🎓 Concepts cles</h2>
+  <p class="section-desc">Explications des concepts transversaux qui reviennent dans le bot.</p>
+  <div class="subsection">
+    <h3 class="subsection-title">Modes de pilotage</h3>
+    <ul>
+    <li>MANUEL : toute decision demande ta validation (popup).</li>
+    <li>SEMI-AUTO : &gt;=75% execute seul, 60-75% demande validation, &lt;60% ignore.</li>
+    <li>FULL-AUTO : &gt;=75% execute seul, 60-75% REFUSE auto (pas de popup), &lt;60% ignore. Ideal pour vacances.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Patterns chartistes</h3>
+    <ul>
+    <li>Classiques : Double Top/Bottom, Triangle, Flag.</li>
+    <li>Avances : Head &amp; Shoulders (+ inverse), Divergences RSI haussiere/baissiere.</li>
+    <li>Impact : bloque ou booste un signal selon compatibilite (&gt;=65% confiance).</li>
+    <li>Alerte Telegram auto quand pattern &gt;=80% detecte.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Multi-Timeframe (MTF) Confirmation</h3>
+    <ul>
+    <li>Avant de trader sur le TF principal, verifie que 1h + 4h confirment la direction.</li>
+    <li>Mode SOUPLE : au moins 1 des 2 doit confirmer.</li>
+    <li>Mode STRICT : les 2 doivent confirmer.</li>
+    <li>Reduit drastiquement les faux signaux.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Sentiment de marche</h3>
+    <ul>
+    <li>Fear &amp; Greed Index (0-100) : indicateur de panique / euphorie.</li>
+    <li>Funding rates Hyperliquid : cout des positions longues/courtes.</li>
+    <li>Mode informatif par defaut (affiche dans les logs, pas de blocage).</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Budget quotidien</h3>
+    <ul>
+    <li>Plafond de perte en dollars par jour ($50 par defaut).</li>
+    <li>Cumulee en NET (gains compensent pertes).</li>
+    <li>Atteint : refus des nouveaux trades jusqu&#x27;a minuit.</li>
+    <li>Alerte anticipee a 70% du budget.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Kill switches</h3>
+    <ul>
+    <li>Perte quotidienne max en % (kill_max_daily_loss).</li>
+    <li>Pertes consecutives max (kill_max_consec_loss).</li>
+    <li>Drawdown total max (kill_max_drawdown).</li>
+    <li>Spread anormal (kill_max_spread_pct).</li>
+    <li>Cooldown de reactivation (30 min par defaut).</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Protections SL/TP</h3>
+    <ul>
+    <li>Tous les ordres passent avec SL et TP sur Hyperliquid en reduceOnly.</li>
+    <li>Watchdog 30s verifie que les protections sont en place.</li>
+    <li>Cleanup auto des ordres orphelins si aucune position.</li>
+    <li>Confirmation Telegram 🛡️ apres placement reussi.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <h3 class="subsection-title">Narration</h3>
+    <ul>
+    <li>200+ templates FR anti-repetition.</li>
+    <li>Observations toutes les 3 min (bandeau + journal).</li>
+    <li>Story quotidienne a 19h (resume journee).</li>
+    <li>Rapport hebdo dimanche 19h sur Telegram.</li>
+    </ul>
+  </div>
+</section>
+  </div>
+
+  <div class="no-results" id="noResults">
+    <div class="icon">🔎</div>
+    <div>Aucune section ne correspond à ta recherche</div>
+  </div>
+
+  <div class="footer-nav">
+    <a href="https://cgform-source.github.io/greenroad-remote/dashboard.html" class="nav-btn">
+      <span class="label">ALLER AU</span>
+      <span class="name">📊 Dashboard</span>
+    </a>
+    <a href="https://cgform-source.github.io/greenroad-remote/remote.html" class="nav-btn pilotage">
+      <span class="label">ALLER AU</span>
+      <span class="name">🎛️ Pilotage</span>
+    </a>
+  </div>
+</main>
+```
+
+  </div>
+
+<script>
+  // Scrollspy : highlight section active dans la sidebar
+  const sections = document.querySelectorAll(".manual-section");
+  const tocItems = document.querySelectorAll(".toc-item");
+
+  function setActive(key) {
+    tocItems.forEach(i => {
+      i.classList.toggle("active", i.dataset.key === key);
+    });
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        setActive(entry.target.dataset.key);
+      }
+    });
+  }, { rootMargin: "-40% 0px -55% 0px" });
+
+  sections.forEach(s => observer.observe(s));
+
+  // Recherche
+  const searchBox = document.getElementById("searchBox");
+  const noResults = document.getElementById("noResults");
+
+  searchBox.addEventListener("input", (e) => {
+    const q = e.target.value.toLowerCase().trim();
+    let visibleCount = 0;
+
+    sections.forEach(sec => {
+      const text = sec.textContent.toLowerCase();
+      const match = !q || text.includes(q);
+      sec.classList.toggle("hidden", !match);
+      if (match) visibleCount++;
+    });
+
+    tocItems.forEach(item => {
+      const key = item.dataset.key;
+      const relatedSection = document.getElementById("sec-" + key);
+      const hidden = relatedSection && relatedSection.classList.contains("hidden");
+      item.classList.toggle("hidden", hidden);
+    });
+
+    noResults.classList.toggle("show", visibleCount === 0);
+  });
+
+  // Scroll smooth au clic
+  tocItems.forEach(item => {
+    item.addEventListener("click", (e) => {
+      e.preventDefault();
+      const target = document.querySelector(item.getAttribute("href"));
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+</script>
+
+</body>
+</html>
