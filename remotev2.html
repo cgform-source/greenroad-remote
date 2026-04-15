@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>GREENROAD · Remote</title>
+<link rel="apple-touch-icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="%2300ff88"/><stop offset="1" stop-color="%2300d4ff"/></linearGradient></defs><rect width="180" height="180" fill="%23050810"/><text x="50%25" y="66%25" font-size="110" text-anchor="middle" fill="url(%23g)">⬢</text></svg>'>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+html,body{overflow-x:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;background:#050810;color:#e6f1ff;min-height:100vh;padding:20px 18px 40px;background-image:radial-gradient(circle at 20% 10%,rgba(0,255,136,0.08) 0%,transparent 40%),radial-gradient(circle at 80% 80%,rgba(0,212,255,0.06) 0%,transparent 45%),radial-gradient(circle at 50% 50%,rgba(123,47,255,0.04) 0%,transparent 50%);background-attachment:fixed;position:relative}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(0,255,136,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,136,0.03) 1px,transparent 1px);background-size:40px 40px;mask-image:radial-gradient(ellipse at center,rgba(0,0,0,0.8) 0%,transparent 70%);-webkit-mask-image:radial-gradient(ellipse at center,rgba(0,0,0,0.8) 0%,transparent 70%);z-index:0}
+.container{max-width:560px;margin:0 auto;position:relative;z-index:1}
+.header{text-align:center;margin-bottom:28px;padding-top:10px}
+.logo{font-size:56px;line-height:1;background:linear-gradient(135deg,#00ff88 0%,#00d4ff 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;animation:logoGlow 3s ease-in-out infinite;display:inline-block}
+@keyframes logoGlow{0%,100%{filter:drop-shadow(0 0 8px rgba(0,255,136,0.5))}50%{filter:drop-shadow(0 0 18px rgba(0,212,255,0.7))}}
+h1{font-size:22px;font-weight:800;letter-spacing:2px;margin-top:8px;background:linear-gradient(90deg,#00ff88,#00d4ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:#64748b;font-size:11px;letter-spacing:3px;margin-top:6px;text-transform:uppercase}
+.card{background:rgba(13,17,28,0.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(0,255,136,0.1);border-radius:16px;padding:20px;margin-bottom:14px;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(135deg,rgba(0,255,136,0.2),transparent 40%,rgba(0,212,255,0.1));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.card-title{font-size:10px;color:#64748b;font-weight:700;margin-bottom:14px;text-transform:uppercase;letter-spacing:2.5px;display:flex;align-items:center;gap:8px}
+.card-title::before{content:"";width:6px;height:6px;background:#00ff88;border-radius:50%;box-shadow:0 0 8px #00ff88}
+.status-display{padding:28px 20px;border-radius:14px;margin-bottom:14px;position:relative;overflow:hidden;transition:all 0.4s;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px}
+.status-display.active{background:linear-gradient(135deg,rgba(0,255,136,0.1) 0%,rgba(0,212,255,0.05) 100%);border:2px solid #00ff88;box-shadow:0 0 30px rgba(0,255,136,0.2),inset 0 0 30px rgba(0,255,136,0.05)}
+.status-display.locked{background:linear-gradient(135deg,rgba(255,61,107,0.15) 0%,rgba(139,0,0,0.08) 100%);border:2px solid #ff3d6b;box-shadow:0 0 30px rgba(255,61,107,0.3),inset 0 0 30px rgba(255,61,107,0.05);animation:lockedPulse 2s ease-in-out infinite}
+@keyframes lockedPulse{0%,100%{box-shadow:0 0 30px rgba(255,61,107,0.3),inset 0 0 30px rgba(255,61,107,0.05)}50%{box-shadow:0 0 50px rgba(255,61,107,0.5),inset 0 0 40px rgba(255,61,107,0.1)}}
+.status-display.panic{background:linear-gradient(135deg,rgba(255,0,60,0.25) 0%,rgba(60,0,0,0.15) 100%);border:2px solid #ff0044;box-shadow:0 0 40px rgba(255,0,60,0.5),inset 0 0 30px rgba(255,0,60,0.1);animation:panicPulse 0.8s ease-in-out infinite}
+@keyframes panicPulse{0%,100%{box-shadow:0 0 40px rgba(255,0,60,0.5),inset 0 0 30px rgba(255,0,60,0.1)}50%{box-shadow:0 0 70px rgba(255,0,60,0.8),inset 0 0 50px rgba(255,0,60,0.2);transform:scale(1.005)}}
+.status-display.unknown{background:rgba(30,35,50,0.4);border:2px solid #334}
+.status-icon{font-size:56px;margin-bottom:12px;line-height:1;filter:drop-shadow(0 0 12px currentColor)}
+.status-display.active .status-icon{color:#00ff88;animation:iconFloat 3s ease-in-out infinite}
+.status-display.locked .status-icon{color:#ff3d6b;animation:iconShake 2s ease-in-out infinite}
+.status-display.panic .status-icon{color:#ff0044;animation:iconAlert 0.5s ease-in-out infinite}
+@keyframes iconFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes iconShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+@keyframes iconAlert{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.1);opacity:0.7}}
+.status-text{font-size:22px;font-weight:800;letter-spacing:1.5px;margin-bottom:4px}
+.status-text.active{color:#00ff88;text-shadow:0 0 10px rgba(0,255,136,0.5)}
+.status-text.locked{color:#ff3d6b;text-shadow:0 0 10px rgba(255,61,107,0.5)}
+.status-text.panic{color:#ff0044;text-shadow:0 0 12px rgba(255,0,60,0.7)}
+.status-text.unknown{color:#94a3b8}
+.status-meta{font-size:11px;color:#94a3b8;margin-top:8px;text-align:center;font-family:"SF Mono",Monaco,Consolas,monospace;letter-spacing:0.5px}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;animation:dotBlink 1.5s ease-in-out infinite}
+.status-display.active .status-dot{background:#00ff88;box-shadow:0 0 8px #00ff88}
+.status-display.locked .status-dot{background:#ff3d6b;box-shadow:0 0 8px #ff3d6b}
+.status-display.panic .status-dot{background:#ff0044;box-shadow:0 0 10px #ff0044;animation:dotBlink 0.4s ease-in-out infinite}
+@keyframes dotBlink{0%,100%{opacity:1}50%{opacity:0.3}}
+.status-display.active::after{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,#00ff88,transparent);animation:scanLine 3s ease-in-out infinite}
+@keyframes scanLine{0%{top:0;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:100%;opacity:0}}
+.btn{width:100%;padding:16px;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;transition:all 0.2s;font-family:inherit;letter-spacing:1px;text-transform:uppercase;position:relative;overflow:hidden}
+.btn::before{content:"";position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);transition:left 0.6s}
+.btn:hover::before{left:100%}
+.btn:active{transform:scale(0.97)}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
+.btn:disabled::before{display:none}
+.btn-lock{background:linear-gradient(135deg,#ff3d6b 0%,#d12a54 100%);color:#fff;box-shadow:0 4px 20px rgba(255,61,107,0.3),inset 0 1px 0 rgba(255,255,255,0.15)}
+.btn-unlock{background:linear-gradient(135deg,#00ff88 0%,#00d470 100%);color:#050810;box-shadow:0 4px 20px rgba(0,255,136,0.3),inset 0 1px 0 rgba(255,255,255,0.3)}
+.btn-secondary{background:rgba(30,35,50,0.6);color:#e6f1ff;border:1px solid rgba(0,255,136,0.15)}
+.btn-secondary:hover:not(:disabled){border-color:rgba(0,255,136,0.4);background:rgba(30,35,50,0.9)}
+.btn-danger-soft{background:rgba(60,20,20,0.5);color:#ff9999;border:1px solid rgba(255,61,107,0.2)}
+@keyframes panicBtnPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,0,60,0.7),0 4px 25px rgba(255,0,60,0.4);transform:scale(1)}50%{box-shadow:0 0 0 18px rgba(255,0,60,0),0 4px 35px rgba(255,0,60,0.6);transform:scale(1.015)}}
+.btn-panic{background:linear-gradient(135deg,#ff0030 0%,#8b0000 100%);color:#fff;font-size:18px;padding:24px 20px;border:3px solid #ff0044;animation:panicBtnPulse 1.6s ease-in-out infinite;text-shadow:0 2px 6px rgba(0,0,0,0.6),0 0 12px rgba(255,0,60,0.8);position:relative;letter-spacing:2px}
+.btn-panic:hover:not(:disabled){background:linear-gradient(135deg,#ff1a4a 0%,#a00000 100%);border-color:#ff3366}
+.btn-panic:active{transform:scale(0.95) !important}
+.panic-sub{font-size:10px;font-weight:500;opacity:0.85;margin-top:4px;display:block;text-transform:none;letter-spacing:0.5px}
+.panic-divider{display:flex;align-items:center;margin:24px 0 14px;color:#ff3d6b;font-size:10px;font-weight:800;letter-spacing:3px;text-shadow:0 0 8px rgba(255,61,107,0.5)}
+.panic-divider::before,.panic-divider::after{content:"";flex:1;height:1px;margin:0 12px;background:linear-gradient(90deg,transparent,rgba(255,61,107,0.5),transparent)}
+input,textarea{width:100%;padding:13px 15px;background:rgba(5,8,16,0.6);border:1px solid rgba(100,116,139,0.2);border-radius:10px;color:#e6f1ff;font-size:14px;font-family:inherit;margin-bottom:10px;transition:all 0.2s}
+input:focus,textarea:focus{outline:none;border-color:#00ff88;box-shadow:0 0 0 3px rgba(0,255,136,0.15);background:rgba(5,8,16,0.9)}
+input::placeholder{color:#475569}
+label{display:block;font-size:11px;color:#64748b;margin-bottom:5px;margin-top:10px;letter-spacing:0.5px;text-transform:uppercase}
+.history{font-family:"SF Mono",Monaco,Consolas,monospace;font-size:11px;background:rgba(5,8,16,0.6);border-radius:10px;padding:12px;max-height:180px;overflow-y:auto;border:1px solid rgba(100,116,139,0.15)}
+.history-item{padding:6px 0;border-bottom:1px solid rgba(100,116,139,0.1);color:#94a3b8;display:flex;align-items:center;gap:8px}
+.history-item:last-child{border:none}
+.history-item.lock{color:#ff8888}
+.history-item.unlock{color:#88ffaa}
+.history-empty{color:#475569;text-align:center;padding:12px;font-style:italic}
+.alert{padding:14px 16px;border-radius:10px;font-size:13px;margin-bottom:14px;display:none;align-items:center;gap:10px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);animation:alertSlide 0.3s ease-out}
+@keyframes alertSlide{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.alert.show{display:flex}
+.alert.error{background:rgba(42,10,10,0.8);border:1px solid #ff3d6b;color:#ffaaaa}
+.alert.success{background:rgba(10,42,26,0.8);border:1px solid #00ff88;color:#88ffaa}
+.alert.info{background:rgba(10,26,42,0.8);border:1px solid #00d4ff;color:#88ddff}
+.token-status{display:inline-block;padding:3px 9px;border-radius:12px;font-size:10px;font-weight:800;margin-left:8px;letter-spacing:1px;text-transform:uppercase}
+.token-status.ok{background:rgba(0,255,136,0.15);color:#00ff88;border:1px solid rgba(0,255,136,0.3)}
+.token-status.missing{background:rgba(255,61,107,0.15);color:#ff3d6b;border:1px solid rgba(255,61,107,0.3);animation:badgeMissingPulse 2s ease-in-out infinite}
+@keyframes badgeMissingPulse{0%,100%{opacity:1}50%{opacity:0.6}}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,255,136,0.2);border-top-color:#00ff88;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+details{margin-top:10px}
+summary{cursor:pointer;font-size:12px;color:#00d4ff;padding:6px 0;transition:color 0.2s}
+summary:hover{color:#00ff88}
+.help-content{background:rgba(5,8,16,0.6);padding:14px;border-radius:10px;margin-top:8px;font-size:12px;line-height:1.7;color:#94a3b8;border:1px solid rgba(0,212,255,0.15)}
+.help-content code{background:rgba(0,255,136,0.08);padding:2px 7px;border-radius:4px;color:#00ff88;font-size:11px;font-family:"SF Mono",Monaco,monospace}
+.footer{text-align:center;font-size:10px;color:#475569;margin-top:28px;letter-spacing:1.5px;text-transform:uppercase}
+.footer .ping-dot{display:inline-block;width:6px;height:6px;background:#00ff88;border-radius:50%;margin-right:6px;vertical-align:middle;box-shadow:0 0 8px #00ff88;animation:dotBlink 2s ease-in-out infinite}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="logo">⬢</div>
+    <h1>GREENROAD</h1>
+    <div class="subtitle">Remote · Kill Switch</div>
+  </div>
+  <div id="alert" class="alert"></div>
+
+  <div class="card">
+    <div class="card-title">Etat du bot</div>
+    <div id="status-display" class="status-display unknown">
+      <div class="status-icon">⏳</div>
+      <div class="status-text unknown">Connexion...</div>
+      <div id="status-meta" class="status-meta"></div>
+    </div>
+    <button class="btn btn-secondary" onclick="loadStatus()">↻ Rafraichir</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Controle standard</div>
+    <label>Message (optionnel)</label>
+    <input type="text" id="msg-input" placeholder="Ex: Maintenance, pause..." maxlength="200">
+    <button class="btn btn-lock" id="btn-lock" onclick="lockBots()">🔒 Verrouiller le bot</button>
+    <button class="btn btn-unlock" id="btn-unlock" onclick="unlockBots()">🟢 Reactiver le bot</button>
+  </div>
+
+  <div class="card">
+    <div class="panic-divider">◆ Zone d'urgence ◆</div>
+    <div class="card-title" style="color:#ff3d6b">Black Swan / Panic</div>
+    <p style="font-size:12px;color:#94a3b8;margin-bottom:14px;line-height:1.6">
+      Krach brutal, crash marche, rug pull, event imprevu.<br>
+      <span style="color:#ff8888;font-weight:700">Action IMMEDIATE, pas de countdown.</span>
+      Fermeture des positions en &lt; 10 secondes.
+    </p>
+    <button class="btn btn-panic" id="btn-panic" onclick="panicBots()">
+      🚨 Bouton d'urgence
+      <span class="panic-sub">Fermer maintenant · sans delai</span>
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Historique · Cet appareil</div>
+    <div id="history" class="history"><div class="history-empty">Aucune action recente</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Token Github <span id="token-badge" class="token-status missing">manquant</span></div>
+    <p style="font-size:11px;color:#64748b;margin-bottom:10px">Stocke uniquement dans ton navigateur.</p>
+    <input type="password" id="token-input" placeholder="github_pat_...">
+    <button class="btn btn-secondary" onclick="saveToken()">💾 Sauvegarder</button>
+    <button class="btn btn-danger-soft" onclick="forgetToken()">🗑 Oublier</button>
+    <details>
+      <summary>📖 Comment generer un token ?</summary>
+      <div class="help-content">
+        1. Va sur <code>github.com/settings/tokens?type=beta</code><br>
+        2. <strong>Generate new token</strong> (fine-grained)<br>
+        3. Name: <code>GREENROAD Remote</code><br>
+        4. Expiration: <code>No expiration</code><br>
+        5. Repository access: <code>Public Repositories</code><br>
+        6. Account permissions &rarr; <code>Gists</code> &rarr; <code>Read and write</code><br>
+        7. <strong>Generate token</strong> &rarr; copie et colle ci-dessus.
+      </div>
+    </details>
+  </div>
+
+  <p class="footer">
+    <span class="ping-dot"></span>
+    GREENROAD v4.1 · Last sync: <span id="last-check">—</span>
+  </p>
+</div>
+
+<script>
+const GIST_ID = "1c4e2920a94766263d6b729873b1e525";
+const GIST_USER = "cgform-source";
+const FILENAME = "greenroad_license.json";
+const RAW_URL = `https://gist.githubusercontent.com/${GIST_USER}/${GIST_ID}/raw/${FILENAME}`;
+const API_URL = `https://api.github.com/gists/${GIST_ID}`;
+
+let history = JSON.parse(localStorage.getItem('greenroad_history') || '[]');
+
+function showAlert(type, msg, duration) {
+  const el = document.getElementById('alert');
+  el.className = 'alert show ' + type;
+  el.textContent = msg;
+  if (duration === undefined) duration = 4500;
+  if (duration > 0) setTimeout(() => el.classList.remove('show'), duration);
+}
+function getToken() { return localStorage.getItem('greenroad_token') || ''; }
+function saveToken() {
+  const t = document.getElementById('token-input').value.trim();
+  if (!t.startsWith('github_pat_') && !t.startsWith('ghp_')) { showAlert('error','Token invalide'); return; }
+  localStorage.setItem('greenroad_token', t);
+  document.getElementById('token-input').value = '';
+  updateTokenBadge();
+  showAlert('success', '✓ Token sauvegarde');
+}
+function forgetToken() {
+  if (!confirm('Oublier le token ?')) return;
+  localStorage.removeItem('greenroad_token');
+  updateTokenBadge();
+  showAlert('info','Token supprime');
+}
+function updateTokenBadge() {
+  const badge = document.getElementById('token-badge');
+  if (getToken()) { badge.textContent='OK'; badge.className='token-status ok'; }
+  else { badge.textContent='manquant'; badge.className='token-status missing'; }
+}
+function addHistory(action, note) {
+  const ts = new Date().toLocaleString('fr-FR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  history.unshift({ts, action, note});
+  history = history.slice(0, 20);
+  localStorage.setItem('greenroad_history', JSON.stringify(history));
+  renderHistory();
+}
+function renderHistory() {
+  const el = document.getElementById('history');
+  if (!history.length) { el.innerHTML = '<div class="history-empty">Aucune action recente</div>'; return; }
+  el.innerHTML = history.map(h => {
+    const cls = h.action === 'LOCK' ? 'lock' : (h.action === 'UNLOCK' ? 'unlock' : '');
+    const icon = h.action === 'LOCK' ? '🔒' : (h.action === 'UNLOCK' ? '🟢' : 'ℹ');
+    return `<div class="history-item ${cls}"><span>${icon}</span><span>${h.ts}</span><span>·</span><span>${h.note}</span></div>`;
+  }).join('');
+}
+async function loadStatus() {
+  const display = document.getElementById('status-display');
+  const meta = document.getElementById('status-meta');
+  display.className = 'status-display unknown';
+  display.querySelector('.status-icon').textContent = '⏳';
+  display.querySelector('.status-text').textContent = 'Connexion...';
+  display.querySelector('.status-text').className = 'status-text unknown';
+  meta.textContent = '';
+  try {
+    const r = await fetch(RAW_URL + '?_=' + Date.now());
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    const status = (data.status || '').toLowerCase();
+    document.getElementById('last-check').textContent = new Date().toLocaleTimeString('fr-FR');
+    if (status === 'panic') {
+      display.className = 'status-display panic';
+      display.querySelector('.status-icon').textContent = '🚨';
+      display.querySelector('.status-text').innerHTML = '<span class="status-dot"></span>URGENCE';
+      display.querySelector('.status-text').className = 'status-text panic';
+      meta.textContent = data.message || '// PANIC MODE ACTIVE';
+    } else if (status === 'locked') {
+      display.className = 'status-display locked';
+      display.querySelector('.status-icon').textContent = '🔒';
+      display.querySelector('.status-text').innerHTML = '<span class="status-dot"></span>Bot verrouille';
+      display.querySelector('.status-text').className = 'status-text locked';
+      meta.textContent = data.message || '// Locked remotely';
+    } else {
+      display.className = 'status-display active';
+      display.querySelector('.status-icon').textContent = '⬢';
+      display.querySelector('.status-text').innerHTML = '<span class="status-dot"></span>Bot actif';
+      display.querySelector('.status-text').className = 'status-text active';
+      meta.textContent = '// Sync ' + (data.updated_at || 'OK');
+    }
+  } catch (e) {
+    display.querySelector('.status-text').textContent = 'Erreur reseau';
+    meta.textContent = '// ' + e.message;
+  }
+}
+async function updateGist(newStatus, newMessage) {
+  const token = getToken();
+  if (!token) { showAlert('error','Token GitHub manquant',8000); return false; }
+  const today = new Date().toISOString().split('T')[0];
+  const content = {
+    "_______COMMENT_______":"=====================================================",
+    "_MODE_EMPLOI_1":"Pour VERROUILLER : mets status sur 'locked'",
+    "_MODE_EMPLOI_2":"Pour REACTIVER : remets status sur 'active'",
+    "_MODE_EMPLOI_3":"Pour URGENCE immediate : mets status sur 'panic'",
+    "_MODE_EMPLOI_4":"Le message s'affichera sur l'overlay du bot",
+    "_MODE_EMPLOI_5":"Modifie depuis la telecommande GitHub Pages",
+    "_______CONFIG________":"=====================================================",
+    "status": newStatus, "message": newMessage, "updated_at": today
+  };
+  try {
+    const r = await fetch(API_URL, {
+      method:'PATCH',
+      headers:{'Accept':'application/vnd.github+json','Authorization':'Bearer '+token,'X-GitHub-Api-Version':'2022-11-28'},
+      body: JSON.stringify({ files:{ [FILENAME]:{ content:JSON.stringify(content,null,2) } } })
+    });
+    if (!r.ok) { const err = await r.text(); throw new Error('HTTP '+r.status+': '+err.slice(0,200)); }
+    return true;
+  } catch (e) { showAlert('error','API: '+e.message,8000); return false; }
+}
+async function lockBots() {
+  const msg = document.getElementById('msg-input').value.trim() || 'Verrouillage a distance';
+  if (!confirm(`🔒 Verrouiller le bot ?\n\nMessage: "${msg}"\n\nLe bot va :\n• Afficher un countdown 5 min\n• Puis fermer les positions\n• Puis se bloquer\n\nTu peux annuler avant la fin.`)) return;
+  const btn = document.getElementById('btn-lock');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Envoi...';
+  const ok = await updateGist('locked', msg);
+  btn.disabled = false; btn.innerHTML = '🔒 Verrouiller le bot';
+  if (ok) { showAlert('success','✓ Verrouillage envoye · Countdown 5 min',6000); addHistory('LOCK', msg); setTimeout(loadStatus, 1500); }
+}
+async function unlockBots() {
+  if (!confirm('🟢 Reactiver le bot ?')) return;
+  const btn = document.getElementById('btn-unlock');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Envoi...';
+  const ok = await updateGist('active', '');
+  btn.disabled = false; btn.innerHTML = '🟢 Reactiver le bot';
+  if (ok) { showAlert('success','✓ Bot reactive',4500); addHistory('UNLOCK','Reactivation'); setTimeout(loadStatus, 1500); }
+}
+async function panicBots() {
+  if (!confirm('🚨 URGENCE - FERMER TOUT MAINTENANT ?\n\nAction IMMEDIATE (pas de countdown) :\n• Fermeture des positions sous 10s\n• Annulation des ordres TP/SL\n• Verrouillage complet\n\nConfirmer ?')) return;
+  const btn = document.getElementById('btn-panic');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> URGENCE...';
+  const ok = await updateGist('panic', '🚨 URGENCE - Fermeture black swan');
+  btn.disabled = false; btn.innerHTML = '🚨 Bouton d\'urgence<span class="panic-sub">Fermer maintenant · sans delai</span>';
+  if (ok) { showAlert('success','🚨 URGENCE envoyee · Fermeture dans 10s',8000); addHistory('LOCK','🚨 PANIC declenche'); setTimeout(loadStatus, 1500); }
+}
+window.addEventListener('DOMContentLoaded', () => {
+  updateTokenBadge();
+  renderHistory();
+  loadStatus();
+  setInterval(loadStatus, 45000);
+});
+</script>
+</body>
+</html>
