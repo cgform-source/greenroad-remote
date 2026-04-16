@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#060d0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>GREENROAD — Sobre</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh; background: #060d0f; color: #e6edf3;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    padding: 20px; overflow-x: hidden; position: relative;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0;
+    background-image: linear-gradient(rgba(0,255,136,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,136,0.06) 1px, transparent 1px);
+    background-size: 50px 50px; animation: gridMove 20s linear infinite; z-index: 0;
+    mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+  }
+  @keyframes gridMove { 0% { background-position: 0 0; } 100% { background-position: 50px 50px; } }
+  .orb { position: fixed; border-radius: 50%; filter: blur(100px); opacity: 0.3; z-index: 0; pointer-events: none; }
+  .orb1 { width: 500px; height: 500px; background: #00ff88; top: -150px; left: -150px; animation: float1 18s ease-in-out infinite; }
+  .orb2 { width: 400px; height: 400px; background: #00cc66; bottom: -120px; right: -120px; animation: float2 22s ease-in-out infinite; }
+  @keyframes float1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(200px,150px) scale(1.2); } }
+  @keyframes float2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-180px,-120px) scale(1.3); } }
+
+/* LOCK */
+.lock-overlay { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); background: rgba(6,13,15,0.7); transition: opacity 0.8s ease; }
+.lock-overlay.unlocked { opacity: 0; pointer-events: none; }
+.lock-box { width: 100%; max-width: 380px; background: linear-gradient(135deg, rgba(10,31,20,0.95), rgba(8,24,16,0.95)); border: 1px solid rgba(0,255,136,0.3); border-radius: 20px; padding: 48px 32px 40px; text-align: center; box-shadow: 0 25px 60px rgba(0,0,0,0.5), 0 0 100px rgba(0,255,136,0.12); animation: lockIn 0.6s cubic-bezier(0.16,1,0.3,1); position: relative; overflow: hidden; }
+@keyframes lockIn { from { opacity: 0; transform: translateY(20px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.lock-box::before { content: “”; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #00ff88, #33ffaa, transparent); animation: scanL 3s ease-in-out infinite; }
+@keyframes scanL { 0%,100% { transform: scaleX(0.3); opacity: 0.5; } 50% { transform: scaleX(1); opacity: 1; } }
+.lock-title { font-size: 36px; font-weight: 900; letter-spacing: 5px; background: linear-gradient(135deg, #00ff88, #33ffaa, #00cc66); background-size: 200% 200%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 6px; animation: gShift 6s ease-in-out infinite; }
+@keyframes gShift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+.lock-sub { font-size: 10px; color: #00ff88; letter-spacing: 6px; text-transform: uppercase; margin-bottom: 32px; font-weight: 600; opacity: 0.8; }
+.lock-input { width: 100%; padding: 14px 18px; background: rgba(6,13,15,0.8); border: 1px solid rgba(0,255,136,0.25); border-radius: 12px; color: #e6edf3; font-size: 16px; font-family: inherit; text-align: center; letter-spacing: 4px; outline: none; transition: all 0.3s; margin-bottom: 16px; }
+.lock-input:focus { border-color: #00ff88; box-shadow: 0 0 20px rgba(0,255,136,0.25); }
+.lock-input.error { border-color: #ff5577; animation: shake 0.4s; }
+@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+.lock-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #00ff88, #00cc66); border: none; border-radius: 12px; color: #060d0f; font-size: 14px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; font-family: inherit; transition: all 0.3s; }
+.lock-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,255,136,0.3); }
+.lock-err { color: #ff5577; font-size: 12px; letter-spacing: 1px; margin-top: 12px; min-height: 16px; opacity: 0; transition: opacity 0.3s; }
+.lock-err.show { opacity: 1; }
+
+/* CONTENT */
+.content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; animation: fadeUp 1s ease-out; width: 100%; max-width: 500px; }
+@keyframes fadeUp { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
+.header { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 10px 0 20px; }
+.logo-m { font-size: 32px; font-weight: 900; letter-spacing: 3px; background: linear-gradient(135deg, #00ff88, #33ffaa, #00cc66); background-size: 200% 200%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: gShift 6s ease-in-out infinite, gPulse 3s ease-in-out infinite; }
+@keyframes gPulse { 0%,100% { filter: drop-shadow(0 0 15px rgba(0,255,136,0.5)); } 50% { filter: drop-shadow(0 0 30px rgba(0,255,136,0.8)); } }
+.pill { padding: 6px 16px; border-radius: 100px; font-size: 11px; font-weight: 700; letter-spacing: 2px; display: flex; align-items: center; gap: 8px; background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3); color: #00ff88; transition: all 0.4s; }
+.pill.off { background: rgba(255,85,119,0.1); border-color: rgba(255,85,119,0.3); color: #ff5577; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #00ff88; box-shadow: 0 0 12px #00ff88; animation: blink 1.2s ease-in-out infinite; }
+.pill.off .dot { background: #ff5577; box-shadow: 0 0 12px #ff5577; }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+.scan-line { width: 100%; height: 1px; margin-bottom: 24px; background: linear-gradient(90deg, transparent, #00ff88, transparent); animation: scanL 3s ease-in-out infinite; }
+
+/* CARDS */
+.card { width: 100%; padding: 22px 24px; margin-bottom: 14px; background: linear-gradient(135deg, rgba(10,31,20,0.85), rgba(8,24,16,0.85)); backdrop-filter: blur(10px); border: 1px solid rgba(0,255,136,0.15); border-radius: 16px; position: relative; overflow: hidden; transition: all 0.4s cubic-bezier(0.16,1,0.3,1); }
+.card::before { content: “”; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(0,255,136,0.5), transparent); opacity: 0.6; }
+.card:hover { border-color: rgba(0,255,136,0.35); box-shadow: 0 8px 30px rgba(0,255,136,0.08); transform: translateY(-2px); }
+.card-row { display: flex; gap: 14px; width: 100%; margin-bottom: 14px; }
+.card-row .card { flex: 1; margin-bottom: 0; }
+.lbl { font-size: 10px; color: rgba(0,255,136,0.6); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; font-weight: 600; }
+.val { font-size: 32px; font-weight: 800; color: #00ff88; line-height: 1.2; letter-spacing: 1px; }
+.val.md { font-size: 24px; }
+.val.sm { font-size: 18px; }
+.sub { font-size: 11px; color: rgba(0,255,136,0.45); margin-top: 4px; letter-spacing: 0.5px; }
+.pos { color: #00ff88; }
+.neg { color: #ff5577; }
+.neu { color: #5fa07f; }
+
+/* ACTIVITY */
+.act-card { width: 100%; padding: 24px; margin-bottom: 14px; background: linear-gradient(135deg, rgba(10,31,20,0.9), rgba(6,20,12,0.9)); backdrop-filter: blur(10px); border: 1px solid rgba(0,255,136,0.2); border-radius: 16px; text-align: center; position: relative; overflow: hidden; transition: all 0.4s; }
+.act-card::before { content: “”; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(0,255,136,0.6), transparent); }
+.act-card.hot { border-color: rgba(0,255,136,0.5); box-shadow: 0 0 40px rgba(0,255,136,0.15); }
+.act-title { font-size: 10px; color: rgba(0,255,136,0.6); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 16px; font-weight: 600; }
+.bar-out { height: 48px; background: rgba(6,13,15,0.8); border-radius: 10px; border: 1px solid rgba(0,255,136,0.15); overflow: hidden; position: relative; margin-bottom: 14px; }
+.bar-fill { height: 100%; border-radius: 10px; position: relative; transition: width 1s cubic-bezier(0.16,1,0.3,1), background 0.6s ease; background: linear-gradient(90deg, #003a1a, #00ff88); min-width: 4px; }
+.bar-fill::after { content: “”; position: absolute; right: 0; top: 0; bottom: 0; width: 4px; background: #00ff88; box-shadow: 0 0 12px #00ff88, 0 0 24px rgba(0,255,136,0.5); border-radius: 0 10px 10px 0; }
+.bar-fill.hot::after { animation: ePulse 0.8s ease-in-out infinite; }
+@keyframes ePulse { 0%,100% { box-shadow: 0 0 12px #00ff88, 0 0 24px rgba(0,255,136,0.5); } 50% { box-shadow: 0 0 24px #00ff88, 0 0 50px rgba(0,255,136,0.8), 0 0 80px rgba(0,255,136,0.3); } }
+.bar-pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: #fff; letter-spacing: 2px; text-shadow: 0 2px 6px rgba(0,0,0,0.5); z-index: 2; }
+.act-msg { font-size: 13px; color: rgba(0,255,136,0.7); font-weight: 500; letter-spacing: 1px; }
+.act-msg.hot { color: #00ff88; font-weight: 700; }
+
+/* FOOTER */
+.fbar { display: flex; align-items: center; gap: 10px; margin-top: 28px; padding: 6px 18px; background: rgba(0,255,136,0.06); border: 1px solid rgba(0,255,136,0.15); border-radius: 100px; font-size: 10px; color: rgba(0,255,136,0.5); letter-spacing: 2px; font-weight: 600; }
+.fsub { margin-top: 10px; color: #2a3a30; font-size: 10px; letter-spacing: 1px; text-align: center; }
+.fsub a { color: rgba(0,255,136,0.3); text-decoration: none; transition: color 0.3s; }
+.fsub a:hover { color: #00ff88; }
+
+@media (max-width: 480px) {
+.logo-m { font-size: 24px; letter-spacing: 2px; }
+.val { font-size: 26px; }
+.val.md { font-size: 20px; }
+.card-row { flex-direction: column; gap: 14px; }
+.lock-title { font-size: 28px; letter-spacing: 4px; }
+}
+</style>
+
+</head>
+<body>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-box">
+    <div class="lock-title">GREENROAD</div>
+    <div class="lock-sub">VUE SOBRE</div>
+    <input type="password" class="lock-input" id="lockInput" placeholder="••••••••" autocomplete="off" autofocus>
+    <button class="lock-btn" id="lockBtn">DEVERROUILLER</button>
+    <div class="lock-err" id="lockErr">Mot de passe incorrect</div>
+  </div>
+</div>
+<div class="content">
+  <div class="header">
+    <div class="logo-m">GREENROAD</div>
+    <div class="pill" id="pill"><span class="dot"></span><span id="pTxt">CHARGEMENT</span></div>
+  </div>
+  <div class="scan-line"></div>
+  <div id="cards">
+    <div class="card" style="text-align:center"><div class="lbl">CHARGEMENT</div><div class="val md neu">...</div></div>
+  </div>
+  <div class="fbar"><span class="dot" style="width:6px;height:6px"></span><span id="upd">SYNCHRO EN COURS</span></div>
+  <div class="fsub"><a href="https://cgform-source.github.io/greenroad-remote/index.html">&larr; MENU PRINCIPAL</a> &middot; Vue Sobre &middot; Anti-spoil</div>
+</div>
+<script>
+const GIST="https://gist.githubusercontent.com/cgform-source/1c4e2920a94766263d6b729873b1e525/raw/greenroad_stats.json";
+const PH="571c8cced6b923a298c8ab03b5641492624d1940d1c9d1ad46b61f5dc466cd57";
+const SK="greenroad_sobre_unlocked";
+const ov=document.getElementById("lockOverlay"),li=document.getElementById("lockInput"),lb=document.getElementById("lockBtn"),le=document.getElementById("lockErr");
+if(sessionStorage.getItem(SK)==="1")ov.style.display="none";
+async function h(t){const b=new TextEncoder().encode(t),d=await crypto.subtle.digest("SHA-256",b);return Array.from(new Uint8Array(d)).map(x=>x.toString(16).padStart(2,"0")).join("")}
+async function tryU(){if(!li.value)return;if(await h(li.value)===PH){sessionStorage.setItem(SK,"1");ov.classList.add("unlocked");setTimeout(()=>ov.style.display="none",800)}else{li.classList.add("error");le.classList.add("show");li.value="";setTimeout(()=>li.classList.remove("error"),400);setTimeout(()=>le.classList.remove("show"),2500)}}
+lb.addEventListener("click",tryU);li.addEventListener("keydown",e=>{if(e.key==="Enter")tryU()});
+
+function $(n){if(n==null)return”$\u2014”;const s=n<0?”-”:””;return s+”$”+Math.abs(n).toLocaleString(“en-US”,{minimumFractionDigits:2,maximumFractionDigits:2})}
+function P(n){if(n==null)return””;return(n>=0?”+”:””)+n.toFixed(2)+”%”}
+function A(p){if(p>=95)return{g:“linear-gradient(90deg,#003a1a 0%,#00ff88 60%,#33ffaa 100%)”,m:“ORDRE IMMINENT”,h:1};if(p>=75)return{g:“linear-gradient(90deg,#003a1a 0%,#00cc66 70%,#00ff88 100%)”,m:“DECISION PROCHE”,h:1};if(p>=50)return{g:“linear-gradient(90deg,#002a14 0%,#009944 80%)”,m:“QUELQUE CHOSE SE PREPARE”,h:0};if(p>=25)return{g:“linear-gradient(90deg,#001a0a 0%,#006633 80%)”,m:“SURVEILLANCE ACTIVE”,h:0};return{g:“linear-gradient(90deg,#0a1f14 0%,#1a3a2a 80%)”,m:“BOT EN REPOS”,h:0}}
+
+function R(d){
+const s=d.sobre||{};
+const pl=document.getElementById(“pill”),pt=document.getElementById(“pTxt”);
+if(s.bot_running){pl.className=“pill”;pt.textContent=“EN MARCHE”}else{pl.className=“pill off”;pt.textContent=“ARRETE”}
+let pH=””;
+if(s.has_position){const p=s.position_pnl||0,c=p>=0?“pos”:“neg”;pH=`<div class="card"><div class="lbl">POSITION OUVERTE</div><div class="val md ${c}">${p>=0?"+":""}${$(Math.abs(p))}</div><div class="sub ${c}">${P(s.position_pnl_pct)}</div></div>`}
+else{pH=`<div class="card"><div class="lbl">POSITION</div><div class="val sm neu">AUCUNE POSITION</div></div>`}
+const pnl=s.pnl_session||0,pC=pnl>0?“pos”:pnl<0?“neg”:“neu”;
+const act=s.activity_pct||0,a=A(act);
+const tr=s.trades_today||0,tL=tr===0?“AUCUN TRADE”:tr===1?“1 TRADE”:tr+” TRADES”;
+document.getElementById(“cards”).innerHTML=` <div class="card-row"><div class="card"><div class="lbl">CAPITAL</div><div class="val">${$(s.capital_usd)}</div></div><div class="card"><div class="lbl">AUJOURD'HUI</div><div class="val md">${tL}</div></div></div> <div class="card"><div class="lbl">P&L SESSION</div><div class="val md ${pC}">${pnl>=0?"+":""}${$(Math.abs(pnl))}</div></div> ${pH} <div class="act-card ${a.h?'hot':''}"><div class="act-title">ACTIVITE DU BOT</div><div class="bar-out"><div class="bar-fill ${a.h?'hot':''}" style="width:${Math.max(2,act)}%;background:${a.g}"></div><div class="bar-pct">${act}%</div></div><div class="act-msg ${a.h?'hot':''}">${a.m}</div></div>`;
+const dt=new Date(d.updated_at);
+if(!isNaN(dt.getTime())){document.getElementById(“upd”).textContent=`MAJ ${dt.getHours().toString().padStart(2,"0")}:${dt.getMinutes().toString().padStart(2,"0")}:${dt.getSeconds().toString().padStart(2,"0")}`}
+}
+
+async function F(){try{const r=await fetch(GIST+”?t=”+Date.now(),{cache:“no-store”});if(!r.ok)throw new Error(“HTTP “+r.status);R(await r.json())}catch(e){document.getElementById(“cards”).innerHTML=`<div class="card" style="text-align:center"><div class="lbl">ERREUR</div><div class="val sm neg">HORS LIGNE</div><div class="sub">${e.message}</div></div>`;document.getElementById(“pill”).className=“pill off”;document.getElementById(“pTxt”).textContent=“HORS LIGNE”}}
+F();setInterval(F,5000);
+</script>
+
+</body>
+</html>
