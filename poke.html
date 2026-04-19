@@ -65,28 +65,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;back
 .card:hover::before{transform:translateX(30%)}
 .card-inner{display:grid;grid-template-columns:200px 1fr;gap:0;min-height:300px}
 
-.slab{position:relative;overflow:hidden;background:#000;border-right:1px solid var(–border);display:flex;flex-direction:column}
-.slab-header{background:linear-gradient(180deg,var(–psa-red) 0%,#8a0f0f 100%);color:#fff;padding:8px 10px;text-align:center;border-bottom:2px solid var(–psa-gold);position:relative;z-index:2}
-.slab-header .psa-logo{font-family:‘Orbitron’,sans-serif;font-weight:900;font-size:14px;letter-spacing:3px;line-height:1}
-.slab-header .psa-line{font-family:‘JetBrains Mono’,monospace;font-size:8px;letter-spacing:1px;opacity:0.85;margin-top:2px}
-.slab-grade{background:#fff;color:#000;padding:6px 10px;text-align:center;border-bottom:2px solid var(–psa-gold);position:relative;z-index:2}
-.slab-grade .cert{font-family:‘JetBrains Mono’,monospace;font-size:8px;letter-spacing:1px;color:#444}
-.slab-grade .card-title{font-family:‘Orbitron’,sans-serif;font-weight:700;font-size:9px;letter-spacing:0.5px;margin-top:2px;line-height:1.2}
-.slab-grade .gem-mint{font-family:‘Orbitron’,sans-serif;font-weight:900;font-size:13px;color:var(–psa-red);margin-top:3px;letter-spacing:1px}
-.slab-grade .grade-num{display:inline-block;background:var(–psa-red);color:#fff;padding:1px 6px;font-size:11px;margin-left:4px;border-radius:2px}
-.slab-window{flex:1;position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(138,43,255,0.2),rgba(0,255,224,0.1));display:flex;align-items:center;justify-content:center;min-height:160px;cursor:pointer}
-.slab-window img{width:100%;height:100%;object-fit:cover;object-position:center;display:block;position:absolute;inset:0}
-.slab-fallback{text-align:center;padding:12px;font-family:‘Orbitron’,sans-serif;font-weight:700;color:#fff;letter-spacing:2px;font-size:11px;line-height:1.4;text-shadow:0 0 10px rgba(255,255,255,0.4);z-index:1;background:repeating-linear-gradient(45deg,rgba(255,46,196,0.05) 0 10px,transparent 10px 20px);position:relative;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.slab-holo{position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,0.12) 50%,transparent 70%);pointer-events:none;animation:holo 4s ease-in-out infinite;z-index:2}
-@keyframes holo{0%,100%{opacity:0.3;transform:translateX(-100%)}50%{opacity:0.8;transform:translateX(100%)}}
-.slab-barcode{background:#fff;padding:4px 8px;text-align:center;border-top:2px solid var(–psa-gold);position:relative;z-index:2}
-.slab-barcode .bars{display:flex;gap:1px;justify-content:center;align-items:center;height:14px}
-.slab-barcode .bars span{display:block;width:1px;height:100%;background:#000}
-.slab-barcode .bars span:nth-child(even){width:2px}
-.slab-barcode .bars span:nth-child(3n){height:80%}
-.slab-barcode .code{font-family:‘JetBrains Mono’,monospace;font-size:7px;color:#000;letter-spacing:2px;margin-top:2px}
-.rank{position:absolute;top:-2px;right:-2px;width:28px;height:28px;background:var(–cyan);color:#000;font-family:‘Orbitron’,sans-serif;font-weight:900;font-size:11px;display:flex;align-items:center;justify-content:center;z-index:4;box-shadow:0 0 10px rgba(0,255,224,0.6)}
-body.editing .slab-window::after{content:‘📷 MODIFIER IMAGE’;position:absolute;bottom:8px;left:8px;right:8px;background:rgba(255,46,196,0.9);color:#000;font-family:‘JetBrains Mono’,monospace;font-weight:700;font-size:9px;padding:4px;text-align:center;letter-spacing:1px;z-index:5;border-radius:2px;animation:edit-glow 2s infinite}
+.slab{position:relative;overflow:hidden;background:#000;border-right:1px solid var(–border);cursor:pointer}
+.slab img{width:100%;height:100%;object-fit:cover;object-position:center;display:block;position:absolute;inset:0}
+.slab-fallback{text-align:center;padding:16px;font-family:‘Orbitron’,sans-serif;font-weight:700;color:#fff;letter-spacing:2px;font-size:11px;line-height:1.4;text-shadow:0 0 10px rgba(255,255,255,0.4);z-index:1;background:repeating-linear-gradient(45deg,rgba(255,46,196,0.05) 0 10px,transparent 10px 20px);position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.slab-holo{position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,0.10) 50%,transparent 70%);pointer-events:none;animation:holo 4s ease-in-out infinite;z-index:2}
+@keyframes holo{0%,100%{opacity:0.3;transform:translateX(-100%)}50%{opacity:0.6;transform:translateX(100%)}}
+.rank{position:absolute;top:8px;right:8px;width:28px;height:28px;background:var(–cyan);color:#000;font-family:‘Orbitron’,sans-serif;font-weight:900;font-size:11px;display:flex;align-items:center;justify-content:center;z-index:4;box-shadow:0 0 10px rgba(0,255,224,0.6);border-radius:2px}
+body.editing .slab::after{content:‘📷 MODIFIER IMAGE’;position:absolute;bottom:8px;left:8px;right:8px;background:rgba(255,46,196,0.9);color:#000;font-family:‘JetBrains Mono’,monospace;font-weight:700;font-size:9px;padding:4px;text-align:center;letter-spacing:1px;z-index:5;border-radius:2px;animation:edit-glow 2s infinite}
 
 .card-body{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
 .card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
@@ -253,7 +238,7 @@ const CARDS = [
     name: 'Dracaufeu ex', nameAlt: 'Charizard ex',
     set: 'Pokémon 151 (SV2a) • 2023 • JP',
     num: '201/165 SAR',
-    image: '',
+    image: 'https://www.psacard.com/cert/102215566/psa/image/VCCjBrZ3AES-hPUcUnHh2Q',
     price: 580,
     history: [420, 440, 460, 480, 490, 500, 520, 540, 560, 575, 580],
     ebaySearch: 'PSA 10 Charizard ex 201/165 SV2a 151 Japanese',
@@ -265,7 +250,7 @@ const CARDS = [
     name: 'Pikachu ex', nameAlt: 'Pikachu ex',
     set: 'Super Electric Breaker (SV8) • 2024 • JP',
     num: '132/106 SAR',
-    image: '',
+    image: 'https://www.psacard.com/cert/102618365/psa/image/sLvYjXjxt0yZrUKGPYGTDw',
     price: 380,
     history: [520, 490, 470, 450, 430, 410, 400, 390, 385, 380, 380],
     ebaySearch: 'PSA 10 Pikachu ex 132/106 SV8 Super Electric Breaker Japanese',
@@ -277,7 +262,7 @@ const CARDS = [
     name: 'Noctali ex', nameAlt: 'Umbreon ex',
     set: 'Terastal Festival (SV8a) • 2024 • JP',
     num: '217/187 SAR',
-    image: '',
+    image: 'https://www.psacard.com/cert/109838459/psa/image/Ure9Ck43B0KUOT_Bfgneeg',
     price: 720,
     history: [450, 490, 530, 570, 600, 630, 660, 680, 700, 720, 720],
     ebaySearch: 'PSA 10 Umbreon ex 217/187 SV8a Terastal Festival Japanese',
@@ -330,26 +315,11 @@ function renderCards() {
     return `
       <article class="card" data-id="${c.id}">
         <div class="card-inner">
-          <div class="slab">
+          <div class="slab" data-card="${c.id}">
             <div class="rank">#${rank}</div>
-            <div class="slab-header">
-              <div class="psa-logo">PSA</div>
-              <div class="psa-line">PROFESSIONAL SPORTS AUTHENTICATOR</div>
-            </div>
-            <div class="slab-grade">
-              <div class="cert">CERT #${c.cert}</div>
-              <div class="card-title">${c.nameAlt.toUpperCase()} ${c.num}</div>
-              <div class="gem-mint">GEM MT <span class="grade-num">10</span></div>
-            </div>
-            <div class="slab-window" data-card="${c.id}">
-              ${hasImg ? `<img src="${c.image}" alt="${c.name}" referrerpolicy="no-referrer" onerror="this.style.display='none';const fb=this.nextElementSibling;if(fb)fb.style.display='flex';">` : ''}
-              <div class="slab-fallback" style="${hasImg ? 'display:none' : ''}">${c.nameAlt}<br><span style="font-size:9px;opacity:0.6;margin-top:6px;letter-spacing:3px">PSA 10 SLAB</span></div>
-              <div class="slab-holo"></div>
-            </div>
-            <div class="slab-barcode">
-              <div class="bars">${'<span></span>'.repeat(40)}</div>
-              <div class="code">CERT ${c.cert}</div>
-            </div>
+            ${hasImg ? `<img src="${c.image}" alt="${c.name}" referrerpolicy="no-referrer" onerror="this.style.display='none';const fb=this.nextElementSibling;if(fb)fb.style.display='flex';">` : ''}
+            <div class="slab-fallback" style="${hasImg ? 'display:none' : ''}">${c.nameAlt}<br><span style="font-size:9px;opacity:0.6;margin-top:8px;letter-spacing:3px">PSA 10 • CERT ${c.cert}</span></div>
+            <div class="slab-holo"></div>
           </div>
           <div class="card-body">
             <div class="card-head">
@@ -385,7 +355,7 @@ function renderCards() {
       openModal(el.dataset.card, 'price');
     });
   });
-  document.querySelectorAll('.slab-window').forEach(el => {
+  document.querySelectorAll('.slab').forEach(el => {
     el.addEventListener('click', () => {
       if (!editMode) return;
       openModal(el.dataset.card, 'image');
