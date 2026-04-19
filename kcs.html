@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CS2 INVENTORY // TRACKER</title>
+<meta name="description" content="Counter-Strike 2 inventory value tracker with price history" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#050608;
+  --bg-elev:#0a0d12;
+  --bg-card:#0f141b;
+  --bg-card-2:#131922;
+  --border:#1c2330;
+  --border-bright:#2a3445;
+  --primary:#ff6b1a;
+  --primary-dim:#b34710;
+  --cyan:#00eaff;
+  --magenta:#ff3da6;
+  --green:#00ff9d;
+  --yellow:#ffcc00;
+  --red:#ff3a3a;
+  --text:#e5eaf0;
+  --text-dim:#8691a0;
+  --text-dimmer:#4a5464;
+
+/* Rarity colors (Valve’s canonical hex) */
+–r-common:#b0c3d9;
+–r-uncommon:#5e98d9;
+–r-rare:#4b69ff;
+–r-mythical:#8847ff;
+–r-legendary:#d32ce6;
+–r-ancient:#eb4b4b;
+–r-immortal:#e4ae39;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html,body{
+background:var(–bg);
+color:var(–text);
+font-family:‘Rajdhani’,system-ui,sans-serif;
+min-height:100vh;
+overflow-x:hidden;
+-webkit-font-smoothing:antialiased;
+}
+
+/* Tactical grid background */
+body::before{
+content:””;
+position:fixed;
+inset:0;
+background:
+radial-gradient(ellipse at 20% 0%, rgba(255,107,26,0.08), transparent 55%),
+radial-gradient(ellipse at 90% 100%, rgba(0,234,255,0.06), transparent 50%),
+linear-gradient(rgba(255,107,26,0.035) 1px, transparent 1px) 0 0/44px 44px,
+linear-gradient(90deg, rgba(255,107,26,0.035) 1px, transparent 1px) 0 0/44px 44px;
+pointer-events:none;
+z-index:0;
+}
+
+/* Scan line */
+body::after{
+content:””;
+position:fixed;
+left:0;right:0;
+top:0;
+height:2px;
+background:linear-gradient(90deg, transparent, var(–primary), transparent);
+opacity:0.4;
+animation:scan 8s linear infinite;
+pointer-events:none;
+z-index:1;
+}
+@keyframes scan{
+0%{transform:translateY(-10px)}
+100%{transform:translateY(100vh)}
+}
+
+.wrap{
+position:relative;
+z-index:2;
+max-width:1480px;
+margin:0 auto;
+padding:28px 22px 120px;
+}
+
+/* ============ HEADER ============ */
+.hdr{
+display:grid;
+grid-template-columns:auto 1fr auto;
+gap:22px;
+align-items:center;
+margin-bottom:28px;
+padding:18px 22px;
+background:linear-gradient(180deg, rgba(18,22,30,0.85), rgba(10,13,18,0.85));
+border:1px solid var(–border);
+position:relative;
+backdrop-filter:blur(8px);
+}
+.hdr::before,.hdr::after{
+content:””;
+position:absolute;
+width:14px;height:14px;
+border-color:var(–primary);
+border-style:solid;
+}
+.hdr::before{top:-1px;left:-1px;border-width:2px 0 0 2px}
+.hdr::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
+
+.brand{display:flex;align-items:center;gap:14px}
+.brand-logo{
+width:46px;height:46px;
+display:grid;place-items:center;
+border:1px solid var(–primary);
+background:rgba(255,107,26,0.08);
+font-family:‘Orbitron’,sans-serif;
+font-weight:900;
+color:var(–primary);
+font-size:20px;
+box-shadow:0 0 24px rgba(255,107,26,0.25), inset 0 0 12px rgba(255,107,26,0.1);
+}
+.brand-text{line-height:1.05}
+.brand-text .t1{
+font-family:‘Orbitron’,sans-serif;
+font-weight:900;
+font-size:22px;
+letter-spacing:0.12em;
+color:var(–text);
+}
+.brand-text .t1 span{color:var(–primary)}
+.brand-text .t2{
+font-family:‘JetBrains Mono’,monospace;
+font-size:10px;
+color:var(–text-dim);
+letter-spacing:0.3em;
+margin-top:3px;
+}
+
+.id-form{display:flex;gap:8px;max-width:560px;margin:0 auto;width:100%}
+.id-input{
+flex:1;
+background:var(–bg);
+border:1px solid var(–border-bright);
+color:var(–text);
+padding:10px 14px;
+font-family:‘JetBrains Mono’,monospace;
+font-size:13px;
+outline:none;
+transition:all 0.2s;
+}
+.id-input:focus{border-color:var(–primary);box-shadow:0 0 0 2px rgba(255,107,26,0.15)}
+.id-input::placeholder{color:var(–text-dimmer)}
+
+.btn{
+background:var(–bg);
+border:1px solid var(–border-bright);
+color:var(–text);
+padding:10px 18px;
+font-family:‘Orbitron’,sans-serif;
+font-weight:700;
+font-size:12px;
+letter-spacing:0.15em;
+cursor:pointer;
+transition:all 0.18s;
+position:relative;
+text-transform:uppercase;
+}
+.btn:hover{
+border-color:var(–primary);
+color:var(–primary);
+box-shadow:0 0 16px rgba(255,107,26,0.25);
+}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
+.btn:disabled:hover{border-color:var(–border-bright);color:var(–text);box-shadow:none}
+.btn.primary{
+background:var(–primary);
+border-color:var(–primary);
+color:#0a0501;
+}
+.btn.primary:hover{
+background:#ff842f;
+color:#0a0501;
+box-shadow:0 0 22px rgba(255,107,26,0.45);
+}
+.btn.ghost{background:transparent}
+.btn.sm{padding:7px 12px;font-size:10px}
+
+.status{
+display:flex;align-items:center;gap:8px;
+font-family:‘JetBrains Mono’,monospace;
+font-size:11px;
+color:var(–text-dim);
+}
+.status .dot{
+width:8px;height:8px;border-radius:50%;
+background:var(–text-dimmer);
+box-shadow:0 0 8px currentColor;
+}
+.status.ok .dot{background:var(–green);color:var(–green)}
+.status.loading .dot{background:var(–yellow);color:var(–yellow);animation:pulse 1s ease-in-out infinite}
+.status.err .dot{background:var(–red);color:var(–red)}
+@keyframes pulse{0%,100%{opacity:0.4}50%{opacity:1}}
+
+/* ============ STATS BAR ============ */
+.stats{
+display:grid;
+grid-template-columns:repeat(5,1fr);
+gap:14px;
+margin-bottom:22px;
+}
+.stat{
+background:linear-gradient(180deg,var(–bg-card),var(–bg-card-2));
+border:1px solid var(–border);
+padding:18px 20px;
+position:relative;
+overflow:hidden;
+}
+.stat::before{
+content:””;
+position:absolute;
+top:0;left:0;
+width:3px;height:100%;
+background:var(–primary);
+box-shadow:0 0 12px var(–primary);
+}
+.stat.c1::before{background:var(–primary);box-shadow:0 0 12px var(–primary)}
+.stat.c2::before{background:var(–cyan);box-shadow:0 0 12px var(–cyan)}
+.stat.c3::before{background:var(–magenta);box-shadow:0 0 12px var(–magenta)}
+.stat.c4::before{background:var(–green);box-shadow:0 0 12px var(–green)}
+.stat.c5::before{background:var(–yellow);box-shadow:0 0 12px var(–yellow)}
+
+.stat .label{
+font-family:‘JetBrains Mono’,monospace;
+font-size:10px;
+color:var(–text-dim);
+letter-spacing:0.25em;
+text-transform:uppercase;
+margin-bottom:8px;
+}
+.stat .value{
+font-family:‘Orbitron’,sans-serif;
+font-weight:900;
+font-size:28px;
+letter-spacing:0.02em;
+color:var(–text);
+line-height:1;
+}
+.stat .sub{
+margin-top:6px;
+font-family:‘JetBrains Mono’,monospace;
+font-size:11px;
+color:var(–text-dim);
+}
+.stat .sub.pos{color:var(–green)}
+.stat .sub.neg{color:var(–red)}
+
+/* ============ CARD GENERIC ============ */
+.card{
+background:linear-gradient(180deg,var(–bg-card),var(–bg-card-2));
+border:1px solid var(–border);
+padding:22px;
+margin-bottom:22px;
+position:relative;
+}
+.card-hdr{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:18px;
+gap:14px;
+flex-wrap:wrap;
+}
+.card-title{
+font-family:‘Orbitron’,sans-serif;
+font-weight:700;
+font-size:14px;
+letter-spacing:0.25em;
+text-transform:uppercase;
+color:var(–text);
+display:flex;align-items:center;gap:10px;
+}
+.card-title::before{
+content:””;
+width:14px;height:14px;
+border:2px solid var(–primary);
+border-right:0;border-bottom:0;
+}
+.card-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ============ CHART ============ */
+.chart-wrap{position:relative;height:300px}
+#emptyChart{
+position:absolute;inset:0;
+display:grid;place-items:center;
+font-family:‘JetBrains Mono’,monospace;
+color:var(–text-dimmer);
+font-size:12px;
+letter-spacing:0.2em;
+text-align:center;
+pointer-events:none;
+}
+
+/* ============ PROGRESS ============ */
+.progress-wrap{
+margin-bottom:14px;
+display:none;
+}
+.progress-wrap.active{display:block}
+.progress-info{
+display:flex;justify-content:space-between;
+font-family:‘JetBrains Mono’,monospace;
+font-size:11px;
+color:var(–text-dim);
+margin-bottom:6px;
+}
+.progress-bar{
+height:4px;
+background:var(–bg);
+border:1px solid var(–border);
+overflow:hidden;
+position:relative;
+}
+.progress-fill{
+height:100%;
+background:linear-gradient(90deg,var(–primary),var(–magenta));
+transition:width 0.3s;
+box-shadow:0 0 10px var(–primary);
+}
+
+/* ============ ITEMS GRID ============ */
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+gap:14px;
+}
+.item{
+background:var(–bg-card);
+border:1px solid var(–border);
+position:relative;
+cursor:default;
+transition:transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+overflow:hidden;
+}
+.item:hover{
+transform:translateY(-2px);
+border-color:var(–rarity,var(–primary));
+box-shadow:0 8px 28px rgba(0,0,0,0.5), 0 0 14px var(–rarity,var(–primary));
+}
+.item::before{
+content:””;
+position:absolute;
+top:0;left:0;right:0;
+height:3px;
+background:var(–rarity,var(–border));
+opacity:0.8;
+}
+.item-img-wrap{
+position:relative;
+aspect-ratio:1.6/1;
+background:
+radial-gradient(circle at center, rgba(255,255,255,0.04), transparent 60%),
+var(–bg);
+display:grid;place-items:center;
+overflow:hidden;
+}
+.item-img-wrap::before{
+content:””;
+position:absolute;inset:0;
+background:linear-gradient(135deg, var(–rarity,transparent) 0%, transparent 45%);
+opacity:0.15;
+pointer-events:none;
+}
+.item-img{
+max-width:88%;
+max-height:88%;
+filter:drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+}
+.item-qty{
+position:absolute;
+top:6px;right:6px;
+background:rgba(0,0,0,0.85);
+border:1px solid var(–rarity,var(–border));
+color:var(–text);
+font-family:‘JetBrains Mono’,monospace;
+font-size:10px;
+padding:2px 6px;
+font-weight:700;
+}
+.item-tradable{
+position:absolute;
+top:6px;left:6px;
+width:8px;height:8px;
+border-radius:50%;
+background:var(–red);
+box-shadow:0 0 6px currentColor;
+}
+.item-tradable.ok{background:var(–green)}
+
+.item-body{padding:11px 13px 13px}
+.item-name{
+font-family:‘Rajdhani’,sans-serif;
+font-weight:600;
+font-size:13px;
+color:var(–text);
+line-height:1.25;
+min-height:32px;
+display:-webkit-box;
+-webkit-line-clamp:2;
+-webkit-box-orient:vertical;
+overflow:hidden;
+margin-bottom:6px;
+}
+.item-type{
+font-family:‘JetBrains Mono’,monospace;
+font-size:9px;
+color:var(–text-dim);
+letter-spacing:0.08em;
+text-transform:uppercase;
+margin-bottom:8px;
+min-height:11px;
+display:-webkit-box;
+-webkit-line-clamp:1;
+-webkit-box-orient:vertical;
+overflow:hidden;
+}
+.item-price{
+font-family:‘Orbitron’,sans-serif;
+font-weight:700;
+font-size:15px;
+color:var(–primary);
+letter-spacing:0.02em;
+}
+.item-price .unit{
+color:var(–text-dim);
+font-size:10px;
+margin-left:4px;
+font-weight:500;
+}
+.item-price.pending{color:var(–text-dimmer)}
+.item-price.pending::after{content:”…”;animation:dots 1.4s infinite}
+.item-price.fail{color:var(–red);font-size:10px;opacity:0.7}
+@keyframes dots{0%,20%{content:”.”}40%{content:”..”}60%,100%{content:”…”}}
+
+/* ============ FILTERS ============ */
+.filters{
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+margin-bottom:16px;
+align-items:center;
+}
+.filter-input{
+background:var(–bg);
+border:1px solid var(–border-bright);
+color:var(–text);
+padding:8px 12px;
+font-family:‘JetBrains Mono’,monospace;
+font-size:12px;
+outline:none;
+min-width:200px;
+}
+.filter-input:focus{border-color:var(–primary)}
+select.filter-input{cursor:pointer}
+
+/* ============ LOG ============ */
+.log{
+background:var(–bg);
+border:1px solid var(–border);
+padding:12px 14px;
+max-height:140px;
+overflow-y:auto;
+font-family:‘JetBrains Mono’,monospace;
+font-size:11px;
+line-height:1.6;
+}
+.log-line{color:var(–text-dim)}
+.log-line .ts{color:var(–text-dimmer);margin-right:8px}
+.log-line.ok .msg{color:var(–green)}
+.log-line.warn .msg{color:var(–yellow)}
+.log-line.err .msg{color:var(–red)}
+.log-line.info .msg{color:var(–cyan)}
+
+/* ============ SMALL SCREENS ============ */
+@media (max-width:980px){
+.hdr{grid-template-columns:1fr;gap:12px}
+.stats{grid-template-columns:repeat(2,1fr)}
+.stat .value{font-size:22px}
+}
+@media (max-width:520px){
+.stats{grid-template-columns:1fr}
+.grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.item-name{font-size:12px}
+.item-price{font-size:13px}
+}
+
+/* scrollbar */
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:var(–bg-elev)}
+::-webkit-scrollbar-thumb{background:var(–border-bright);border:2px solid var(–bg-elev)}
+::-webkit-scrollbar-thumb:hover{background:var(–primary)}
+
+/* footer */
+.foot{
+margin-top:40px;
+text-align:center;
+font-family:‘JetBrains Mono’,monospace;
+font-size:10px;
+color:var(–text-dimmer);
+letter-spacing:0.2em;
+}
+.foot a{color:var(–primary);text-decoration:none}
+.foot a:hover{text-decoration:underline}
+
+.hidden{display:none !important}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ========== HEADER ========== -->
+
+  <header class="hdr">
+    <div class="brand">
+      <div class="brand-logo">Ω</div>
+      <div class="brand-text">
+        <div class="t1">CS2 <span>INVENTORY</span></div>
+        <div class="t2">// TACTICAL VALUE TRACKER</div>
+      </div>
+    </div>
+    <div class="id-form">
+      <input id="steamInput" class="id-input" type="text" placeholder="archibien  or  76561198...  or  steamcommunity.com/id/..." value="archibien" spellcheck="false" />
+      <button id="loadBtn" class="btn primary">FETCH</button>
+    </div>
+    <div class="status" id="status"><div class="dot"></div><span id="statusText">READY</span></div>
+  </header>
+
+  <!-- ========== STATS ========== -->
+
+  <section class="stats" id="stats">
+    <div class="stat c1">
+      <div class="label">Valeur totale</div>
+      <div class="value" id="statTotal">—</div>
+      <div class="sub" id="statTotalSub">EUR</div>
+    </div>
+    <div class="stat c2">
+      <div class="label">Items (quantité)</div>
+      <div class="value" id="statCount">—</div>
+      <div class="sub" id="statCountSub">dans l'inventaire</div>
+    </div>
+    <div class="stat c3">
+      <div class="label">Items uniques</div>
+      <div class="value" id="statUnique">—</div>
+      <div class="sub" id="statUniqueSub">références distinctes</div>
+    </div>
+    <div class="stat c4">
+      <div class="label">Évolution</div>
+      <div class="value" id="statDelta">—</div>
+      <div class="sub" id="statDeltaSub">depuis dernier snapshot</div>
+    </div>
+    <div class="stat c5">
+      <div class="label">Snapshots</div>
+      <div class="value" id="statSnaps">0</div>
+      <div class="sub" id="statSnapsSub">enregistrés</div>
+    </div>
+  </section>
+
+  <!-- ========== CHART ========== -->
+
+  <section class="card">
+    <div class="card-hdr">
+      <h2 class="card-title">Historique de valeur</h2>
+      <div class="card-actions">
+        <button id="snapBtn" class="btn sm">📸 Snapshot</button>
+        <button id="exportBtn" class="btn sm ghost">Export</button>
+        <button id="importBtn" class="btn sm ghost">Import</button>
+        <button id="clearBtn" class="btn sm ghost">Clear</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none" />
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="chart"></canvas>
+      <div id="emptyChart">// AUCUN SNAPSHOT ENREGISTRÉ //<br/>CHARGE UN INVENTAIRE ET CLIQUE "SNAPSHOT"</div>
+    </div>
+  </section>
+
+  <!-- ========== ITEMS ========== -->
+
+  <section class="card">
+    <div class="card-hdr">
+      <h2 class="card-title">Inventaire</h2>
+      <div class="card-actions">
+        <button id="refreshPrices" class="btn sm">↻ Rafraîchir prix</button>
+        <button id="clearCache" class="btn sm ghost">Vider cache</button>
+      </div>
+    </div>
+
+```
+<div class="progress-wrap" id="progress">
+  <div class="progress-info">
+    <span id="progLabel">Fetching prices...</span>
+    <span id="progCount">0 / 0</span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progFill" style="width:0%"></div></div>
+</div>
+
+<div class="filters">
+  <input type="text" id="searchInput" class="filter-input" placeholder="🔍 Rechercher (nom, type, rareté...)" />
+  <select id="sortSelect" class="filter-input">
+    <option value="value-desc">Tri : Valeur ↓</option>
+    <option value="value-asc">Tri : Valeur ↑</option>
+    <option value="name-asc">Tri : Nom A→Z</option>
+    <option value="rarity-desc">Tri : Rareté ↓</option>
+  </select>
+  <select id="rarityFilter" class="filter-input">
+    <option value="">Toutes les raretés</option>
+  </select>
+  <label style="display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);cursor:pointer;">
+    <input type="checkbox" id="tradableOnly" /> Tradables uniquement
+  </label>
+</div>
+
+<div class="grid" id="grid"></div>
+<div id="emptyGrid" style="text-align:center;padding:60px 20px;font-family:'JetBrains Mono',monospace;color:var(--text-dimmer);letter-spacing:0.2em;">
+  // AUCUN INVENTAIRE CHARGÉ //
+</div>
+```
+
+  </section>
+
+  <!-- ========== LOG ========== -->
+
+  <section class="card">
+    <div class="card-hdr">
+      <h2 class="card-title">Journal système</h2>
+      <div class="card-actions">
+        <select id="proxySelect" class="filter-input" style="min-width:auto">
+          <option value="corsproxy">corsproxy.io</option>
+          <option value="allorigins">allorigins.win</option>
+          <option value="codetabs">codetabs.com</option>
+        </select>
+      </div>
+    </div>
+    <div class="log" id="log"></div>
+  </section>
+
+  <div class="foot">
+    BUILT WITH ⚡  //  DATA: STEAM COMMUNITY MARKET  //  PRICES IN EUR  //  STORAGE: LOCAL ONLY
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CS2 INVENTORY TRACKER
+   ============================================================ */
+
+const PROXIES = {
+  corsproxy:  u => 'https://corsproxy.io/?url=' + encodeURIComponent(u),
+  allorigins: u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+  codetabs:   u => 'https://api.codetabs.com/v1/proxy?quote=' + encodeURIComponent(u),
+};
+
+const LS = {
+  HISTORY: 'cs2tracker.history',       // [{ts, steamid, total, count, unique}]
+  PRICES:  'cs2tracker.prices',        // { "<market_hash_name>": {price, ts} }
+  LAST:    'cs2tracker.lastInventory', // { steamid, items, ts }
+  SETTINGS:'cs2tracker.settings',      // { proxy }
+};
+
+const PRICE_CACHE_TTL = 6 * 60 * 60 * 1000; // 6h
+const PRICE_FETCH_DELAY = 1500;             // ms between price requests (avoid IP ban)
+const PRICE_FETCH_RETRY_DELAY = 30000;      // 30s pause after 429
+
+const RARITY_ORDER = {
+  'Consumer Grade': 1,
+  'Industrial Grade': 2,
+  'Mil-Spec Grade': 3,
+  'Restricted': 4,
+  'Classified': 5,
+  'Covert': 6,
+  'Contraband': 7,
+  'Extraordinary': 7,
+  'Base Grade': 1,
+  'High Grade': 3,
+  'Remarkable': 4,
+  'Exotic': 5,
+  'Exceedingly Rare': 7,
+  '★': 8,
+};
+
+/* ------------ STATE ------------ */
+let state = {
+  steamid: null,
+  vanity: null,
+  items: [],         // grouped, unique by market_hash_name
+  chart: null,
+  fetchAbort: false,
+};
+
+/* ------------ DOM ------------ */
+const $ = id => document.getElementById(id);
+const el = {
+  steamInput: $('steamInput'),
+  loadBtn: $('loadBtn'),
+  status: $('status'),
+  statusText: $('statusText'),
+  statTotal: $('statTotal'),
+  statTotalSub: $('statTotalSub'),
+  statCount: $('statCount'),
+  statUnique: $('statUnique'),
+  statDelta: $('statDelta'),
+  statDeltaSub: $('statDeltaSub'),
+  statSnaps: $('statSnaps'),
+  snapBtn: $('snapBtn'),
+  exportBtn: $('exportBtn'),
+  importBtn: $('importBtn'),
+  importFile: $('importFile'),
+  clearBtn: $('clearBtn'),
+  refreshPrices: $('refreshPrices'),
+  clearCache: $('clearCache'),
+  progress: $('progress'),
+  progLabel: $('progLabel'),
+  progCount: $('progCount'),
+  progFill: $('progFill'),
+  grid: $('grid'),
+  emptyGrid: $('emptyGrid'),
+  searchInput: $('searchInput'),
+  sortSelect: $('sortSelect'),
+  rarityFilter: $('rarityFilter'),
+  tradableOnly: $('tradableOnly'),
+  log: $('log'),
+  proxySelect: $('proxySelect'),
+  emptyChart: $('emptyChart'),
+};
+
+/* ------------ HELPERS ------------ */
+function setStatus(kind, text){
+  el.status.className = 'status ' + kind;
+  el.statusText.textContent = text;
+}
+function log(msg, kind='info'){
+  const now = new Date();
+  const ts = now.toTimeString().slice(0,8);
+  const line = document.createElement('div');
+  line.className = 'log-line ' + kind;
+  line.innerHTML = `<span class="ts">${ts}</span><span class="msg">${msg}</span>`;
+  el.log.prepend(line);
+  while(el.log.childNodes.length > 80) el.log.removeChild(el.log.lastChild);
+}
+function fmtEUR(v){
+  if(v === null || v === undefined || isNaN(v)) return '—';
+  return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:2}).format(v);
+}
+function fmtNum(v){
+  if(v === null || v === undefined || isNaN(v)) return '—';
+  return new Intl.NumberFormat('fr-FR').format(v);
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+function getProxy(){ return PROXIES[el.proxySelect.value] || PROXIES.corsproxy }
+
+/* ------------ SETTINGS ------------ */
+function loadSettings(){
+  try{
+    const s = JSON.parse(localStorage.getItem(LS.SETTINGS)||'{}');
+    if(s.proxy) el.proxySelect.value = s.proxy;
+  }catch(e){}
+}
+function saveSettings(){
+  localStorage.setItem(LS.SETTINGS, JSON.stringify({proxy: el.proxySelect.value}));
+}
+el.proxySelect.addEventListener('change', saveSettings);
+
+/* ------------ INPUT PARSING ------------ */
+function parseSteamInput(input){
+  input = input.trim();
+  let m = input.match(/steamcommunity\.com\/(id|profiles)\/([^\/\?#]+)/i);
+  if(m) return { type: m[1].toLowerCase()==='id' ? 'vanity' : 'steamid', value: m[2] };
+  if(/^\d{17}$/.test(input)) return { type: 'steamid', value: input };
+  return { type: 'vanity', value: input };
+}
+
+/* ------------ STEAM API ------------ */
+async function resolveVanity(vanity){
+  const url = `https://steamcommunity.com/id/${encodeURIComponent(vanity)}?xml=1`;
+  const res = await fetch(getProxy()(url));
+  if(!res.ok) throw new Error('HTTP '+res.status+' resolving vanity');
+  const xml = await res.text();
+  const m = xml.match(/<steamID64>(\d+)<\/steamID64>/);
+  if(!m) throw new Error('SteamID64 introuvable pour "'+vanity+'"');
+  return m[1];
+}
+
+async function fetchInventory(steamid){
+  const url = `https://steamcommunity.com/inventory/${steamid}/730/2?l=french&count=5000`;
+  const res = await fetch(getProxy()(url));
+  if(!res.ok){
+    if(res.status===403) throw new Error('Inventaire privé (403). Rends-le public dans les paramètres Steam.');
+    throw new Error('HTTP '+res.status+' (inventaire)');
+  }
+  const data = await res.json();
+  if(!data || !data.descriptions) throw new Error('Réponse inventaire invalide');
+  return data;
+}
+
+async function fetchPrice(marketHashName){
+  const url = `https://steamcommunity.com/market/priceoverview/?appid=730&currency=3&market_hash_name=${encodeURIComponent(marketHashName)}`;
+  const res = await fetch(getProxy()(url));
+  if(res.status === 429) throw new Error('RATE_LIMIT');
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  const data = await res.json();
+  if(!data || !data.success) return null;
+  // lowest_price / median_price are strings like "1,23€"
+  const raw = data.lowest_price || data.median_price;
+  if(!raw) return null;
+  const n = parseFloat(raw.replace(/[^0-9,.-]/g,'').replace(',','.'));
+  return isNaN(n) ? null : n;
+}
+
+/* ------------ INVENTORY PROCESSING ------------ */
+function processInventory(invData){
+  // Map descriptions by "classid_instanceid"
+  const descMap = {};
+  for(const d of invData.descriptions){
+    descMap[d.classid + '_' + d.instanceid] = d;
+  }
+  // Group by market_hash_name
+  const groups = new Map();
+  for(const a of (invData.assets || [])){
+    const key = a.classid + '_' + a.instanceid;
+    const desc = descMap[key];
+    if(!desc) continue;
+    const mhn = desc.market_hash_name;
+    if(!mhn) continue;
+    if(!groups.has(mhn)){
+      const rarityTag = (desc.tags || []).find(t => t.category==='Rarity') || {};
+      const typeTag = (desc.tags || []).find(t => t.category==='Type') || {};
+      const exteriorTag = (desc.tags || []).find(t => t.category==='Exterior') || {};
+      const weaponTag = (desc.tags || []).find(t => t.category==='Weapon') || {};
+      groups.set(mhn, {
+        market_hash_name: mhn,
+        name: desc.name || mhn,
+        market_name: desc.market_name || mhn,
+        icon: desc.icon_url_large || desc.icon_url,
+        tradable: desc.tradable === 1,
+        marketable: desc.marketable === 1,
+        type: desc.type || '',
+        rarity: rarityTag.localized_tag_name || rarityTag.name || '',
+        rarityInternal: rarityTag.internal_name || '',
+        rarityColor: rarityTag.color ? ('#'+rarityTag.color) : null,
+        typeCat: typeTag.localized_tag_name || '',
+        exterior: exteriorTag.localized_tag_name || '',
+        weapon: weaponTag.localized_tag_name || '',
+        quantity: 0,
+        price: undefined, // undefined = not fetched yet, null = failed, number = ok
+      });
+    }
+    groups.get(mhn).quantity += 1;
+  }
+  return [...groups.values()];
+}
+
+/* ------------ PRICES WITH CACHE ------------ */
+function loadPriceCache(){
+  try{ return JSON.parse(localStorage.getItem(LS.PRICES)||'{}'); }
+  catch(e){ return {}; }
+}
+function savePriceCache(c){
+  try{ localStorage.setItem(LS.PRICES, JSON.stringify(c)); }catch(e){}
+}
+function applyCachedPrices(items){
+  const cache = loadPriceCache();
+  const now = Date.now();
+  let hits = 0;
+  for(const it of items){
+    const c = cache[it.market_hash_name];
+    if(c && (now - c.ts) < PRICE_CACHE_TTL){
+      it.price = c.price;
+      if(c.price !== null) hits++;
+    }
+  }
+  return hits;
+}
+async function fetchAllPrices(items, {forceRefresh=false}={}){
+  const cache = loadPriceCache();
+  const now = Date.now();
+  state.fetchAbort = false;
+
+  const queue = items.filter(it => {
+    if(!it.marketable) return false;
+    if(forceRefresh) return true;
+    const c = cache[it.market_hash_name];
+    if(!c) return it.price === undefined;
+    return (now - c.ts) >= PRICE_CACHE_TTL;
+  });
+
+  if(queue.length === 0){
+    log('Aucun prix à rafraîchir (cache valide)','info');
+    return;
+  }
+
+  el.progress.classList.add('active');
+  el.progLabel.textContent = `Récupération des prix (${PRICE_FETCH_DELAY}ms entre chaque requête)...`;
+  log(`Début fetch prix pour ${queue.length} items uniques`,'info');
+
+  let done = 0, failed = 0;
+  for(const it of queue){
+    if(state.fetchAbort){ log('Fetch interrompu','warn'); break; }
+    try{
+      const p = await fetchPrice(it.market_hash_name);
+      it.price = p;
+      cache[it.market_hash_name] = { price: p, ts: Date.now() };
+      if(p === null) failed++;
+    }catch(e){
+      if(e.message === 'RATE_LIMIT'){
+        log(`Rate limit Steam — pause ${PRICE_FETCH_RETRY_DELAY/1000}s`,'warn');
+        await sleep(PRICE_FETCH_RETRY_DELAY);
+        try{
+          const p = await fetchPrice(it.market_hash_name);
+          it.price = p;
+          cache[it.market_hash_name] = { price: p, ts: Date.now() };
+          if(p === null) failed++;
+        }catch(e2){
+          it.price = null;
+          failed++;
+        }
+      }else{
+        it.price = null;
+        failed++;
+      }
+    }
+    done++;
+    el.progCount.textContent = `${done} / ${queue.length}`;
+    el.progFill.style.width = ((done/queue.length)*100).toFixed(1) + '%';
+    // live updates
+    if(done % 5 === 0 || done === queue.length){
+      savePriceCache(cache);
+      renderGrid();
+      updateStats();
+    }
+    await sleep(PRICE_FETCH_DELAY);
+  }
+  savePriceCache(cache);
+  renderGrid();
+  updateStats();
+  el.progress.classList.remove('active');
+  log(`Prix récupérés : ${done-failed} OK / ${failed} échecs`, failed ? 'warn' : 'ok');
+
+  // auto-snapshot if we have a meaningful total
+  if(done > 0){
+    autoSnapshot();
+  }
+}
+
+/* ------------ TOTALS & STATS ------------ */
+function computeTotal(items){
+  let total = 0, count = 0, valued = 0;
+  for(const it of items){
+    count += it.quantity;
+    if(typeof it.price === 'number' && it.price > 0){
+      total += it.price * it.quantity;
+      valued += it.quantity;
+    }
+  }
+  return { total, count, valued, unique: items.length };
+}
+
+function updateStats(){
+  const {total, count, unique, valued} = computeTotal(state.items);
+  el.statTotal.textContent = fmtEUR(total);
+  el.statTotalSub.textContent = `${valued}/${count} items valorisés`;
+  el.statCount.textContent = fmtNum(count);
+  el.statUnique.textContent = fmtNum(unique);
+
+  // delta vs last snapshot
+  const hist = loadHistory().filter(h => h.steamid === state.steamid);
+  if(hist.length >= 1){
+    const last = hist[hist.length-1];
+    const delta = total - last.total;
+    el.statDelta.textContent = (delta>=0?'+':'') + fmtEUR(delta);
+    el.statDeltaSub.className = 'sub ' + (delta>=0?'pos':'neg');
+    const pct = last.total ? (delta/last.total*100) : 0;
+    el.statDeltaSub.textContent = `${delta>=0?'▲':'▼'} ${pct.toFixed(2)}% depuis ${new Date(last.ts).toLocaleString('fr-FR')}`;
+  }else{
+    el.statDelta.textContent = '—';
+    el.statDeltaSub.className = 'sub';
+    el.statDeltaSub.textContent = 'aucun snapshot précédent';
+  }
+  el.statSnaps.textContent = hist.length;
+}
+
+/* ------------ HISTORY / SNAPSHOTS ------------ */
+function loadHistory(){
+  try{ return JSON.parse(localStorage.getItem(LS.HISTORY)||'[]'); }
+  catch(e){ return []; }
+}
+function saveHistory(h){
+  localStorage.setItem(LS.HISTORY, JSON.stringify(h));
+}
+function takeSnapshot(){
+  if(!state.items.length){ log('Charge d\'abord un inventaire','warn'); return; }
+  const {total, count, unique, valued} = computeTotal(state.items);
+  if(total === 0){ log('Aucun prix valorisé — snapshot ignoré','warn'); return; }
+  const hist = loadHistory();
+  hist.push({ ts: Date.now(), steamid: state.steamid, total, count, unique, valued });
+  saveHistory(hist);
+  log(`Snapshot enregistré : ${fmtEUR(total)} (${valued}/${count} items)`,'ok');
+  renderChart();
+  updateStats();
+}
+function autoSnapshot(){
+  // only auto-snapshot if we don't have one in the last 30 min
+  const hist = loadHistory().filter(h => h.steamid === state.steamid);
+  const last = hist[hist.length-1];
+  if(last && (Date.now() - last.ts) < 30*60*1000){
+    log('Dernier snapshot récent (<30min), auto-snapshot ignoré','info');
+    return;
+  }
+  takeSnapshot();
+}
+
+/* ------------ CHART ------------ */
+function renderChart(){
+  const hist = loadHistory().filter(h => h.steamid === state.steamid);
+  if(!hist.length){
+    el.emptyChart.style.display = 'grid';
+    if(state.chart){ state.chart.destroy(); state.chart = null; }
+    return;
+  }
+  el.emptyChart.style.display = 'none';
+
+  const labels = hist.map(h => new Date(h.ts));
+  const data = hist.map(h => h.total);
+
+  const ctx = document.getElementById('chart').getContext('2d');
+  if(state.chart) state.chart.destroy();
+
+  const grad = ctx.createLinearGradient(0,0,0,300);
+  grad.addColorStop(0, 'rgba(255,107,26,0.45)');
+  grad.addColorStop(1, 'rgba(255,107,26,0)');
+
+  state.chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Valeur (EUR)',
+        data,
+        borderColor: '#ff6b1a',
+        backgroundColor: grad,
+        borderWidth: 2,
+        fill: true,
+        tension: 0.25,
+        pointRadius: 4,
+        pointHoverRadius: 7,
+        pointBackgroundColor: '#ff6b1a',
+        pointBorderColor: '#050608',
+        pointBorderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      scales: {
+        x: {
+          type: 'time',
+          time: { displayFormats: { hour:'dd/MM HH:mm', day:'dd/MM', month:'MM/yy' } },
+          ticks: { color:'#8691a0', font:{family:'JetBrains Mono', size:10} },
+          grid:  { color:'rgba(28,35,48,0.6)' }
+        },
+        y: {
+          ticks: {
+            color:'#8691a0',
+            font:{family:'JetBrains Mono', size:10},
+            callback: v => fmtEUR(v)
+          },
+          grid: { color:'rgba(28,35,48,0.6)' }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0a0d12',
+          borderColor: '#ff6b1a',
+          borderWidth: 1,
+          titleColor: '#ff6b1a',
+          titleFont: { family:'Orbitron', weight:'700', size:11 },
+          bodyColor: '#e5eaf0',
+          bodyFont: { family:'JetBrains Mono', size:12 },
+          padding: 12,
+          callbacks: {
+            title: ctxs => new Date(ctxs[0].parsed.x).toLocaleString('fr-FR'),
+            label: c => `  ${fmtEUR(c.parsed.y)}   (${hist[c.dataIndex].valued || 0} items)`
+          }
+        }
+      }
+    }
+  });
+}
+
+/* ------------ RENDERING GRID ------------ */
+function rarityColor(it){
+  if(it.rarityColor) return it.rarityColor;
+  const map = {
+    'Consumer Grade':'#b0c3d9',
+    'Industrial Grade':'#5e98d9',
+    'Mil-Spec Grade':'#4b69ff',
+    'Restricted':'#8847ff',
+    'Classified':'#d32ce6',
+    'Covert':'#eb4b4b',
+    'Contraband':'#e4ae39',
+    'Extraordinary':'#e4ae39',
+  };
+  return map[it.rarity] || '#556070';
+}
+function getFilteredItems(){
+  const q = (el.searchInput.value||'').toLowerCase().trim();
+  const rarity = el.rarityFilter.value;
+  const tradableOnly = el.tradableOnly.checked;
+
+  let arr = state.items.slice();
+  if(q){
+    arr = arr.filter(it =>
+      (it.name||'').toLowerCase().includes(q) ||
+      (it.type||'').toLowerCase().includes(q) ||
+      (it.rarity||'').toLowerCase().includes(q) ||
+      (it.exterior||'').toLowerCase().includes(q)
+    );
+  }
+  if(rarity) arr = arr.filter(it => it.rarity === rarity);
+  if(tradableOnly) arr = arr.filter(it => it.tradable);
+
+  const sort = el.sortSelect.value;
+  arr.sort((a,b)=>{
+    const va = (typeof a.price === 'number' ? a.price : 0) * a.quantity;
+    const vb = (typeof b.price === 'number' ? b.price : 0) * b.quantity;
+    switch(sort){
+      case 'value-asc': return va - vb;
+      case 'name-asc':  return (a.name||'').localeCompare(b.name||'');
+      case 'rarity-desc':
+        return (RARITY_ORDER[b.rarity]||0) - (RARITY_ORDER[a.rarity]||0) || vb - va;
+      case 'value-desc':
+      default:          return vb - va;
+    }
+  });
+  return arr;
+}
+
+function renderGrid(){
+  const items = getFilteredItems();
+  if(items.length === 0 && state.items.length === 0){
+    el.grid.innerHTML = '';
+    el.emptyGrid.style.display = 'block';
+    return;
+  }
+  el.emptyGrid.style.display = 'none';
+
+  el.grid.innerHTML = items.map(it => {
+    const color = rarityColor(it);
+    const img = it.icon ? `https://community.fastly.steamstatic.com/economy/image/${it.icon}/330x192` : '';
+    let priceHTML = '';
+    if(it.price === undefined){
+      priceHTML = `<div class="item-price pending">Loading</div>`;
+    }else if(it.price === null || it.price === 0){
+      priceHTML = `<div class="item-price fail">— no market —</div>`;
+    }else{
+      const total = it.price * it.quantity;
+      priceHTML = `<div class="item-price">${fmtEUR(total)}<span class="unit">(${fmtEUR(it.price)} × ${it.quantity})</span></div>`;
+    }
+    const safeName = (it.name||'').replace(/[<>&"]/g, s=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[s]));
+    const safeType = (it.type||'').replace(/[<>&"]/g, s=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[s]));
+    const mhnEnc = encodeURIComponent(it.market_hash_name);
+    return `
+      <a class="item" href="https://steamcommunity.com/market/listings/730/${mhnEnc}" target="_blank" rel="noopener" style="--rarity:${color};text-decoration:none">
+        <div class="item-img-wrap">
+          ${img ? `<img class="item-img" src="${img}" alt="" loading="lazy" />` : ''}
+          <div class="item-qty">×${it.quantity}</div>
+          <div class="item-tradable ${it.tradable?'ok':''}" title="${it.tradable?'Tradable':'Non tradable'}"></div>
+        </div>
+        <div class="item-body">
+          <div class="item-name" title="${safeName}">${safeName}</div>
+          <div class="item-type" title="${safeType}">${safeType}</div>
+          ${priceHTML}
+        </div>
+      </a>
+    `;
+  }).join('');
+}
+
+function buildRarityOptions(){
+  const set = new Set(state.items.map(it => it.rarity).filter(Boolean));
+  const sorted = [...set].sort((a,b)=>(RARITY_ORDER[b]||0)-(RARITY_ORDER[a]||0));
+  el.rarityFilter.innerHTML = '<option value="">Toutes les raretés</option>' +
+    sorted.map(r => `<option value="${r}">${r}</option>`).join('');
+}
+
+/* ------------ MAIN FLOWS ------------ */
+async function loadInventory(){
+  const raw = el.steamInput.value.trim();
+  if(!raw){ log('Entre un identifiant Steam','warn'); return; }
+  el.loadBtn.disabled = true;
+
+  try{
+    setStatus('loading','RESOLVE');
+    const parsed = parseSteamInput(raw);
+    log(`Input parsé : ${parsed.type} = ${parsed.value}`,'info');
+
+    let steamid;
+    if(parsed.type === 'steamid'){
+      steamid = parsed.value;
+    }else{
+      log(`Résolution vanity "${parsed.value}"...`,'info');
+      steamid = await resolveVanity(parsed.value);
+      log(`SteamID64 : ${steamid}`,'ok');
+    }
+    state.steamid = steamid;
+    state.vanity = parsed.type==='vanity' ? parsed.value : null;
+
+    setStatus('loading','INVENTORY');
+    log('Téléchargement inventaire CS2...','info');
+    const invData = await fetchInventory(steamid);
+
+    state.items = processInventory(invData);
+    log(`Inventaire : ${state.items.length} items uniques / ${(invData.assets||[]).length} assets`,'ok');
+
+    // persist last inventory
+    try{
+      localStorage.setItem(LS.LAST, JSON.stringify({
+        steamid, ts: Date.now(),
+        items: state.items.map(({icon,...rest})=>({icon,...rest}))
+      }));
+    }catch(e){ log('Impossible de cacher l\'inventaire (localStorage plein)','warn'); }
+
+    // apply price cache immediately
+    const hits = applyCachedPrices(state.items);
+    log(`Cache prix : ${hits} items hit`, hits ? 'ok' : 'info');
+
+    buildRarityOptions();
+    renderGrid();
+    updateStats();
+    renderChart();
+
+    setStatus('ok','ONLINE');
+
+    // start fetching missing prices
+    await fetchAllPrices(state.items);
+
+  }catch(e){
+    console.error(e);
+    log('Erreur: '+e.message,'err');
+    setStatus('err','ERROR');
+  }finally{
+    el.loadBtn.disabled = false;
+  }
+}
+
+/* ------------ EVENT WIRING ------------ */
+el.loadBtn.addEventListener('click', loadInventory);
+el.steamInput.addEventListener('keydown', e => { if(e.key==='Enter') loadInventory(); });
+
+el.snapBtn.addEventListener('click', takeSnapshot);
+
+el.refreshPrices.addEventListener('click', async () => {
+  if(!state.items.length){ log('Charge d\'abord un inventaire','warn'); return; }
+  await fetchAllPrices(state.items, {forceRefresh:true});
+});
+el.clearCache.addEventListener('click', () => {
+  localStorage.removeItem(LS.PRICES);
+  log('Cache prix vidé','ok');
+});
+
+el.clearBtn.addEventListener('click', () => {
+  if(!confirm('Effacer TOUT l\'historique (snapshots) ?')) return;
+  localStorage.removeItem(LS.HISTORY);
+  log('Historique effacé','warn');
+  renderChart();
+  updateStats();
+});
+
+el.exportBtn.addEventListener('click', () => {
+  const data = {
+    exported_at: new Date().toISOString(),
+    history: loadHistory(),
+    prices: loadPriceCache(),
+  };
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `cs2-tracker-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  log('Export OK','ok');
+});
+
+el.importBtn.addEventListener('click', () => el.importFile.click());
+el.importFile.addEventListener('change', async e => {
+  const f = e.target.files[0]; if(!f) return;
+  try{
+    const text = await f.text();
+    const data = JSON.parse(text);
+    if(data.history && Array.isArray(data.history)){
+      const merged = [...loadHistory(), ...data.history];
+      // dedupe by ts+steamid
+      const seen = new Set();
+      const clean = merged.filter(h => {
+        const k = h.ts+'|'+h.steamid;
+        if(seen.has(k)) return false;
+        seen.add(k); return true;
+      }).sort((a,b)=>a.ts-b.ts);
+      saveHistory(clean);
+    }
+    if(data.prices && typeof data.prices === 'object'){
+      const existing = loadPriceCache();
+      savePriceCache({...existing, ...data.prices});
+    }
+    log('Import OK','ok');
+    renderChart();
+    updateStats();
+  }catch(err){ log('Import échoué: '+err.message,'err'); }
+  e.target.value = '';
+});
+
+el.searchInput.addEventListener('input', renderGrid);
+el.sortSelect.addEventListener('change', renderGrid);
+el.rarityFilter.addEventListener('change', renderGrid);
+el.tradableOnly.addEventListener('change', renderGrid);
+
+/* ------------ BOOT ------------ */
+loadSettings();
+log('Système initialisé. Entre un profil Steam et clique FETCH.','info');
+updateStats();
+renderChart();
+
+// Try to restore last inventory (offline-ish mode)
+try{
+  const last = JSON.parse(localStorage.getItem(LS.LAST)||'null');
+  if(last && last.items){
+    state.steamid = last.steamid;
+    state.items = last.items;
+    applyCachedPrices(state.items);
+    buildRarityOptions();
+    renderGrid();
+    updateStats();
+    renderChart();
+    log(`Inventaire précédent restauré (${last.items.length} items, ${new Date(last.ts).toLocaleString('fr-FR')})`,'info');
+    setStatus('ok','CACHED');
+  }
+}catch(e){}
+</script>
+
+</body>
+</html>
