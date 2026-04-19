@@ -1,1 +1,455 @@
+<!DOCTYPE html>
 
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PKMN VAULT // Collection PSA 10</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600;800&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#05060f;
+  --bg-2:#0a0f1e;
+  --panel:rgba(10,15,30,0.7);
+  --cyan:#00ffe0;
+  --magenta:#ff2ec4;
+  --violet:#8a2bff;
+  --yellow:#ffe436;
+  --green:#00ff9d;
+  --red:#ff3860;
+  --grid:rgba(0,255,224,0.08);
+  --border:rgba(0,255,224,0.25);
+  --text:#e5f3ff;
+  --muted:#6e7da6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden}
+body{
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(138,43,255,0.15), transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(0,255,224,0.12), transparent 50%),
+    linear-gradient(180deg, #05060f 0%, #080b1a 50%, #05060f 100%);
+  background-attachment:fixed;
+  position:relative;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size:50px 50px;
+  mask-image:radial-gradient(ellipse at center, black 30%, transparent 80%);
+}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:1;
+  background:repeating-linear-gradient(0deg, transparent 0, transparent 3px, rgba(0,0,0,0.12) 3px, rgba(0,0,0,0.12) 4px);
+  mix-blend-mode:multiply;
+}
+.wrap{max-width:1280px;margin:0 auto;padding:24px 20px 60px;position:relative;z-index:2}
+
+/* HEADER */
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border:1px solid var(–border);background:var(–panel);backdrop-filter:blur(10px);border-radius:6px;margin-bottom:28px}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{width:36px;height:36px;border:2px solid var(–cyan);transform:rotate(45deg);position:relative;flex-shrink:0}
+.logo::before{content:’’;position:absolute;inset:4px;border:1px solid var(–magenta);transform:rotate(45deg)}
+.logo::after{content:’’;position:absolute;inset:10px;background:var(–cyan);box-shadow:0 0 12px var(–cyan)}
+.brand h1{font-family:‘Orbitron’,sans-serif;font-weight:900;font-size:20px;letter-spacing:3px;color:#fff;text-shadow:0 0 15px rgba(0,255,224,0.5)}
+.brand h1 span{color:var(–magenta);text-shadow:0 0 15px var(–magenta)}
+.meta{font-family:‘JetBrains Mono’,monospace;font-size:11px;color:var(–muted);text-align:right;line-height:1.4}
+.meta .live{display:inline-flex;align-items:center;gap:6px;color:var(–green)}
+.pulse{width:8px;height:8px;background:var(–green);border-radius:50%;box-shadow:0 0 10px var(–green);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.85)}}
+
+/* HERO STATS */
+.hero{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:14px;margin-bottom:32px}
+.stat{border:1px solid var(–border);background:var(–panel);backdrop-filter:blur(10px);padding:18px 20px;position:relative;overflow:hidden;border-radius:4px}
+.stat::before{content:’’;position:absolute;top:0;left:0;width:3px;height:100%;background:var(–cyan);box-shadow:0 0 10px var(–cyan)}
+.stat.main::before{background:var(–magenta);box-shadow:0 0 10px var(–magenta)}
+.stat .label{font-family:‘JetBrains Mono’,monospace;font-size:10px;letter-spacing:2px;color:var(–muted);text-transform:uppercase;margin-bottom:8px}
+.stat .value{font-family:‘Orbitron’,sans-serif;font-weight:900;font-size:28px;color:#fff;letter-spacing:1px}
+.stat.main .value{font-size:40px;color:var(–cyan);text-shadow:0 0 20px rgba(0,255,224,0.4)}
+.stat .delta{font-family:‘JetBrains Mono’,monospace;font-size:12px;font-weight:600;margin-top:4px}
+.stat .delta.up{color:var(–green)}
+.stat .delta.down{color:var(–red)}
+.stat .sub{font-family:‘JetBrains Mono’,monospace;font-size:10px;color:var(–muted);margin-top:4px}
+
+/* SECTION TITLE */
+.section-title{display:flex;align-items:center;gap:12px;margin:0 0 18px;font-family:‘Orbitron’,sans-serif;font-weight:700;letter-spacing:4px;font-size:14px;color:var(–cyan);text-transform:uppercase}
+.section-title::before{content:‘▸’;color:var(–magenta)}
+.section-title .line{flex:1;height:1px;background:linear-gradient(90deg,var(–border),transparent)}
+
+/* CARD GRID */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(540px,1fr));gap:20px}
+.card{
+border:1px solid var(–border);
+background:linear-gradient(135deg, rgba(10,15,30,0.85), rgba(20,10,40,0.7));
+backdrop-filter:blur(12px);
+border-radius:6px;
+overflow:hidden;
+position:relative;
+transition:transform .4s cubic-bezier(.2,.8,.2,1), box-shadow .4s ease, border-color .4s ease;
+}
+.card::before{
+content:’’;position:absolute;inset:0;pointer-events:none;z-index:3;
+background:linear-gradient(115deg, transparent 40%, rgba(255,46,196,0.08) 48%, rgba(0,255,224,0.08) 52%, transparent 60%);
+transition:transform .6s ease;transform:translateX(-30%);
+}
+.card:hover{transform:translateY(-4px);border-color:var(–cyan);box-shadow:0 20px 50px rgba(0,255,224,0.15), 0 0 40px rgba(138,43,255,0.1)}
+.card:hover::before{transform:translateX(30%)}
+.card-inner{display:grid;grid-template-columns:180px 1fr;gap:0;min-height:280px}
+.card-img{
+position:relative;overflow:hidden;
+background:linear-gradient(135deg, rgba(138,43,255,0.15), rgba(0,255,224,0.1));
+border-right:1px solid var(–border);
+}
+.card-img img{width:100%;height:100%;object-fit:cover;object-position:center;display:block}
+.card-img .fallback{
+position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+text-align:center;padding:20px;font-family:‘Orbitron’,sans-serif;font-weight:700;
+color:#fff;letter-spacing:2px;font-size:12px;
+background:
+repeating-linear-gradient(45deg, rgba(255,46,196,0.05) 0 10px, transparent 10px 20px),
+linear-gradient(135deg, #1a0b33, #0b1a2e);
+}
+.card-img .fallback::after{content:‘NO IMG’;position:absolute;bottom:10px;font-size:9px;color:var(–muted);letter-spacing:3px}
+.card-img .holo{position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,0.08) 50%,transparent 70%);pointer-events:none;animation:holo 4s ease-in-out infinite}
+@keyframes holo{0%,100%{opacity:0.3;transform:translateX(-100%)}50%{opacity:0.8;transform:translateX(100%)}}
+.rank{position:absolute;top:10px;left:10px;width:30px;height:30px;background:rgba(0,0,0,0.8);border:1px solid var(–cyan);color:var(–cyan);font-family:‘Orbitron’,sans-serif;font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center;z-index:2;box-shadow:0 0 10px rgba(0,255,224,0.4)}
+.grade{position:absolute;bottom:10px;left:10px;right:10px;background:rgba(0,0,0,0.85);border:1px solid var(–yellow);padding:4px 8px;text-align:center;font-family:‘Orbitron’,sans-serif;font-weight:700;font-size:11px;color:var(–yellow);letter-spacing:2px;z-index:2;text-shadow:0 0 8px rgba(255,228,54,0.6)}
+
+.card-body{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.card-name{font-family:‘Orbitron’,sans-serif;font-weight:700;font-size:16px;color:#fff;letter-spacing:1px;line-height:1.2}
+.card-set{font-family:‘JetBrains Mono’,monospace;font-size:10px;color:var(–muted);margin-top:4px;letter-spacing:1px}
+.card-num{font-family:‘JetBrains Mono’,monospace;font-size:10px;color:var(–magenta);background:rgba(255,46,196,0.1);border:1px solid rgba(255,46,196,0.4);padding:3px 8px;letter-spacing:1px;white-space:nowrap}
+
+.price-block{display:flex;align-items:flex-end;gap:14px;padding:10px 0;border-top:1px dashed var(–border);border-bottom:1px dashed var(–border)}
+.price-main{font-family:‘Orbitron’,sans-serif;font-weight:900;font-size:30px;color:var(–cyan);letter-spacing:1px;line-height:1;text-shadow:0 0 15px rgba(0,255,224,0.3)}
+.price-main .cur{font-size:18px;color:var(–muted);margin-right:2px}
+.price-delta{font-family:‘JetBrains Mono’,monospace;font-size:12px;font-weight:600;padding-bottom:4px}
+.price-delta.up{color:var(–green)}
+.price-delta.down{color:var(–red)}
+.price-meta{font-family:‘JetBrains Mono’,monospace;font-size:10px;color:var(–muted);margin-left:auto;padding-bottom:4px;text-align:right}
+
+.chart-wrap{position:relative;height:80px;margin:4px 0}
+.chart-wrap canvas{width:100%!important;height:100%!important}
+
+.links{display:flex;gap:8px;flex-wrap:wrap}
+.link{
+flex:1;min-width:120px;
+display:inline-flex;align-items:center;justify-content:center;gap:6px;
+padding:8px 12px;
+border:1px solid var(–border);
+background:rgba(0,255,224,0.04);
+color:var(–cyan);
+text-decoration:none;
+font-family:‘JetBrains Mono’,monospace;font-size:11px;font-weight:600;letter-spacing:1px;
+text-transform:uppercase;
+transition:all .25s ease;
+border-radius:3px;
+}
+.link.cm{color:var(–magenta);border-color:rgba(255,46,196,0.3);background:rgba(255,46,196,0.04)}
+.link:hover{background:var(–cyan);color:#000;box-shadow:0 0 15px var(–cyan);border-color:var(–cyan);transform:translateY(-1px)}
+.link.cm:hover{background:var(–magenta);color:#000;box-shadow:0 0 15px var(–magenta);border-color:var(–magenta)}
+
+/* FOOTER */
+footer{margin-top:40px;padding:20px;border:1px solid var(–border);background:var(–panel);border-radius:4px}
+footer p{font-family:‘JetBrains Mono’,monospace;font-size:10px;color:var(–muted);line-height:1.7;letter-spacing:0.5px}
+footer p + p{margin-top:6px}
+footer strong{color:var(–cyan);font-weight:600}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+.hero{grid-template-columns:1fr 1fr;gap:10px}
+.stat.main{grid-column:span 2}
+.cards{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+.wrap{padding:16px 12px 40px}
+.topbar{flex-direction:column;align-items:flex-start;gap:10px}
+.meta{text-align:left}
+.brand h1{font-size:16px;letter-spacing:2px}
+.hero{grid-template-columns:1fr}
+.stat.main{grid-column:auto}
+.stat .value{font-size:22px}
+.stat.main .value{font-size:32px}
+.card-inner{grid-template-columns:130px 1fr}
+.card-body{padding:14px}
+.card-name{font-size:14px}
+.price-main{font-size:24px}
+.link{min-width:0;font-size:10px;padding:7px 8px}
+}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+  <!-- TOPBAR -->
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo"></div>
+      <h1>PKMN<span>//</span>VAULT</h1>
+    </div>
+    <div class="meta">
+      <div class="live"><span class="pulse"></span>TRACKING 5 ASSETS</div>
+      <div id="lastUpdate">LAST SYNC: —</div>
+    </div>
+  </header>
+
+  <!-- HERO STATS -->
+
+  <section class="hero">
+    <div class="stat main">
+      <div class="label">▸ Valeur Totale Portfolio</div>
+      <div class="value" id="totalValue">€ 0</div>
+      <div class="delta up" id="totalDelta">+0% (30j)</div>
+    </div>
+    <div class="stat">
+      <div class="label">Cartes PSA 10</div>
+      <div class="value" id="cardCount">5</div>
+      <div class="sub">100% graded gem mint</div>
+    </div>
+    <div class="stat">
+      <div class="label">Top Performer</div>
+      <div class="value" id="topMover" style="font-size:16px;line-height:1.2">—</div>
+      <div class="delta up" id="topMoverDelta">—</div>
+    </div>
+    <div class="stat">
+      <div class="label">Valeur Moyenne</div>
+      <div class="value" id="avgValue">€ 0</div>
+      <div class="sub">par carte</div>
+    </div>
+  </section>
+
+  <!-- CARDS -->
+
+  <h2 class="section-title">Collection <span class="line"></span></h2>
+  <div class="cards" id="cardsGrid"></div>
+
+  <footer>
+    <p><strong>// DATA SOURCES</strong> — Cotes PSA 10 agrégées depuis PriceCharting, eBay.fr (ventes complétées) et Cardmarket.com/fr. Les prix affichés sont des estimations basées sur les transactions récentes.</p>
+    <p><strong>// UPDATE</strong> — Modifie la constante <code style="color:var(--yellow)">CARDS</code> dans le script en bas de page pour mettre à jour les prix. Clique sur les boutons eBay / Cardmarket pour voir les ventes live.</p>
+    <p><strong>// DEPLOY</strong> — Repo GitHub → Settings → Pages → Source: main branch → Save. URL: username.github.io/repo-name</p>
+  </footer>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   DONNEES CARTES — modifie ici pour mettre a jour les prix
+   prix = cote PSA 10 en euros
+   history = 12 derniers mois (du plus ancien au plus recent)
+   ═══════════════════════════════════════════════════════════════════ */
+const CARDS = [
+  {
+    id: 'charizard-v-ssv',
+    name: 'Dracaufeu V',
+    nameAlt: 'Charizard V',
+    set: 'Shiny Star V (S4a) • 2020 • JP',
+    num: '307/190 SSR',
+    image: 'images/charizard-v-ssv.jpg',
+    price: 98,
+    history: [110, 105, 102, 100, 98, 95, 97, 100, 98, 95, 97, 98],
+    ebaySearch: 'PSA 10 Charizard V 307/190 Shiny Star V Japanese',
+    cardmarketSlug: 'Shiny-Star-V/Charizard-V-V2-s4a307'
+  },
+  {
+    id: 'mentali-v-eh',
+    name: 'Mentali V',
+    nameAlt: 'Espeon V',
+    set: 'Eevee Heroes (S6a) • 2021 • JP',
+    num: '081/069 SAR',
+    image: 'images/mentali-v-eh.jpg',
+    price: 148,
+    history: [125, 130, 135, 140, 142, 145, 148, 150, 152, 148, 150, 148],
+    ebaySearch: 'PSA 10 Espeon V 081/069 Eevee Heroes Japanese',
+    cardmarketSlug: 'Eevee-Heroes/Espeon-V-V2-s6a081'
+  },
+  {
+    id: 'dracaufeu-ex-151',
+    name: 'Dracaufeu ex',
+    nameAlt: 'Charizard ex',
+    set: 'Pokémon 151 (SV2a) • 2023 • JP',
+    num: '201/165 SAR',
+    image: 'images/dracaufeu-ex-151.jpg',
+    price: 265,
+    history: [180, 195, 210, 215, 210, 220, 230, 245, 260, 275, 280, 265],
+    ebaySearch: 'PSA 10 Charizard ex 201/165 SV2a 151 Japanese',
+    cardmarketSlug: 'Pokemon-151/Charizard-ex-V3-sv2a201'
+  },
+  {
+    id: 'pikachu-ex-sv8',
+    name: 'Pikachu ex',
+    nameAlt: 'Pikachu ex',
+    set: 'Super Electric Breaker (SV8) • 2024 • JP',
+    num: '132/106 SAR',
+    image: 'images/pikachu-ex-sv8.jpg',
+    price: 260,
+    history: [380, 360, 340, 320, 310, 290, 285, 280, 275, 270, 265, 260],
+    ebaySearch: 'PSA 10 Pikachu ex 132/106 SV8 Super Electric Breaker Japanese',
+    cardmarketSlug: 'Super-Electric-Breaker/Pikachu-ex-V3-sv8132'
+  },
+  {
+    id: 'umbreon-ex-sv8a',
+    name: 'Noctali ex',
+    nameAlt: 'Umbreon ex',
+    set: 'Terastal Festival (SV8a) • 2024 • JP',
+    num: '217/187 SAR',
+    image: 'images/umbreon-ex-sv8a.jpg',
+    price: 385,
+    history: [280, 300, 315, 330, 350, 360, 370, 380, 395, 405, 410, 385],
+    ebaySearch: 'PSA 10 Umbreon ex 217/187 SV8a Terastal Festival Japanese',
+    cardmarketSlug: 'Terastal-Festival-ex/Umbreon-ex-V3-sv8a217'
+  }
+];
+
+/* ═══════════════════════════════════════════════════════════════════
+   RENDERING
+   ═══════════════════════════════════════════════════════════════════ */
+const fmt = (n) => '€ ' + Math.round(n).toLocaleString('fr-FR').replace(/,/g,' ');
+const pct = (o, n) => ((n - o) / o * 100);
+
+function buildLinks(card) {
+  const eb = `https://www.ebay.fr/sch/i.html?_from=R40&_nkw=${encodeURIComponent(card.ebaySearch)}&LH_Sold=1&LH_Complete=1&_sop=13`;
+  const cm = `https://www.cardmarket.com/fr/Pokemon/Products/Singles/${card.cardmarketSlug}`;
+  return { eb, cm };
+}
+
+function renderCards() {
+  const grid = document.getElementById('cardsGrid');
+  grid.innerHTML = CARDS.map((c, i) => {
+    const d30 = pct(c.history[c.history.length - 2], c.history[c.history.length - 1]);
+    const d12m = pct(c.history[0], c.history[c.history.length - 1]);
+    const cls30 = d30 >= 0 ? 'up' : 'down';
+    const s30 = (d30 >= 0 ? '+' : '') + d30.toFixed(1) + '%';
+    const s12 = (d12m >= 0 ? '+' : '') + d12m.toFixed(1) + '%';
+    const { eb, cm } = buildLinks(c);
+    const rank = String(i + 1).padStart(2, '0');
+    return `
+      <article class="card" data-id="${c.id}">
+        <div class="card-inner">
+          <div class="card-img">
+            <div class="fallback">${c.name}</div>
+            <img src="${c.image}" alt="${c.name}" onerror="this.style.display='none'" onload="this.previousElementSibling.style.display='none'">
+            <div class="holo"></div>
+            <div class="rank">#${rank}</div>
+            <div class="grade">PSA 10 • GEM MINT</div>
+          </div>
+          <div class="card-body">
+            <div class="card-head">
+              <div>
+                <div class="card-name">${c.name}</div>
+                <div class="card-set">${c.set}</div>
+              </div>
+              <div class="card-num">${c.num}</div>
+            </div>
+            <div class="price-block">
+              <div class="price-main"><span class="cur">€</span>${c.price.toLocaleString('fr-FR')}</div>
+              <div class="price-delta ${cls30}">${s30} <span style="color:var(--muted);font-weight:400">30j</span></div>
+              <div class="price-meta">12M: <span class="${d12m>=0?'up':'down'}" style="color:${d12m>=0?'var(--green)':'var(--red)'}">${s12}</span></div>
+            </div>
+            <div class="chart-wrap"><canvas id="chart-${c.id}"></canvas></div>
+            <div class="links">
+              <a class="link" href="${eb}" target="_blank" rel="noopener">▸ eBay.fr Ventes</a>
+              <a class="link cm" href="${cm}" target="_blank" rel="noopener">▸ Cardmarket</a>
+            </div>
+          </div>
+        </div>
+      </article>`;
+  }).join('');
+
+  CARDS.forEach(c => drawChart(c));
+}
+
+function drawChart(card) {
+  const ctx = document.getElementById('chart-' + card.id);
+  if (!ctx) return;
+  const months = ['M-11','M-10','M-9','M-8','M-7','M-6','M-5','M-4','M-3','M-2','M-1','Now'];
+  const trending = card.history[card.history.length - 1] >= card.history[0];
+  const color = trending ? '#00ff9d' : '#ff3860';
+  const grd = ctx.getContext('2d').createLinearGradient(0, 0, 0, 80);
+  grd.addColorStop(0, trending ? 'rgba(0,255,157,0.35)' : 'rgba(255,56,96,0.35)');
+  grd.addColorStop(1, 'rgba(0,0,0,0)');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [{
+        data: card.history,
+        borderColor: color,
+        backgroundColor: grd,
+        fill: true,
+        tension: 0.35,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: color,
+        pointHoverBorderWidth: 2,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 1200, easing: 'easeOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(5,6,15,0.95)',
+          borderColor: color,
+          borderWidth: 1,
+          titleFont: { family: 'JetBrains Mono', size: 10 },
+          bodyFont: { family: 'JetBrains Mono', size: 11, weight: 'bold' },
+          padding: 8,
+          callbacks: { label: (ctx) => '€ ' + ctx.raw }
+        }
+      },
+      scales: {
+        x: { display: false },
+        y: { display: false, grace: '5%' }
+      }
+    }
+  });
+}
+
+function renderStats() {
+  const total = CARDS.reduce((s, c) => s + c.price, 0);
+  const totalOld = CARDS.reduce((s, c) => s + c.history[c.history.length - 2], 0);
+  const totalDelta = pct(totalOld, total);
+  document.getElementById('totalValue').textContent = fmt(total);
+  const td = document.getElementById('totalDelta');
+  td.textContent = (totalDelta >= 0 ? '+' : '') + totalDelta.toFixed(1) + '% (30j)';
+  td.className = 'delta ' + (totalDelta >= 0 ? 'up' : 'down');
+
+  document.getElementById('avgValue').textContent = fmt(total / CARDS.length);
+  document.getElementById('cardCount').textContent = CARDS.length;
+
+  // top mover
+  const movers = CARDS.map(c => ({
+    name: c.name,
+    delta: pct(c.history[0], c.history[c.history.length - 1])
+  }));
+  movers.sort((a, b) => b.delta - a.delta);
+  document.getElementById('topMover').textContent = movers[0].name;
+  const tmd = document.getElementById('topMoverDelta');
+  tmd.textContent = (movers[0].delta >= 0 ? '+' : '') + movers[0].delta.toFixed(1) + '% (12M)';
+  tmd.className = 'delta ' + (movers[0].delta >= 0 ? 'up' : 'down');
+
+  // last update = today
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  document.getElementById('lastUpdate').textContent =
+    `LAST SYNC: ${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+renderStats();
+renderCards();
+</script>
+
+</body>
+</html>
