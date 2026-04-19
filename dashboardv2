@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#060d0f">
+<title>GREENROAD — Dashboard V2</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--g:#00ff88;--r:#ff5577;--b:#00d4ff;--y:#ffd600;--bg:#060d0f;--card:rgba(10,24,16,0.85);--border:rgba(26,74,42,0.5);--muted:#5fa07f;--text:#e6edf3}
+body{min-height:100vh;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(0,255,136,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,136,0.04) 1px,transparent 1px);background-size:40px 40px;animation:grid 25s linear infinite;z-index:0;pointer-events:none}
+@keyframes grid{to{background-position:40px 40px}}
+.wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:16px}
+.hdr{display:flex;justify-content:space-between;align-items:center;padding:12px 0 20px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.logo{font-size:28px;font-weight:900;letter-spacing:3px;background:linear-gradient(135deg,#00ff88,#33ffaa,#00cc66);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:gp 3s ease-in-out infinite}
+@keyframes gp{0%,100%{filter:drop-shadow(0 0 10px rgba(0,255,136,0.4))}50%{filter:drop-shadow(0 0 25px rgba(0,255,136,0.7))}}
+.pill{padding:5px 14px;border-radius:100px;font-size:10px;font-weight:700;letter-spacing:2px;display:flex;align-items:center;gap:6px;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);color:var(--g)}
+.pill.off{background:rgba(255,85,119,0.1);border-color:rgba(255,85,119,0.3);color:var(--r)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--g);box-shadow:0 0 10px var(--g);animation:blink 1.2s infinite}
+.pill.off .dot{background:var(--r);box-shadow:0 0 10px var(--r)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.hdr-info{display:flex;gap:16px;align-items:center;font-size:11px;color:var(--muted)}
+.hdr-info span{background:rgba(0,255,136,0.08);padding:3px 10px;border-radius:6px;border:1px solid rgba(0,255,136,0.15)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;backdrop-filter:blur(8px);transition:border-color .3s,transform .2s}
+.card:hover{border-color:rgba(0,255,136,0.4);transform:translateY(-1px)}
+.card-label{font-size:9px;font-weight:700;letter-spacing:2px;color:var(--muted);margin-bottom:6px}
+.card-val{font-size:24px;font-weight:800;line-height:1.1}
+.card-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.green{color:var(--g)}.red{color:var(--r)}.blue{color:var(--b)}.yellow{color:var(--y)}
+.section-title{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--muted);margin:20px 0 10px;padding-left:4px;border-left:3px solid var(--g);padding:4px 0 4px 10px}
+.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;position:relative;overflow:hidden}
+canvas{width:100%!important}
+.heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.heat-cell{aspect-ratio:1;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9px;font-weight:700;transition:transform .2s;cursor:default;border:1px solid transparent}
+.heat-cell:hover{transform:scale(1.1)}
+.heat-cell .day{color:var(--muted);margin-bottom:2px;font-size:8px;letter-spacing:1px}
+.heat-cell .val{font-size:11px;font-weight:800}
+.trades-table{width:100%;border-collapse:collapse;font-size:11px}
+.trades-table th{text-align:left;padding:8px 6px;color:var(--muted);font-size:9px;letter-spacing:1px;font-weight:700;border-bottom:1px solid var(--border)}
+.trades-table td{padding:7px 6px;border-bottom:1px solid rgba(26,74,42,0.2)}
+.trades-table tr{transition:background .2s}
+.trades-table tr:hover{background:rgba(0,255,136,0.04)}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:1px}
+.badge-long{background:rgba(0,255,136,0.15);color:var(--g)}
+.badge-short{background:rgba(255,85,119,0.15);color:var(--r)}
+.pos-card{background:linear-gradient(135deg,rgba(0,255,136,0.06),rgba(0,212,255,0.04));border:1px solid rgba(0,255,136,0.3)}
+.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px}
+.cfg-row{display:flex;justify-content:space-between;padding:6px 10px;font-size:11px;border-bottom:1px solid rgba(26,74,42,0.15)}
+.cfg-row .k{color:var(--muted)}.cfg-row .v{color:var(--text);font-weight:600}
+.sync{text-align:center;font-size:11px;color:var(--muted);margin:16px 0;animation:sp 2s infinite}
+@keyframes sp{0%,100%{opacity:.5}50%{opacity:1}}
+.footer{text-align:center;font-size:10px;color:#3a5a4a;padding:20px 0}
+.footer a{color:var(--muted);text-decoration:none}
+.glow-line{height:1px;background:linear-gradient(90deg,transparent,var(--g),transparent);margin:20px 0;animation:scanPulse 3s ease-in-out infinite}
+@keyframes scanPulse{0%,100%{opacity:.3}50%{opacity:1}}
+.activity-wrap{height:40px;background:#0a0f0d;border-radius:8px;overflow:hidden;position:relative;border:1px solid var(--border)}
+.activity-bar{height:100%;border-radius:8px;transition:width 1s ease}
+.activity-lbl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);z-index:2}
+@media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}.grid3{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.config-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="logo">GREENROAD</div>
+    <div class="hdr-info">
+      <span id="hCoin">—</span>
+      <span id="hStrat">—</span>
+      <span id="hMode">—</span>
+    </div>
+    <div class="pill" id="pill"><span class="dot"></span><span id="pillTxt">CHARGEMENT</span></div>
+  </div>
+
+  <div class="grid" id="statsGrid">
+    <div class="card"><div class="card-label">CAPITAL</div><div class="card-val green" id="sCapital">...</div></div>
+    <div class="card"><div class="card-label">P&L AUJOURD'HUI</div><div class="card-val" id="sPnlToday">...</div><div class="card-sub" id="sPnlTodaySub"></div></div>
+    <div class="card"><div class="card-label">P&L GLOBAL</div><div class="card-val" id="sPnlGlobal">...</div><div class="card-sub" id="sGlobalSub"></div></div>
+    <div class="card"><div class="card-label">WIN RATE</div><div class="card-val" id="sWinRate">...</div><div class="card-sub" id="sWinRateSub"></div></div>
+  </div>
+
+  <div class="card pos-card" id="posCard" style="margin-bottom:16px;display:none">
+    <div class="card-label">POSITION OUVERTE</div>
+    <div style="display:flex;gap:16px;align-items:baseline;flex-wrap:wrap">
+      <div class="card-val" id="posPnl">—</div>
+      <span class="badge" id="posBadge">—</span>
+      <span style="font-size:12px;color:var(--muted)" id="posDetail">—</span>
+    </div>
+    <div class="card-sub" id="posSub"></div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-label">ACTIVITÉ DU BOT</div>
+    <div class="activity-wrap"><div class="activity-bar" id="actBar"></div><div class="activity-lbl" id="actLbl">0%</div></div>
+    <div class="card-sub" style="text-align:center;margin-top:8px" id="actMsg">—</div>
+  </div>
+
+  <div class="glow-line"></div>
+  <div class="section-title">PERFORMANCE 7 JOURS</div>
+  <div class="chart-wrap"><canvas id="perfChart" height="200"></canvas></div>
+
+  <div class="section-title">HEATMAP SEMAINE</div>
+  <div class="card" style="margin-bottom:16px"><div class="heatmap" id="heatmap"></div></div>
+
+  <div class="glow-line"></div>
+  <div class="section-title">DERNIERS TRADES</div>
+  <div class="card" style="margin-bottom:16px;overflow-x:auto">
+    <table class="trades-table">
+      <thead><tr><th>DATE</th><th>COIN</th><th>SIDE</th><th>ENTRÉE</th><th>SORTIE</th><th>P&L</th><th>STRATÉGIE</th></tr></thead>
+      <tbody id="tradesTbody"></tbody>
+    </table>
+  </div>
+
+  <div class="glow-line"></div>
+  <div class="section-title">CONFIGURATION BOT</div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="config-grid" id="configGrid"></div>
+  </div>
+
+  <div class="grid2" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-label">MEILLEUR TRADE</div>
+      <div class="card-val green" id="bestTrade">—</div>
+      <div class="card-sub" id="bestSub"></div>
+    </div>
+    <div class="card">
+      <div class="card-label">PIRE TRADE</div>
+      <div class="card-val red" id="worstTrade">—</div>
+      <div class="card-sub" id="worstSub"></div>
+    </div>
+  </div>
+
+  <div class="sync" id="sync">⟳ SYNCHRO EN COURS</div>
+  <div class="footer">
+    <a href="https://cgform-source.github.io/greenroad-remote/sobre.html">Vue Sobre</a> ·
+    <a href="https://cgform-source.github.io/greenroad-remote/index.html">Menu</a>
+    <br>GREENROAD Dashboard V2
+  </div>
+</div>
+
+<script>
+const GIST="https://gist.githubusercontent.com/cgform-source/1c4e2920a94766263d6b729873b1e525/raw/greenroad_stats.json";
+const $=id=>document.getElementById(id);
+const fmt=(v,d=2)=>(v>=0?"+":"")+v.toFixed(d);
+const fmtUsd=v=>(v>=0?"+$":"-$")+Math.abs(v).toFixed(2);
+
+let chartInstance=null;
+
+async function refresh(){
+  try{
+    const r=await fetch(GIST+"?t="+Date.now());
+    const d=await r.json();
+    const bot=d.bot||{},f=d.full||{},s=d.sobre||{},today=f.today||{},g=f.global||{};
+
+    // Pill
+    if(bot.running){$("pill").classList.remove("off");$("pillTxt").textContent="EN MARCHE";}
+    else{$("pill").classList.add("off");$("pillTxt").textContent="ARRÊTÉ";}
+
+    // Header info
+    $("hCoin").textContent=bot.coin||"—";
+    $("hStrat").textContent=(bot.strategy||"—").replace(/_/g," ");
+    $("hMode").textContent=bot.mode||"—";
+
+    // Stats cards
+    $("sCapital").textContent="$"+(f.capital_usd||0).toFixed(2);
+    const pt=today.pnl_usd||0;
+    $("sPnlToday").textContent=fmtUsd(pt);
+    $("sPnlToday").className="card-val "+(pt>=0?"green":"red");
+    $("sPnlTodaySub").textContent=(today.trades||0)+" trades | WR "+(today.win_rate||0).toFixed(0)+"%";
+    const gp=g.total_pnl||0;
+    $("sPnlGlobal").textContent=fmtUsd(gp);
+    $("sPnlGlobal").className="card-val "+(gp>=0?"green":"red");
+    $("sGlobalSub").textContent=(g.total_trades||0)+" trades";
+    const wr=g.total_wr||0;
+    $("sWinRate").textContent=wr.toFixed(0)+"%";
+    $("sWinRate").className="card-val "+(wr>=50?"green":"red");
+    $("sWinRateSub").textContent=(g.total_wins||0)+"W / "+((g.total_trades||0)-(g.total_wins||0))+"L";
+
+    // Position
+    const pos=f.current_position;
+    if(pos){
+      $("posCard").style.display="block";
+      const pnl=pos.unrealized_pnl||0,pct=pos.unrealized_pct||0;
+      $("posPnl").textContent=fmtUsd(pnl);
+      $("posPnl").className="card-val "+(pnl>=0?"green":"red");
+      $("posBadge").textContent=pos.side;
+      $("posBadge").className="badge "+(pos.side==="LONG"?"badge-long":"badge-short");
+      $("posDetail").textContent=pos.coin+" @ $"+(pos.entry_price||0).toFixed(2)+" → $"+(pos.price_now||0).toFixed(2);
+      const sl=s.position_sl,tp=s.position_tp;
+      let sub="P&L: "+fmt(pct)+"%";
+      if(sl)sub+=" | SL: $"+sl.toFixed(2);
+      if(tp)sub+=" | TP: $"+tp.toFixed(2);
+      $("posSub").textContent=sub;
+    }else{$("posCard").style.display="none";}
+
+    // Activity
+    const pct2=Math.min(100,Math.max(0,s.activity_pct||0));
+    $("actBar").style.width=pct2+"%";
+    $("actLbl").textContent=pct2+"%";
+    let col,msg;
+    if(pct2>=95){col="#00ff88";msg="⚡ ORDRE IMMINENT";}
+    else if(pct2>=75){col="#00cc66";msg="🔥 DÉCISION PROCHE";}
+    else if(pct2>=50){col="#009944";msg="👀 QUELQUE CHOSE SE PRÉPARE";}
+    else if(pct2>=25){col="#006633";msg="🔍 SURVEILLANCE ACTIVE";}
+    else{col="#1a3a2a";msg="💤 BOT EN REPOS";}
+    $("actBar").style.background=col;$("actMsg").textContent=msg;
+
+    // Perf chart
+    const days7=f.last_7_days||[];
+    drawChart(days7);
+
+    // Heatmap
+    drawHeatmap(days7);
+
+    // Trades
+    const trades=f.recent_trades||[];
+    const tb=$("tradesTbody");
+    tb.innerHTML="";
+    trades.forEach(t=>{
+      const pnl=t.pnl||0;
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td style="color:var(--muted)">${t.time||"—"}</td>
+        <td>${t.coin||"?"}</td>
+        <td><span class="badge ${t.side==="LONG"?"badge-long":"badge-short"}">${t.side}</span></td>
+        <td>$${(t.entry||0).toFixed(2)}</td>
+        <td>$${(t.exit||0).toFixed(2)}</td>
+        <td style="color:${pnl>=0?"var(--g)":"var(--r)"};font-weight:700">${fmtUsd(pnl)}</td>
+        <td style="color:var(--muted);font-size:10px">${(t.strategy||"?").replace(/_/g," ")}</td>`;
+      tb.appendChild(tr);
+    });
+    if(!trades.length)tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Aucun trade récent</td></tr>';
+
+    // Config
+    const cg=$("configGrid");
+    cg.innerHTML="";
+    const cfgItems=[
+      ["Coin",bot.coin],["Stratégie",(bot.strategy||"").replace(/_/g," ")],
+      ["Mode",bot.mode],["Uptime",(bot.uptime_hours||0).toFixed(1)+"h"],
+      ["Trades aujourd'hui",today.trades||0],["Win rate aujourd'hui",(today.win_rate||0).toFixed(0)+"%"],
+      ["Capital","$"+(f.capital_usd||0).toFixed(2)],["Activité",pct2+"%"],
+    ];
+    cfgItems.forEach(([k,v])=>{
+      const row=document.createElement("div");row.className="cfg-row";
+      row.innerHTML=`<span class="k">${k}</span><span class="v">${v}</span>`;
+      cg.appendChild(row);
+    });
+
+    // Best/Worst
+    const best=f.best_trade,worst=f.worst_trade;
+    if(best){$("bestTrade").textContent=fmtUsd(best.pnl||0);$("bestSub").textContent=(best.coin||"")+" "+(best.side||"")+" "+(best.date||"");}
+    if(worst){$("worstTrade").textContent=fmtUsd(worst.pnl||0);$("worstSub").textContent=(worst.coin||"")+" "+(worst.side||"")+" "+(worst.date||"");}
+
+    // Sync
+    $("sync").textContent="⟳ MAJ "+new Date().toLocaleTimeString("fr-FR");
+  }catch(e){$("sync").textContent="⚠ Erreur: "+e.message;}
+}
+
+function drawChart(days){
+  const canvas=$("perfChart");
+  const ctx=canvas.getContext("2d");
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.getBoundingClientRect();
+  canvas.width=rect.width*dpr;canvas.height=200*dpr;
+  ctx.scale(dpr,dpr);
+  const W=rect.width,H=200;
+  ctx.clearRect(0,0,W,H);
+
+  if(!days.length)return;
+  const vals=days.map(d=>d.pnl||0);
+  const labels=days.map(d=>d.day_label||"");
+  const mn=Math.min(...vals,0),mx=Math.max(...vals,0);
+  const spread=mx-mn||1;
+  const P={t:20,b:30,l:50,r:20};
+  const cW=W-P.l-P.r,cH=H-P.t-P.b;
+  const zeroY=P.t+(1-(0-mn)/spread)*cH;
+
+  // Grid
+  ctx.strokeStyle="rgba(26,74,42,0.3)";ctx.lineWidth=0.5;
+  ctx.beginPath();ctx.moveTo(P.l,zeroY);ctx.lineTo(W-P.r,zeroY);ctx.stroke();
+  ctx.fillStyle="#5fa07f";ctx.font="9px sans-serif";ctx.textAlign="right";
+  ctx.fillText("$0",P.l-6,zeroY+3);
+  ctx.fillText("$"+mx.toFixed(1),P.l-6,P.t+10);
+  ctx.fillText("$"+mn.toFixed(1),P.l-6,H-P.b);
+
+  // Bars
+  const bw=Math.min(40,cW/vals.length-8);
+  vals.forEach((v,i)=>{
+    const x=P.l+(i+0.5)*cW/vals.length;
+    const y=P.t+(1-(v-mn)/spread)*cH;
+    const col=v>=0?"rgba(0,255,136,":"rgba(255,85,119,";
+    ctx.fillStyle=col+"0.7)";
+    ctx.beginPath();
+    const r=3;
+    if(v>=0){
+      ctx.roundRect(x-bw/2,y,bw,zeroY-y,r);
+    }else{
+      ctx.roundRect(x-bw/2,zeroY,bw,y-zeroY,r);
+    }
+    ctx.fill();
+    // Glow
+    ctx.shadowColor=v>=0?"#00ff88":"#ff5577";ctx.shadowBlur=8;ctx.fill();ctx.shadowBlur=0;
+    // Label
+    ctx.fillStyle="#e6edf3";ctx.font="bold 10px sans-serif";ctx.textAlign="center";
+    ctx.fillText(fmtUsd(v),x,v>=0?y-6:y+14);
+    // Day
+    ctx.fillStyle="#5fa07f";ctx.font="9px sans-serif";
+    ctx.fillText(labels[i],x,H-8);
+  });
+}
+
+function drawHeatmap(days){
+  const wrap=$("heatmap");
+  wrap.innerHTML="";
+  days.forEach(d=>{
+    const pnl=d.pnl||0;const trades=d.trades||0;
+    let bg,fg;
+    if(trades===0){bg="rgba(26,26,26,0.6)";fg="#555";}
+    else if(pnl>5){bg="rgba(0,255,136,0.35)";fg="#00ff88";}
+    else if(pnl>0){bg="rgba(0,255,136,0.15)";fg="#00ff88";}
+    else if(pnl>-5){bg="rgba(255,85,119,0.15)";fg="#ff5577";}
+    else{bg="rgba(255,85,119,0.35)";fg="#ff5577";}
+    const cell=document.createElement("div");
+    cell.className="heat-cell";
+    cell.style.background=bg;
+    cell.style.borderColor=trades>0?(pnl>=0?"rgba(0,255,136,0.3)":"rgba(255,85,119,0.3)"):"transparent";
+    cell.innerHTML=`<span class="day">${d.day_label||""}</span><span class="val" style="color:${fg}">${trades===0?"—":fmtUsd(pnl)}</span>`;
+    cell.title=`${d.date||""}: ${trades} trades, P&L ${fmtUsd(pnl)}, WR ${(d.win_rate||0).toFixed(0)}%`;
+    wrap.appendChild(cell);
+  });
+}
+
+refresh();setInterval(refresh,15000);
+</script>
+</body>
+</html>
