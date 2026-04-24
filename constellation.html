@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#060d0f">
+<title>GREENROAD · Constellation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh; background: #060d0f; color: #e6edf3;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px; overflow-x: hidden; position: relative;
+  }
+  /* Fond étoilé */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.3), transparent),
+      radial-gradient(1px 1px at 40% 50%, rgba(0,212,255,0.4), transparent),
+      radial-gradient(2px 2px at 80% 20%, rgba(255,255,255,0.5), transparent),
+      radial-gradient(1px 1px at 15% 80%, rgba(197,156,255,0.5), transparent),
+      radial-gradient(1px 1px at 90% 60%, rgba(255,255,255,0.2), transparent),
+      radial-gradient(2px 2px at 30% 10%, rgba(0,255,136,0.3), transparent),
+      radial-gradient(1px 1px at 70% 45%, rgba(255,255,255,0.4), transparent);
+    background-size: 400px 400px;
+    animation: twinkle 10s ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  .orb { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.2; z-index: 0; pointer-events: none; }
+  .orb1 { width: 500px; height: 500px; background: #c59cff; top: -150px; left: -150px; animation: float1 25s ease-in-out infinite; }
+  .orb2 { width: 400px; height: 400px; background: #00d4ff; bottom: -120px; right: -120px; animation: float2 30s ease-in-out infinite; }
+  @keyframes float1 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(200px,150px); } }
+  @keyframes float2 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-200px,-130px); } }
+
+  .content {
+    position: relative; z-index: 2; width: 100%; max-width: 900px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .logo-m {
+    font-size: 24px; font-weight: 900; letter-spacing: 3px;
+    background: linear-gradient(135deg, #00ff88, #00d4ff, #c59cff);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .back-btn {
+    color: #8b949e; font-size: 11px; text-decoration: none; letter-spacing: 1px;
+    padding: 6px 12px; border: 1px solid rgba(197,156,255,0.3); border-radius: 20px;
+  }
+  .back-btn:hover { color: #c59cff; border-color: #c59cff; }
+
+  .page-title {
+    text-align: center; padding: 8px 0;
+  }
+  .page-title h1 {
+    color: #c59cff; font-size: 22px; letter-spacing: 3px; font-weight: 700;
+    margin-bottom: 6px;
+    text-shadow: 0 0 20px rgba(197,156,255,0.3);
+  }
+  .page-title .sub {
+    color: #8b949e; font-size: 11px; letter-spacing: 1px;
+  }
+
+  /* Import zone */
+  .import-zone {
+    background: rgba(14,26,40,0.7);
+    border: 1px dashed rgba(197,156,255,0.3);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 8px;
+    transition: all 0.3s;
+  }
+  .import-zone:hover { border-color: #c59cff; background: rgba(197,156,255,0.05); }
+  .import-zone .label { font-size: 12px; color: #8b949e; margin-bottom: 10px; }
+  .import-btn {
+    background: rgba(197,156,255,0.15); color: #c59cff;
+    border: 1px solid rgba(197,156,255,0.4); border-radius: 20px;
+    padding: 8px 18px; font-size: 12px; font-weight: 700;
+    cursor: pointer; letter-spacing: 1px; font-family: inherit;
+    transition: all 0.3s;
+  }
+  .import-btn:hover { background: rgba(197,156,255,0.3); }
+  .status-info {
+    font-size: 11px; color: #8b949e; margin-top: 8px;
+  }
+  .status-info strong { color: #c59cff; }
+
+  /* Canvas */
+  .canvas-wrap {
+    position: relative;
+    background: radial-gradient(ellipse at center, rgba(0,0,10,0.6), rgba(0,0,0,0.9));
+    border: 1px solid rgba(197,156,255,0.2);
+    border-radius: 16px;
+    overflow: hidden;
+    aspect-ratio: 16 / 10;
+  }
+  #starCanvas {
+    width: 100%; height: 100%; display: block;
+    cursor: crosshair;
+  }
+
+  /* Tooltip */
+  .tooltip {
+    position: absolute; pointer-events: none;
+    background: rgba(13,21,32,0.97);
+    border: 1px solid rgba(197,156,255,0.5);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 11px;
+    line-height: 1.6;
+    z-index: 10;
+    display: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    max-width: 220px;
+  }
+  .tooltip.show { display: block; }
+  .tooltip .tt-header { color: #c59cff; font-weight: 700; font-size: 12px; margin-bottom: 4px; }
+  .tooltip .tt-pnl.win { color: #00ff88; font-weight: 700; }
+  .tooltip .tt-pnl.loss { color: #ff5577; font-weight: 700; }
+  .tooltip .tt-row { color: #8b949e; }
+  .tooltip .tt-row strong { color: #e6edf3; }
+
+  /* Legend */
+  .legend-box {
+    background: rgba(14,26,40,0.6);
+    border: 1px solid rgba(197,156,255,0.2);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    font-size: 11px;
+    color: #8b949e;
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .legend-star {
+    width: 14px; height: 14px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Stats */
+  .stats-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+  }
+  .stat-card {
+    background: rgba(14,26,40,0.6);
+    border: 1px solid rgba(197,156,255,0.15);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+  .stat-label { font-size: 10px; color: #8b949e; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .stat-value { font-size: 18px; font-weight: 700; font-family: Consolas, monospace; }
+  .stat-value.green { color: #00ff88; }
+  .stat-value.red { color: #ff5577; }
+  .stat-value.purple { color: #c59cff; }
+  .stat-value.cyan { color: #00d4ff; }
+
+  .footer {
+    text-align: center; color: #3a5a4a; font-size: 11px;
+    letter-spacing: 1px; margin-top: 20px; padding-bottom: 20px;
+  }
+
+  input[type="file"] { display: none; }
+
+  /* Animation d'apparition des étoiles */
+  @keyframes starAppear {
+    0% { opacity: 0; transform: scale(0); }
+    50% { opacity: 1; transform: scale(1.5); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+</style>
+</head>
+<body>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+
+  <div class="content">
+    <div class="header">
+      <div class="logo-m">GREENROAD</div>
+      <a href="https://cgform-source.github.io/greenroad-remote/index.html" class="back-btn">← MENU</a>
+    </div>
+
+    <div class="page-title">
+      <h1>🌌 CONSTELLATION DE TRADES</h1>
+      <div class="sub">Chaque étoile est un trade · Chaque constellation une histoire</div>
+    </div>
+
+    <div class="import-zone" onclick="document.getElementById('fileInput').click()">
+      <div class="label">📥 Importer le JSON de tes trades (exporté depuis le bot)</div>
+      <button class="import-btn">CHOISIR UN FICHIER JSON</button>
+      <input type="file" id="fileInput" accept=".json,application/json">
+      <div class="status-info" id="statusInfo">Sans import : affiche les <strong>10 derniers trades</strong> du bot en live</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Étoiles</div><div class="stat-value purple" id="sCount">—</div></div>
+      <div class="stat-card"><div class="stat-label">Brillantes (gains)</div><div class="stat-value green" id="sWins">—</div></div>
+      <div class="stat-card"><div class="stat-label">Éteintes (pertes)</div><div class="stat-value red" id="sLosses">—</div></div>
+      <div class="stat-card"><div class="stat-label">Plus brillante</div><div class="stat-value green" id="sBest">—</div></div>
+      <div class="stat-card"><div class="stat-label">Plus sombre</div><div class="stat-value red" id="sWorst">—</div></div>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="starCanvas"></canvas>
+      <div class="tooltip" id="tooltip"></div>
+    </div>
+
+    <div class="legend-box">
+      <div class="legend-item">
+        <div class="legend-star" style="background: #00ff88; box-shadow: 0 0 12px #00ff88;"></div>
+        <span>Trade gagnant (taille = P&L)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-star" style="background: #ff5577; box-shadow: 0 0 8px #ff5577;"></div>
+        <span>Trade perdant</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-star" style="background: #00d4ff; box-shadow: 0 0 10px #00d4ff;"></div>
+        <span>Coin HYPE</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-star" style="background: #c59cff; box-shadow: 0 0 10px #c59cff;"></div>
+        <span>Autres coins</span>
+      </div>
+      <div class="legend-item" style="color: #8b949e;">
+        👆 Survole une étoile pour les détails
+      </div>
+    </div>
+
+    <div class="footer">MADE WITH ♥ by GREENROAD · <a href="https://cgform-source.github.io/greenroad-remote/index.html" style="color: #5fa07f; text-decoration: none;">Menu</a></div>
+  </div>
+
+<script>
+const GIST = "https://gist.githubusercontent.com/cgform-source/1c4e2920a94766263d6b729873b1e525/raw/greenroad_stats.json";
+let trades = [];
+let stars = [];
+let hoveredStar = null;
+
+const canvas = document.getElementById('starCanvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * window.devicePixelRatio;
+  canvas.height = rect.height * window.devicePixelRatio;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  generateStars();
+  draw();
+}
+
+window.addEventListener('resize', resizeCanvas);
+
+function generateStars() {
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  stars = [];
+  if (trades.length === 0) return;
+
+  // Trouve les P&L min/max
+  const pnls = trades.map(t => t.pnl || t.pnl_net || 0);
+  const maxPnl = Math.max(...pnls.map(Math.abs), 1);
+
+  // Positions : chronologique sur X, "hauteur" selon P&L
+  trades.forEach((t, i) => {
+    const pnl = t.pnl || t.pnl_net || 0;
+    const coin = t.coin || '?';
+    const side = t.side || '?';
+
+    // Position X : chronologique
+    const xRatio = trades.length > 1 ? i / (trades.length - 1) : 0.5;
+    const x = 40 + xRatio * (w - 80);
+
+    // Position Y : P&L (gagnants en haut, perdants en bas)
+    const yRatio = 0.5 - (pnl / maxPnl) * 0.4;
+    const y = 40 + yRatio * (h - 80);
+
+    // Ajoute un peu de jitter horizontal pour éviter l'alignement parfait
+    const jitterY = (Math.random() - 0.5) * 20;
+
+    // Taille : proportionnelle au |P&L|
+    const size = Math.max(2, Math.min(14, 2 + Math.abs(pnl) / maxPnl * 12));
+
+    // Couleur selon coin + P&L
+    let color;
+    if (coin === 'HYPE') color = pnl >= 0 ? '#00ff88' : '#ff5577';
+    else if (coin === 'ETH') color = pnl >= 0 ? '#00d4ff' : '#ff8899';
+    else color = pnl >= 0 ? '#c59cff' : '#ffaa66';
+
+    stars.push({
+      x, y: y + jitterY,
+      size, color,
+      trade: t,
+      pnl, coin, side,
+      twinkleOffset: Math.random() * Math.PI * 2
+    });
+  });
+}
+
+function draw() {
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+
+  // Fond noir profond
+  const grad = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, Math.max(w, h) / 2);
+  grad.addColorStop(0, 'rgba(0, 0, 30, 0.3)');
+  grad.addColorStop(1, 'rgba(0, 0, 0, 0.95)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Ligne horizontale du "zéro" (neutre)
+  ctx.strokeStyle = 'rgba(139,148,158,0.2)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 6]);
+  ctx.beginPath();
+  ctx.moveTo(40, h / 2);
+  ctx.lineTo(w - 40, h / 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = 'rgba(139,148,158,0.4)';
+  ctx.font = '10px -apple-system, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('— Zone neutre (P&L = 0) —', 50, h / 2 - 4);
+
+  // Axe temporel (bas)
+  ctx.fillStyle = 'rgba(139,148,158,0.6)';
+  ctx.font = '10px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  if (trades.length > 1) {
+    const firstDate = parseDate(trades[0]);
+    const lastDate = parseDate(trades[trades.length - 1]);
+    if (firstDate) ctx.fillText(formatDate(firstDate), 60, h - 10);
+    if (lastDate) ctx.fillText(formatDate(lastDate), w - 60, h - 10);
+  }
+
+  // Labels P&L
+  ctx.textAlign = 'left';
+  ctx.fillStyle = 'rgba(0,255,136,0.5)';
+  ctx.fillText('+ Gains', 8, 30);
+  ctx.fillStyle = 'rgba(255,85,119,0.5)';
+  ctx.fillText('- Pertes', 8, h - 20);
+
+  // Dessine les connexions (lignes fines entre trades consécutifs)
+  ctx.strokeStyle = 'rgba(197,156,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  stars.forEach((s, i) => {
+    if (i === 0) ctx.moveTo(s.x, s.y);
+    else ctx.lineTo(s.x, s.y);
+  });
+  ctx.stroke();
+
+  // Dessine les étoiles
+  const time = Date.now() / 1000;
+  stars.forEach(s => {
+    const twinkle = 0.7 + 0.3 * Math.sin(time * 2 + s.twinkleOffset);
+    const isHovered = hoveredStar === s;
+    const size = isHovered ? s.size * 1.8 : s.size;
+
+    // Halo
+    const haloGrad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, size * 4);
+    haloGrad.addColorStop(0, s.color + Math.floor(twinkle * 180).toString(16).padStart(2, '0'));
+    haloGrad.addColorStop(0.3, s.color + '40');
+    haloGrad.addColorStop(1, s.color + '00');
+    ctx.fillStyle = haloGrad;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, size * 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Cœur de l'étoile
+    ctx.fillStyle = s.color;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, size, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Point blanc central pour briller
+    ctx.fillStyle = 'rgba(255,255,255,' + twinkle + ')';
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, size * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Si hover : rayons en croix
+    if (isHovered) {
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(s.x - size * 3, s.y);
+      ctx.lineTo(s.x + size * 3, s.y);
+      ctx.moveTo(s.x, s.y - size * 3);
+      ctx.lineTo(s.x, s.y + size * 3);
+      ctx.stroke();
+    }
+  });
+}
+
+function parseDate(trade) {
+  const ts = trade.datetime || trade.time || trade.close_time;
+  if (!ts) return null;
+  try { return new Date(ts); } catch { return null; }
+}
+
+function formatDate(d) {
+  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+}
+
+// Hover detection
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  let closest = null;
+  let closestDist = 30;
+  stars.forEach(s => {
+    const dx = mx - s.x, dy = my - s.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < closestDist) {
+      closestDist = dist;
+      closest = s;
+    }
+  });
+
+  if (closest !== hoveredStar) {
+    hoveredStar = closest;
+    const tooltip = document.getElementById('tooltip');
+    if (closest) {
+      const t = closest.trade;
+      const pnl = closest.pnl;
+      const pnlClass = pnl >= 0 ? 'win' : 'loss';
+      const dt = parseDate(t);
+      const dtStr = dt ? dt.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '?';
+
+      tooltip.innerHTML = `
+        <div class="tt-header">${closest.coin} ${closest.side}</div>
+        <div class="tt-row"><strong>Entry :</strong> $${(t.entry || 0).toFixed(4)}</div>
+        <div class="tt-row"><strong>Exit :</strong> $${(t.exit || 0).toFixed(4)}</div>
+        <div class="tt-pnl ${pnlClass}">P&L : ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</div>
+        <div class="tt-row" style="margin-top: 4px;"><strong>${dtStr}</strong></div>
+        ${t.reason ? `<div class="tt-row" style="font-size: 10px; opacity: 0.7;">${t.reason}</div>` : ''}
+      `;
+      tooltip.style.left = (mx + 15) + 'px';
+      tooltip.style.top = (my - 10) + 'px';
+      tooltip.classList.add('show');
+    } else {
+      tooltip.classList.remove('show');
+    }
+  } else if (closest) {
+    const tooltip = document.getElementById('tooltip');
+    tooltip.style.left = (mx + 15) + 'px';
+    tooltip.style.top = (my - 10) + 'px';
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  hoveredStar = null;
+  document.getElementById('tooltip').classList.remove('show');
+});
+
+// Touch support
+canvas.addEventListener('touchstart', (e) => {
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const mx = touch.clientX - rect.left;
+  const my = touch.clientY - rect.top;
+
+  let closest = null;
+  let closestDist = 40;
+  stars.forEach(s => {
+    const dx = mx - s.x, dy = my - s.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < closestDist) {
+      closestDist = dist;
+      closest = s;
+    }
+  });
+
+  hoveredStar = closest;
+  const tooltip = document.getElementById('tooltip');
+  if (closest) {
+    const t = closest.trade;
+    const pnl = closest.pnl;
+    const pnlClass = pnl >= 0 ? 'win' : 'loss';
+    const dt = parseDate(t);
+    const dtStr = dt ? dt.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '?';
+    tooltip.innerHTML = `
+      <div class="tt-header">${closest.coin} ${closest.side}</div>
+      <div class="tt-row"><strong>Entry :</strong> $${(t.entry || 0).toFixed(4)}</div>
+      <div class="tt-row"><strong>Exit :</strong> $${(t.exit || 0).toFixed(4)}</div>
+      <div class="tt-pnl ${pnlClass}">P&L : ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</div>
+      <div class="tt-row" style="margin-top: 4px;"><strong>${dtStr}</strong></div>
+    `;
+    tooltip.style.left = Math.min(mx + 15, rect.width - 240) + 'px';
+    tooltip.style.top = Math.max(10, my - 80) + 'px';
+    tooltip.classList.add('show');
+    setTimeout(() => { tooltip.classList.remove('show'); hoveredStar = null; }, 3500);
+  }
+});
+
+// Animation continue
+function animate() {
+  draw();
+  requestAnimationFrame(animate);
+}
+
+// Update stats
+function updateStats() {
+  document.getElementById('sCount').textContent = trades.length;
+  const wins = trades.filter(t => (t.pnl || t.pnl_net || 0) > 0).length;
+  const losses = trades.filter(t => (t.pnl || t.pnl_net || 0) <= 0).length;
+  document.getElementById('sWins').textContent = wins;
+  document.getElementById('sLosses').textContent = losses;
+  if (trades.length > 0) {
+    const pnls = trades.map(t => t.pnl || t.pnl_net || 0);
+    const best = Math.max(...pnls);
+    const worst = Math.min(...pnls);
+    document.getElementById('sBest').textContent = '+$' + best.toFixed(2);
+    document.getElementById('sWorst').textContent = '$' + worst.toFixed(2);
+  } else {
+    document.getElementById('sBest').textContent = '—';
+    document.getElementById('sWorst').textContent = '—';
+  }
+}
+
+// Import JSON
+document.getElementById('fileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      const newTrades = data.trades || data;
+      if (Array.isArray(newTrades) && newTrades.length > 0) {
+        // Trie par date croissante
+        trades = newTrades.slice().sort((a, b) => {
+          const da = new Date(a.datetime || a.time || a.close_time || 0).getTime();
+          const db = new Date(b.datetime || b.time || b.close_time || 0).getTime();
+          return da - db;
+        });
+        document.getElementById('statusInfo').innerHTML =
+          `✓ <strong>${trades.length} trades importés</strong> depuis le fichier`;
+        updateStats();
+        generateStars();
+        draw();
+      } else {
+        alert('Aucun trade trouvé dans le fichier JSON');
+      }
+    } catch (err) {
+      alert('Fichier JSON invalide : ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+});
+
+// Load recent trades from Gist at start
+async function loadFromGist() {
+  try {
+    const r = await fetch(GIST + "?t=" + Date.now());
+    const data = await r.json();
+    const recent = (data.full && data.full.recent_trades) || [];
+    if (recent.length > 0) {
+      trades = recent.slice().reverse(); // chronologique croissant
+      updateStats();
+      generateStars();
+      draw();
+    }
+  } catch (err) {
+    console.warn('Erreur fetch Gist:', err);
+  }
+}
+
+resizeCanvas();
+loadFromGist();
+animate();
+</script>
+</body>
+</html>

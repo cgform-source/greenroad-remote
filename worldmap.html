@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#060d0f">
+<title>GREENROAD · Carte du monde crypto</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh; background: #060d0f; color: #e6edf3;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px; overflow-x: hidden; position: relative;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 0;
+    background-image: linear-gradient(rgba(0,212,255,0.05) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(0,212,255,0.05) 1px, transparent 1px);
+    background-size: 50px 50px;
+    mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+  }
+  .orb { position: fixed; border-radius: 50%; filter: blur(100px); opacity: 0.25; z-index: 0; pointer-events: none; }
+  .orb1 { width: 400px; height: 400px; background: #00d4ff; top: -100px; left: 40%; animation: float1 20s ease-in-out infinite; }
+  .orb2 { width: 350px; height: 350px; background: #00ff88; bottom: -100px; right: 20%; animation: float2 25s ease-in-out infinite; }
+  @keyframes float1 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(150px,100px); } }
+  @keyframes float2 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-150px,-100px); } }
+
+  .content {
+    position: relative; z-index: 2; width: 100%; max-width: 1000px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .logo-m {
+    font-size: 24px; font-weight: 900; letter-spacing: 3px;
+    background: linear-gradient(135deg, #00d4ff, #00ff88);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .back-btn {
+    color: #5fa07f; font-size: 11px; text-decoration: none; letter-spacing: 1px;
+    padding: 6px 12px; border: 1px solid rgba(0,212,255,0.2); border-radius: 20px;
+  }
+  .back-btn:hover { color: #00d4ff; border-color: #00d4ff; }
+
+  .page-title {
+    text-align: center; padding: 8px 0;
+  }
+  .page-title h1 {
+    color: #00d4ff; font-size: 22px; letter-spacing: 3px; font-weight: 700;
+    margin-bottom: 6px;
+    text-shadow: 0 0 20px rgba(0,212,255,0.3);
+  }
+  .page-title .sub { color: #8b949e; font-size: 11px; letter-spacing: 1px; }
+
+  /* Current time */
+  .time-card {
+    background: rgba(14,26,40,0.8);
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 16px;
+    padding: 18px 24px;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .time-card .info .label {
+    font-size: 10px; color: #8b949e; letter-spacing: 2px; text-transform: uppercase;
+  }
+  .time-card .info .value {
+    font-size: 20px; font-weight: 700; color: #00d4ff;
+    font-family: Consolas, monospace;
+  }
+  .time-card .now {
+    font-size: 32px; font-weight: 800; color: #e6edf3;
+    font-family: Consolas, monospace;
+    letter-spacing: 2px;
+  }
+
+  /* Sessions timeline */
+  .sessions-wrap {
+    background: rgba(14,26,40,0.7);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 16px;
+    padding: 20px;
+  }
+  .sessions-title {
+    color: #00d4ff; font-size: 12px; letter-spacing: 2px; font-weight: 700;
+    text-transform: uppercase; margin-bottom: 16px;
+  }
+
+  .timeline {
+    position: relative; height: 40px;
+    background: rgba(0,0,0,0.3); border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .timeline-session {
+    position: absolute; top: 0; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; letter-spacing: 1px;
+    color: white;
+    text-shadow: 0 0 8px rgba(0,0,0,0.7);
+  }
+  .session-asia { background: rgba(255, 140, 100, 0.5); }
+  .session-europe { background: rgba(100, 255, 140, 0.4); }
+  .session-us { background: rgba(100, 180, 255, 0.5); }
+
+  /* Current hour marker */
+  .now-marker {
+    position: absolute; top: -4px; bottom: -4px; width: 3px;
+    background: #ff3366; z-index: 2;
+    box-shadow: 0 0 12px #ff3366;
+    animation: blink 1.2s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .now-marker::after {
+    content: 'NOW'; position: absolute; top: -18px; left: 50%;
+    transform: translateX(-50%);
+    background: #ff3366; color: white;
+    font-size: 9px; font-weight: 800; padding: 2px 6px;
+    border-radius: 3px; letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .timeline-hours {
+    display: flex; justify-content: space-between;
+    font-size: 9px; color: #5fa07f; letter-spacing: 1px;
+  }
+
+  /* Hubs */
+  .hubs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  .hub-card {
+    background: rgba(14,26,40,0.7);
+    border: 1px solid rgba(139,148,158,0.15);
+    border-radius: 12px;
+    padding: 14px 16px;
+    transition: all 0.4s;
+    position: relative;
+    overflow: hidden;
+  }
+  .hub-card.active {
+    border-color: rgba(0,255,136,0.5);
+    background: rgba(0,255,136,0.08);
+    box-shadow: 0 0 20px rgba(0,255,136,0.1);
+  }
+  .hub-card.active::before {
+    content: '●'; position: absolute; top: 10px; right: 14px;
+    color: #00ff88; font-size: 10px;
+    animation: blink 1.2s ease-in-out infinite;
+    text-shadow: 0 0 6px #00ff88;
+  }
+
+  .hub-flag { font-size: 24px; margin-bottom: 4px; }
+  .hub-name {
+    font-size: 14px; color: #e6edf3; font-weight: 700;
+    letter-spacing: 1px; margin-bottom: 2px;
+  }
+  .hub-card.active .hub-name { color: #00ff88; }
+  .hub-info { font-size: 11px; color: #8b949e; margin-bottom: 8px; }
+  .hub-time {
+    font-size: 18px; font-weight: 700; color: #00d4ff;
+    font-family: Consolas, monospace; letter-spacing: 1px;
+  }
+  .hub-card.active .hub-time { color: #00ff88; }
+  .hub-status {
+    font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 10px; display: inline-block;
+    margin-top: 6px; font-weight: 700;
+  }
+  .hub-status.open {
+    background: rgba(0,255,136,0.15); color: #00ff88;
+    border: 1px solid rgba(0,255,136,0.4);
+  }
+  .hub-status.closed {
+    background: rgba(139,148,158,0.15); color: #8b949e;
+    border: 1px solid rgba(139,148,158,0.3);
+  }
+  .hub-status.weekend {
+    background: rgba(197,156,255,0.15); color: #c59cff;
+    border: 1px solid rgba(197,156,255,0.4);
+  }
+
+  /* Energy meter */
+  .energy-card {
+    background: linear-gradient(135deg, rgba(14,26,40,0.9), rgba(0,26,40,0.9));
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+  }
+  .energy-label {
+    font-size: 10px; color: #8b949e; letter-spacing: 2px;
+    text-transform: uppercase; margin-bottom: 10px;
+  }
+  .energy-value {
+    font-size: 42px; font-weight: 800; color: #00d4ff;
+    font-family: Consolas, monospace;
+    text-shadow: 0 0 20px rgba(0,212,255,0.3);
+  }
+  .energy-status {
+    font-size: 13px; color: #e6edf3; margin-top: 8px;
+  }
+  .energy-bar {
+    width: 100%; height: 8px; background: rgba(139,148,158,0.15);
+    border-radius: 4px; overflow: hidden; margin-top: 12px;
+  }
+  .energy-fill {
+    height: 100%; border-radius: 4px;
+    background: linear-gradient(90deg, #5fa07f, #00d4ff, #00ff88);
+    transition: width 1s ease;
+  }
+
+  /* Info about crypto */
+  .info-note {
+    background: rgba(14,26,40,0.5);
+    border-left: 3px solid rgba(0,212,255,0.4);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    font-size: 12px; color: #8b949e;
+    line-height: 1.6;
+  }
+  .info-note strong { color: #00d4ff; }
+
+  .footer {
+    text-align: center; color: #3a5a4a; font-size: 11px;
+    letter-spacing: 1px; margin-top: 16px; padding-bottom: 20px;
+  }
+</style>
+</head>
+<body>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+
+  <div class="content">
+    <div class="header">
+      <div class="logo-m">GREENROAD</div>
+      <a href="https://cgform-source.github.io/greenroad-remote/index.html" class="back-btn">← MENU</a>
+    </div>
+
+    <div class="page-title">
+      <h1>🗺 CARTE DU MONDE CRYPTO</h1>
+      <div class="sub">Sessions de trading autour du globe · Temps réel</div>
+    </div>
+
+    <div class="time-card">
+      <div class="info">
+        <div class="label">Heure à Paris</div>
+        <div class="value" id="parisTime">—</div>
+      </div>
+      <div class="now" id="nowClock">00:00:00</div>
+      <div class="info">
+        <div class="label">UTC</div>
+        <div class="value" id="utcTime">—</div>
+      </div>
+    </div>
+
+    <div class="energy-card">
+      <div class="energy-label">⚡ Énergie globale du marché</div>
+      <div class="energy-value" id="energyValue">—</div>
+      <div class="energy-status" id="energyStatus">—</div>
+      <div class="energy-bar"><div class="energy-fill" id="energyFill" style="width: 0%"></div></div>
+    </div>
+
+    <div class="sessions-wrap">
+      <div class="sessions-title">📊 Sessions trading traditionnelles (24h)</div>
+      <div class="timeline" id="timeline">
+        <!-- Sessions positioned by JS -->
+        <div class="now-marker" id="nowMarker" style="left: 50%;"></div>
+      </div>
+      <div class="timeline-hours">
+        <span>00h</span><span>04h</span><span>08h</span><span>12h</span><span>16h</span><span>20h</span><span>24h</span>
+      </div>
+      <div style="font-size: 10px; color: #8b949e; margin-top: 8px; text-align: center;">
+        Fuseau horaire : <strong style="color: #00d4ff;">Paris (CEST)</strong>
+      </div>
+    </div>
+
+    <div class="hubs-grid" id="hubsGrid">
+      <!-- Hubs inserted by JS -->
+    </div>
+
+    <div class="info-note">
+      💡 <strong>Note crypto</strong> : les crypto-marchés (dont Hyperliquid) sont <strong>ouverts 24/7</strong>.
+      Cependant, le volume et la volatilité suivent les sessions traditionnelles :
+      <strong>Asie</strong> (Tokyo, Singapour, HK) puis <strong>Europe</strong> (Londres, Francfort)
+      puis <strong>US</strong> (New York, Chicago). Les <strong>chevauchements</strong>
+      Europe × US (15h30-17h30 Paris) sont souvent les plus actifs.
+    </div>
+
+    <div class="footer">MADE WITH ♥ by GREENROAD · <a href="https://cgform-source.github.io/greenroad-remote/index.html" style="color: #5fa07f; text-decoration: none;">Menu</a></div>
+  </div>
+
+<script>
+// Hubs crypto / trading classiques — heures locales d'ouverture
+// Timezone offset en heures par rapport à UTC (pas DST précis, approximatif)
+const HUBS = [
+  { name: 'Tokyo', flag: '🇯🇵', tz: 9, openH: 9, closeH: 17, type: 'traditional', weekendClosed: true },
+  { name: 'Hong Kong', flag: '🇭🇰', tz: 8, openH: 9, closeH: 16, type: 'traditional', weekendClosed: true },
+  { name: 'Singapour', flag: '🇸🇬', tz: 8, openH: 9, closeH: 17, type: 'traditional', weekendClosed: true },
+  { name: 'Dubaï', flag: '🇦🇪', tz: 4, openH: 10, closeH: 22, type: 'crypto', weekendClosed: false },
+  { name: 'Francfort', flag: '🇩🇪', tz: 2, openH: 9, closeH: 17, type: 'traditional', weekendClosed: true },
+  { name: 'Londres', flag: '🇬🇧', tz: 1, openH: 8, closeH: 17, type: 'traditional', weekendClosed: true },
+  { name: 'Paris', flag: '🇫🇷', tz: 2, openH: 9, closeH: 18, type: 'traditional', weekendClosed: true },
+  { name: 'New York', flag: '🇺🇸', tz: -4, openH: 9, closeH: 17, type: 'traditional', weekendClosed: true },
+  { name: 'Miami', flag: '🌴', tz: -4, openH: 9, closeH: 22, type: 'crypto', weekendClosed: false },
+  { name: 'San Francisco', flag: '🌉', tz: -7, openH: 6, closeH: 22, type: 'crypto', weekendClosed: false },
+];
+
+// Sessions trading (heures Paris)
+const SESSIONS = [
+  { name: 'ASIE', startH: 1, endH: 10, cssClass: 'session-asia' },
+  { name: 'EUROPE', startH: 8, endH: 17, cssClass: 'session-europe' },
+  { name: 'US', startH: 15, endH: 22, cssClass: 'session-us' }
+];
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('nowClock').textContent =
+    now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  const paris = now.toLocaleString('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit' });
+  document.getElementById('parisTime').textContent = paris;
+
+  const utc = now.toUTCString().slice(17, 22);
+  document.getElementById('utcTime').textContent = utc;
+}
+
+function getLocalTime(tzOffset) {
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const local = new Date(utc + tzOffset * 3600 * 1000);
+  return local;
+}
+
+function renderHubs() {
+  const grid = document.getElementById('hubsGrid');
+  grid.innerHTML = '';
+
+  const now = new Date();
+  const dayUTC = now.getUTCDay();
+
+  HUBS.forEach(hub => {
+    const localTime = getLocalTime(hub.tz);
+    const localHour = localTime.getHours();
+    const localMin = localTime.getMinutes();
+    const localDay = localTime.getDay(); // 0=dim, 6=sam
+
+    const isWeekend = (localDay === 0 || localDay === 6);
+    const isOpen = !isWeekend && localHour >= hub.openH && localHour < hub.closeH;
+    const isCryptoAlways = hub.type === 'crypto' && !hub.weekendClosed;
+    const isCryptoOpen = isCryptoAlways || isOpen;
+
+    let statusHtml, statusClass;
+    if (isCryptoAlways) {
+      statusClass = 'open';
+      statusHtml = '● 24/7 CRYPTO';
+    } else if (isWeekend) {
+      statusClass = 'weekend';
+      statusHtml = 'WEEKEND';
+    } else if (isOpen) {
+      statusClass = 'open';
+      statusHtml = '● OUVERT';
+    } else {
+      statusClass = 'closed';
+      statusHtml = 'FERMÉ';
+    }
+
+    const card = document.createElement('div');
+    card.className = 'hub-card' + (isCryptoOpen ? ' active' : '');
+    card.innerHTML = `
+      <div class="hub-flag">${hub.flag}</div>
+      <div class="hub-name">${hub.name}</div>
+      <div class="hub-info">Ouvre ${hub.openH}h — Ferme ${hub.closeH}h ${hub.type === 'crypto' ? '(hub crypto)' : ''}</div>
+      <div class="hub-time">${String(localHour).padStart(2,'0')}:${String(localMin).padStart(2,'0')}</div>
+      <div class="hub-status ${statusClass}">${statusHtml}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function renderTimeline() {
+  const timeline = document.getElementById('timeline');
+  // Remove old sessions (keep marker)
+  timeline.querySelectorAll('.timeline-session').forEach(s => s.remove());
+
+  SESSIONS.forEach(sess => {
+    const startPct = (sess.startH / 24) * 100;
+    const widthPct = ((sess.endH - sess.startH) / 24) * 100;
+    const div = document.createElement('div');
+    div.className = 'timeline-session ' + sess.cssClass;
+    div.style.left = startPct + '%';
+    div.style.width = widthPct + '%';
+    div.textContent = sess.name;
+    timeline.insertBefore(div, document.getElementById('nowMarker'));
+  });
+
+  // Position du marker NOW (heure Paris)
+  const now = new Date();
+  const parisTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+  const parisHour = parisTime.getHours() + parisTime.getMinutes() / 60;
+  const nowPct = (parisHour / 24) * 100;
+  document.getElementById('nowMarker').style.left = nowPct + '%';
+}
+
+function renderEnergy() {
+  // Calcule "énergie" du marché = nombre de hubs crypto ouverts + chevauchements sessions
+  const now = new Date();
+  const parisTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+  const parisHour = parisTime.getHours() + parisTime.getMinutes() / 60;
+  const isWeekend = (parisTime.getDay() === 0 || parisTime.getDay() === 6);
+
+  // Compte les sessions actives à cette heure
+  let activeSessions = 0;
+  SESSIONS.forEach(s => {
+    if (parisHour >= s.startH && parisHour < s.endH) activeSessions++;
+  });
+
+  // Compte les hubs actifs
+  let activeHubs = 0;
+  HUBS.forEach(hub => {
+    const localTime = getLocalTime(hub.tz);
+    const localHour = localTime.getHours();
+    const localDay = localTime.getDay();
+    const localWeekend = (localDay === 0 || localDay === 6);
+    const isCryptoAlways = hub.type === 'crypto' && !hub.weekendClosed;
+    const isOpen = !localWeekend && localHour >= hub.openH && localHour < hub.closeH;
+    if (isCryptoAlways || isOpen) activeHubs++;
+  });
+
+  // Score 0-100
+  let energy = 0;
+  if (isWeekend) {
+    // weekend : moins d'énergie
+    energy = 20 + (activeHubs - 3) * 5;  // les hubs crypto 24/7 compensent
+    energy = Math.max(10, Math.min(40, energy));
+  } else {
+    energy = 20 + activeSessions * 20 + activeHubs * 3;
+    energy = Math.max(15, Math.min(100, energy));
+  }
+
+  let status, color;
+  if (energy >= 85) {
+    status = '🔥 Très haute — Sessions qui se chevauchent';
+    color = '#00ff88';
+  } else if (energy >= 65) {
+    status = '⚡ Élevée — Plusieurs marchés actifs';
+    color = '#00d4ff';
+  } else if (energy >= 40) {
+    status = '🟡 Moyenne — Transition entre sessions';
+    color = '#d29922';
+  } else if (energy >= 25) {
+    status = '🌙 Faible — Heures calmes';
+    color = '#8b949e';
+  } else {
+    status = '💤 Très faible — Nuit profonde / weekend';
+    color = '#5fa07f';
+  }
+
+  document.getElementById('energyValue').textContent = Math.round(energy) + '%';
+  document.getElementById('energyValue').style.color = color;
+  document.getElementById('energyStatus').textContent = status;
+  document.getElementById('energyFill').style.width = energy + '%';
+}
+
+function refreshAll() {
+  updateClock();
+  renderHubs();
+  renderTimeline();
+  renderEnergy();
+}
+
+refreshAll();
+setInterval(refreshAll, 1000);
+</script>
+</body>
+</html>

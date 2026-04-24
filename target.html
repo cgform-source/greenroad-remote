@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#060d0f">
+<title>GREENROAD · Target Tracker</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh; background: #060d0f; color: #e6edf3;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px; overflow-x: hidden; position: relative;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 0;
+    background-image: linear-gradient(rgba(0,255,136,0.05) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(0,255,136,0.05) 1px, transparent 1px);
+    background-size: 50px 50px;
+    mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+  }
+  .orb { position: fixed; border-radius: 50%; filter: blur(100px); opacity: 0.3; z-index: 0; pointer-events: none; }
+  .orb1 { width: 400px; height: 400px; background: #00ff88; top: -100px; left: -100px; animation: f1 18s ease-in-out infinite; }
+  .orb2 { width: 350px; height: 350px; background: #d29922; bottom: -100px; right: -100px; animation: f2 22s ease-in-out infinite; }
+  @keyframes f1 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(180px,120px); } }
+  @keyframes f2 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-180px,-100px); } }
+
+  .content {
+    position: relative; z-index: 2; width: 100%; max-width: 600px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .logo-m {
+    font-size: 24px; font-weight: 900; letter-spacing: 3px;
+    background: linear-gradient(135deg, #00ff88, #d29922);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .back-btn {
+    color: #5fa07f; font-size: 11px; text-decoration: none; letter-spacing: 1px;
+    padding: 6px 12px; border: 1px solid rgba(0,255,136,0.2); border-radius: 20px;
+  }
+  .back-btn:hover { color: #00ff88; border-color: #00ff88; }
+
+  .page-title {
+    text-align: center; padding: 8px 0;
+  }
+  .page-title h1 {
+    color: #d29922; font-size: 22px; letter-spacing: 3px; font-weight: 700;
+    margin-bottom: 6px;
+    text-shadow: 0 0 20px rgba(210,153,34,0.3);
+  }
+  .page-title .sub { color: #8b949e; font-size: 11px; letter-spacing: 1px; }
+
+  /* Period tabs */
+  .period-tabs {
+    display: flex;
+    background: rgba(14,26,34,0.7);
+    border: 1px solid rgba(0,255,136,0.15);
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+  }
+  .period-tab {
+    flex: 1;
+    padding: 10px;
+    background: transparent;
+    color: #8b949e;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-family: inherit;
+    transition: all 0.3s;
+  }
+  .period-tab.active {
+    background: rgba(0,255,136,0.15);
+    color: #00ff88;
+  }
+  .period-tab:hover:not(.active) { color: #e6edf3; }
+
+  /* Config card */
+  .config-card {
+    background: rgba(14,26,34,0.8);
+    border: 1px solid rgba(0,255,136,0.2);
+    border-radius: 16px;
+    padding: 20px;
+  }
+  .config-card h3 {
+    color: #00ff88; font-size: 14px; letter-spacing: 1px; font-weight: 700;
+    margin-bottom: 14px; text-transform: uppercase;
+  }
+  .input-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .input-row label {
+    flex: 1; font-size: 13px; color: #e6edf3;
+  }
+  .input-row input {
+    width: 100px; padding: 8px 12px;
+    background: rgba(6,13,15,0.8); color: #00ff88;
+    border: 1px solid rgba(0,255,136,0.3); border-radius: 8px;
+    font-size: 14px; font-weight: 700;
+    font-family: Consolas, monospace; text-align: right;
+  }
+  .input-row input:focus {
+    outline: none; border-color: #00ff88;
+    box-shadow: 0 0 12px rgba(0,255,136,0.2);
+  }
+  .suffix { color: #8b949e; font-size: 12px; min-width: 20px; }
+
+  .save-btn {
+    width: 100%; margin-top: 8px;
+    padding: 10px; background: rgba(0,255,136,0.15);
+    color: #00ff88; border: 1px solid rgba(0,255,136,0.4);
+    border-radius: 8px; font-size: 12px; font-weight: 700;
+    letter-spacing: 2px; cursor: pointer; font-family: inherit;
+    text-transform: uppercase;
+  }
+  .save-btn:hover { background: rgba(0,255,136,0.3); }
+
+  /* Main gauge */
+  .gauge-card {
+    background: rgba(14,26,34,0.8);
+    border: 1px solid rgba(210,153,34,0.3);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .gauge-label {
+    font-size: 11px; color: #8b949e; letter-spacing: 2px;
+    text-transform: uppercase; margin-bottom: 10px;
+  }
+
+  .gauge-circle {
+    width: 200px; height: 200px;
+    margin: 0 auto 16px;
+    position: relative;
+  }
+
+  .gauge-circle svg {
+    width: 100%; height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .gauge-bg {
+    fill: none;
+    stroke: rgba(139,148,158,0.15);
+    stroke-width: 14;
+  }
+  .gauge-fg {
+    fill: none;
+    stroke: #00ff88;
+    stroke-width: 14;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1),
+                stroke 0.5s;
+  }
+
+  .gauge-center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .gauge-pct {
+    font-size: 42px; font-weight: 800; line-height: 1;
+    color: #00ff88;
+    font-family: Consolas, monospace;
+  }
+  .gauge-status {
+    font-size: 10px; color: #8b949e; letter-spacing: 1px;
+    margin-top: 4px; text-transform: uppercase;
+  }
+
+  .progress-detail {
+    display: flex; justify-content: space-between;
+    margin-top: 8px; padding-top: 12px;
+    border-top: 1px solid rgba(139,148,158,0.15);
+  }
+  .progress-detail div {
+    flex: 1; text-align: center;
+  }
+  .progress-detail .pd-label { font-size: 9px; color: #8b949e; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2px; }
+  .progress-detail .pd-value { font-size: 18px; font-weight: 700; font-family: Consolas, monospace; }
+  .progress-detail .pd-value.green { color: #00ff88; }
+  .progress-detail .pd-value.red { color: #ff5577; }
+  .progress-detail .pd-value.yellow { color: #d29922; }
+
+  /* Daily/Monthly infos */
+  .info-card {
+    background: rgba(14,26,34,0.7);
+    border: 1px solid rgba(0,255,136,0.12);
+    border-radius: 12px;
+    padding: 14px 18px;
+  }
+  .info-card h4 {
+    color: #00ff88; font-size: 11px; letter-spacing: 2px; font-weight: 700;
+    text-transform: uppercase; margin-bottom: 10px;
+  }
+  .info-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(139,148,158,0.08);
+    font-size: 12px;
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-row .label { color: #8b949e; }
+  .info-row .value { color: #e6edf3; font-weight: 700; font-family: Consolas, monospace; }
+  .info-row .value.green { color: #00ff88; }
+  .info-row .value.red { color: #ff5577; }
+  .info-row .value.yellow { color: #d29922; }
+
+  /* Motivation message */
+  .motivation {
+    text-align: center;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, rgba(0,255,136,0.08), rgba(210,153,34,0.05));
+    border: 1px solid rgba(0,255,136,0.2);
+    border-radius: 12px;
+    font-size: 13px; color: #e6edf3;
+    line-height: 1.5;
+  }
+  .motivation strong { color: #00ff88; }
+
+  .sync {
+    text-align: center; font-size: 11px; color: #5fa07f; letter-spacing: 1px;
+    opacity: 0.6; margin-top: 4px;
+  }
+
+  .footer {
+    text-align: center; color: #3a5a4a; font-size: 11px;
+    letter-spacing: 1px; margin-top: 16px; padding-bottom: 20px;
+  }
+
+  @keyframes pulsing {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .gauge-circle.reached svg { animation: pulsing 2s ease-in-out infinite; }
+  .gauge-circle.reached .gauge-pct { color: #d29922; text-shadow: 0 0 30px rgba(210,153,34,0.5); }
+</style>
+</head>
+<body>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+
+  <div class="content">
+    <div class="header">
+      <div class="logo-m">GREENROAD</div>
+      <a href="https://cgform-source.github.io/greenroad-remote/index.html" class="back-btn">← MENU</a>
+    </div>
+
+    <div class="page-title">
+      <h1>🎯 TARGET TRACKER</h1>
+      <div class="sub">Fixe ton objectif · Suis ta progression</div>
+    </div>
+
+    <div class="period-tabs">
+      <button class="period-tab active" data-period="day">📅 Jour</button>
+      <button class="period-tab" data-period="month">🗓️ Mois</button>
+    </div>
+
+    <!-- CONFIG CARD -->
+    <div class="config-card">
+      <h3 id="configTitle">Objectif du jour</h3>
+      <div class="input-row">
+        <label>🎯 P&L cible</label>
+        <input type="number" id="targetInput" step="0.5" value="5">
+        <span class="suffix">$</span>
+      </div>
+      <div class="input-row">
+        <label>⚠ Limite de perte (stop)</label>
+        <input type="number" id="lossLimitInput" step="0.5" value="10">
+        <span class="suffix">$</span>
+      </div>
+      <div class="input-row">
+        <label>📊 Max trades autorisés</label>
+        <input type="number" id="maxTradesInput" step="1" value="5">
+        <span class="suffix"></span>
+      </div>
+      <button class="save-btn" onclick="saveConfig()">💾 Sauvegarder objectifs</button>
+    </div>
+
+    <!-- MAIN GAUGE -->
+    <div class="gauge-card">
+      <div class="gauge-label" id="gaugeLabel">Progression vers l'objectif</div>
+      <div class="gauge-circle" id="gaugeCircle">
+        <svg viewBox="0 0 200 200">
+          <circle class="gauge-bg" cx="100" cy="100" r="85" />
+          <circle class="gauge-fg" cx="100" cy="100" r="85"
+                  stroke-dasharray="534.07" stroke-dashoffset="534.07" id="gaugeFg"/>
+        </svg>
+        <div class="gauge-center">
+          <div class="gauge-pct" id="gaugePct">0%</div>
+          <div class="gauge-status" id="gaugeStatus">En cours</div>
+        </div>
+      </div>
+      <div class="progress-detail">
+        <div>
+          <div class="pd-label">Actuel</div>
+          <div class="pd-value" id="pdActual">$0</div>
+        </div>
+        <div>
+          <div class="pd-label">Objectif</div>
+          <div class="pd-value yellow" id="pdTarget">$5</div>
+        </div>
+        <div>
+          <div class="pd-label">Restant</div>
+          <div class="pd-value" id="pdRemaining">$5</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOTIVATION MESSAGE -->
+    <div class="motivation" id="motivation">
+      💪 Fixe-toi un objectif réaliste et suis ta progression en temps réel.
+    </div>
+
+    <!-- TRADES INFO -->
+    <div class="info-card">
+      <h4 id="tradesTitle">📊 Trades aujourd'hui</h4>
+      <div class="info-row">
+        <span class="label">Trades exécutés</span>
+        <span class="value" id="tradesCount">—</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Limite (max autorisés)</span>
+        <span class="value yellow" id="tradesMax">—</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Wins / Losses</span>
+        <span class="value" id="tradesWL">—</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Win Rate</span>
+        <span class="value" id="tradesWR">—</span>
+      </div>
+    </div>
+
+    <!-- LOSS LIMIT INFO -->
+    <div class="info-card">
+      <h4>⚠ Limite de perte</h4>
+      <div class="info-row">
+        <span class="label">Limite fixée</span>
+        <span class="value red" id="lossLimit">—</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Perte actuelle</span>
+        <span class="value" id="lossActual">—</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Marge restante</span>
+        <span class="value" id="lossMargin">—</span>
+      </div>
+    </div>
+
+    <div class="sync" id="sync">⟳ Chargement...</div>
+    <div class="footer">MADE WITH ♥ by GREENROAD · <a href="https://cgform-source.github.io/greenroad-remote/index.html" style="color: #5fa07f; text-decoration: none;">Menu</a></div>
+  </div>
+
+<script>
+const GIST = "https://gist.githubusercontent.com/cgform-source/1c4e2920a94766263d6b729873b1e525/raw/greenroad_stats.json";
+const STORAGE_KEY = "greenroad_targets";
+
+let currentPeriod = 'day';
+let lastData = null;
+
+// Config par défaut
+const DEFAULT_CONFIG = {
+  day: { target: 5, lossLimit: 10, maxTrades: 5 },
+  month: { target: 100, lossLimit: 200, maxTrades: 100 }
+};
+
+function loadConfig() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch (e) {}
+  return DEFAULT_CONFIG;
+}
+
+function getConfig() {
+  const cfg = loadConfig();
+  return cfg[currentPeriod] || DEFAULT_CONFIG[currentPeriod];
+}
+
+function saveConfig() {
+  const cfg = loadConfig();
+  cfg[currentPeriod] = {
+    target: parseFloat(document.getElementById('targetInput').value) || 5,
+    lossLimit: parseFloat(document.getElementById('lossLimitInput').value) || 10,
+    maxTrades: parseInt(document.getElementById('maxTradesInput').value) || 5
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+  render();
+  // Effet visuel sauvegarde
+  const btn = event.target;
+  const original = btn.textContent;
+  btn.textContent = '✓ SAUVEGARDÉ';
+  btn.style.background = 'rgba(210,153,34,0.3)';
+  setTimeout(() => {
+    btn.textContent = original;
+    btn.style.background = '';
+  }, 1500);
+}
+
+// Charge les valeurs dans les inputs
+function loadConfigToInputs() {
+  const cfg = getConfig();
+  document.getElementById('targetInput').value = cfg.target;
+  document.getElementById('lossLimitInput').value = cfg.lossLimit;
+  document.getElementById('maxTradesInput').value = cfg.maxTrades;
+}
+
+// Calcule l'état depuis les données du Gist
+function computeState(data) {
+  const s = data.sobre || {};
+  const today = data.today || {};
+
+  if (currentPeriod === 'day') {
+    return {
+      pnl: s.pnl_session || 0,
+      trades: s.trades_today || 0,
+      wins: today.wins || 0,
+      losses: (s.trades_today || 0) - (today.wins || 0)
+    };
+  } else {
+    // month : somme des last_5_days (approximation) - on utilise last_5_days du Gist
+    // ou mieux : full.last_7_days si dispo
+    const full = data.full || {};
+    const last7 = full.last_7_days || [];
+
+    // Pour le mois, on agrège sur 30 jours environ : on prend ce qu'on a
+    let pnlMonth = 0, tradesMonth = 0, winsMonth = 0;
+    const today_date = new Date();
+    const currentMonth = today_date.getMonth();
+    const currentYear = today_date.getFullYear();
+
+    last7.forEach(day => {
+      try {
+        const dayDate = new Date(day.date || day.day || '');
+        if (dayDate.getMonth() === currentMonth && dayDate.getFullYear() === currentYear) {
+          pnlMonth += day.pnl || 0;
+          tradesMonth += day.trades || 0;
+          winsMonth += day.wins || 0;
+        }
+      } catch (e) {}
+    });
+
+    // Ajoute les données du jour
+    pnlMonth += s.pnl_session || 0;
+    tradesMonth += s.trades_today || 0;
+    winsMonth += today.wins || 0;
+
+    return {
+      pnl: pnlMonth,
+      trades: tradesMonth,
+      wins: winsMonth,
+      losses: tradesMonth - winsMonth
+    };
+  }
+}
+
+function render() {
+  if (!lastData) return;
+  const state = computeState(lastData);
+  const cfg = getConfig();
+
+  // Période label
+  const periodLabel = currentPeriod === 'day' ? 'du jour' : 'du mois';
+  document.getElementById('configTitle').textContent = 'Objectif ' + periodLabel;
+  document.getElementById('gaugeLabel').textContent = 'Progression vers objectif ' + periodLabel;
+  document.getElementById('tradesTitle').textContent = currentPeriod === 'day' ? '📊 Trades aujourd\'hui' : '📊 Trades ce mois';
+
+  // Calcul progression
+  const pct = cfg.target > 0 ? Math.min(100, Math.max(0, (state.pnl / cfg.target) * 100)) : 0;
+  const circumference = 534.07; // 2 * π * 85
+  const dashOffset = circumference - (circumference * Math.min(100, Math.max(-20, pct)) / 100);
+
+  const gaugeFg = document.getElementById('gaugeFg');
+  gaugeFg.setAttribute('stroke-dashoffset', dashOffset.toString());
+
+  // Couleur selon progression
+  let color, status;
+  const gaugeCircle = document.getElementById('gaugeCircle');
+  gaugeCircle.classList.remove('reached');
+
+  if (state.pnl <= -cfg.lossLimit * 0.8) {
+    color = '#ff5577'; status = 'Attention perte';
+  } else if (state.pnl < 0) {
+    color = '#ff8866'; status = 'En perte';
+  } else if (pct >= 100) {
+    color = '#d29922'; status = '🎯 Objectif atteint !';
+    gaugeCircle.classList.add('reached');
+  } else if (pct >= 75) {
+    color = '#00ff88'; status = 'Presque atteint';
+  } else if (pct >= 50) {
+    color = '#00cc66'; status = 'À mi-chemin';
+  } else if (pct > 0) {
+    color = '#00aa55'; status = 'En progression';
+  } else {
+    color = '#8b949e'; status = 'En attente';
+  }
+  gaugeFg.style.stroke = color;
+
+  const gaugePct = document.getElementById('gaugePct');
+  gaugePct.textContent = Math.round(pct) + '%';
+  gaugePct.style.color = color;
+  document.getElementById('gaugeStatus').textContent = status;
+
+  // Progress detail
+  document.getElementById('pdActual').textContent = (state.pnl >= 0 ? '+$' : '-$') + Math.abs(state.pnl).toFixed(2);
+  document.getElementById('pdActual').className = 'pd-value ' + (state.pnl >= 0 ? 'green' : 'red');
+  document.getElementById('pdTarget').textContent = '$' + cfg.target.toFixed(0);
+  const remaining = cfg.target - state.pnl;
+  document.getElementById('pdRemaining').textContent = remaining > 0 ? '$' + remaining.toFixed(2) : '✓';
+  document.getElementById('pdRemaining').className = 'pd-value ' + (remaining > 0 ? '' : 'yellow');
+
+  // Trades info
+  document.getElementById('tradesCount').textContent = state.trades;
+  document.getElementById('tradesMax').textContent = state.trades + ' / ' + cfg.maxTrades;
+  if (state.trades >= cfg.maxTrades) {
+    document.getElementById('tradesMax').className = 'value red';
+  } else if (state.trades >= cfg.maxTrades * 0.8) {
+    document.getElementById('tradesMax').className = 'value yellow';
+  } else {
+    document.getElementById('tradesMax').className = 'value';
+  }
+  document.getElementById('tradesWL').textContent = state.wins + ' / ' + state.losses;
+  const wr = state.trades > 0 ? (state.wins / state.trades * 100) : 0;
+  document.getElementById('tradesWR').textContent = state.trades > 0 ? wr.toFixed(0) + '%' : '—';
+  document.getElementById('tradesWR').className = 'value ' + (wr >= 60 ? 'green' : wr >= 40 ? 'yellow' : 'red');
+
+  // Loss limit
+  document.getElementById('lossLimit').textContent = '-$' + cfg.lossLimit.toFixed(0);
+  const lossActual = state.pnl < 0 ? Math.abs(state.pnl) : 0;
+  document.getElementById('lossActual').textContent = lossActual > 0 ? '-$' + lossActual.toFixed(2) : '$0';
+  document.getElementById('lossActual').className = 'value ' + (lossActual > 0 ? 'red' : '');
+  const lossMargin = cfg.lossLimit - lossActual;
+  document.getElementById('lossMargin').textContent = lossMargin > 0 ? '$' + lossMargin.toFixed(2) : '⚠ DÉPASSÉ';
+  document.getElementById('lossMargin').className = 'value ' + (lossMargin > cfg.lossLimit * 0.3 ? 'green' : lossMargin > 0 ? 'yellow' : 'red');
+
+  // Motivation
+  let motivation = '';
+  if (state.trades === 0) {
+    motivation = '💤 Aucun trade pour l\'instant. Patience, le marché te montrera un setup.';
+  } else if (pct >= 100) {
+    motivation = `🏆 Bravo ! Tu as <strong>atteint ton objectif</strong> ${periodLabel}. Pense à préserver tes gains, arrête-toi si tu te sens fatigué.`;
+  } else if (pct >= 75) {
+    motivation = `🔥 Tu es <strong>à ${Math.round(pct)}%</strong> de ton objectif. Reste discipliné, n'accélère pas juste parce que tu es proche.`;
+  } else if (state.pnl < -cfg.lossLimit * 0.8) {
+    motivation = '🛑 <strong>Attention</strong>, tu approches de ta limite de perte. Considère faire une pause.';
+  } else if (state.pnl < 0) {
+    motivation = '⚠ Tu es en perte. Respire, analyse, et reprends sereinement.';
+  } else if (state.trades >= cfg.maxTrades) {
+    motivation = '🛑 Tu as atteint ta <strong>limite de trades</strong>. C\'est le moment de faire une pause.';
+  } else {
+    motivation = `💪 Tu as pris ${state.trades} trade${state.trades > 1 ? 's' : ''}. Continue avec <strong>patience et discipline</strong>.`;
+  }
+  document.getElementById('motivation').innerHTML = motivation;
+}
+
+async function refresh() {
+  try {
+    const r = await fetch(GIST + "?t=" + Date.now());
+    lastData = await r.json();
+    render();
+    document.getElementById('sync').textContent = '⟳ MAJ ' + new Date().toLocaleTimeString('fr-FR');
+  } catch (err) {
+    document.getElementById('sync').textContent = '⚠ Erreur de connexion';
+  }
+}
+
+// Period tabs
+document.querySelectorAll('.period-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentPeriod = tab.dataset.period;
+    loadConfigToInputs();
+    render();
+  });
+});
+
+loadConfigToInputs();
+refresh();
+setInterval(refresh, 15000);
+</script>
+</body>
+</html>
