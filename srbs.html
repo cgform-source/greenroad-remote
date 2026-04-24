@@ -1,0 +1,2013 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GREENROAD V7.1 — RANGE_TRADER_RB Simulator V2</title>
+<style>
+  :root {
+    --bg: #0a0f14;
+    --panel: #0d1520;
+    --panel-2: #152030;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --dim: #6e7681;
+    --border: #21303a;
+    --green: #3fb950;
+    --red: #f85149;
+    --yellow: #d29922;
+    --gold: #f0b72f;
+    --cyan: #00d4ff;
+    --purple: #c59cff;
+    --orange: #ff8c00;
+    --price: #79c0ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: "Segoe UI", -apple-system, sans-serif;
+    min-height: 100vh; padding: 20px; line-height: 1.5;
+  }
+  .app { max-width: 1400px; margin: 0 auto; }
+  header {
+    text-align: center; padding: 20px 0 24px;
+    border-bottom: 2px solid var(--border); margin-bottom: 20px;
+  }
+  header h1 { color: var(--green); font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+  header .sub { color: var(--muted); font-style: italic; font-size: 13px; }
+  header .version {
+    display: inline-block; margin-top: 6px; padding: 2px 10px;
+    background: var(--panel-2); border: 1px solid var(--gold);
+    border-radius: 12px; font-size: 10px; color: var(--gold);
+    font-weight: 700; letter-spacing: 1px;
+  }
+  .main-tabs {
+    display: flex; gap: 4px; margin-bottom: 20px;
+    border-bottom: 2px solid var(--border);
+  }
+  .main-tab {
+    background: transparent; color: var(--muted); border: none;
+    border-bottom: 3px solid transparent;
+    padding: 12px 20px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .main-tab:hover { color: var(--text); }
+  .main-tab.active { color: var(--green); border-bottom-color: var(--green); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .main-grid {
+    display: grid; grid-template-columns: 1fr 380px;
+    gap: 20px; margin-bottom: 20px;
+  }
+  @media (max-width: 1100px) { .main-grid { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px;
+  }
+  .panel h2 {
+    color: var(--cyan); font-size: 16px; margin-bottom: 12px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  .scenario-pills {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 0;
+  }
+  .scenario-pill {
+    background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 14px; font-size: 12px;
+    cursor: pointer; transition: all 0.2s; font-weight: 600;
+  }
+  .scenario-pill:hover { background: var(--border); transform: translateY(-1px); }
+  .scenario-pill.active { background: var(--green); color: var(--bg); border-color: var(--green); }
+  .scenario-pill.highlight { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+  .scenario-pill.highlight.active { background: var(--gold); color: var(--bg); }
+  .chart-wrap {
+    position: relative; background: var(--panel-2);
+    border: 1px solid var(--border); border-radius: 6px; margin-bottom: 12px;
+  }
+  #chart, #chartFree { width: 100%; height: 440px; display: block; }
+  .chart-info {
+    position: absolute; top: 10px; left: 10px;
+    background: rgba(13, 21, 32, 0.92);
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 8px 12px; font-family: "Consolas", monospace;
+    font-size: 11px; color: var(--text); pointer-events: none; line-height: 1.6;
+  }
+  .chart-status {
+    position: absolute; top: 10px; right: 10px;
+    background: rgba(13, 21, 32, 0.92);
+    border: 2px solid var(--green); border-radius: 4px;
+    padding: 6px 14px; font-size: 12px; font-weight: 700;
+    color: var(--green); pointer-events: none;
+  }
+  .chart-overlay {
+    position: absolute; bottom: 10px; right: 10px;
+    background: rgba(13, 21, 32, 0.92);
+    border: 1px solid var(--purple); border-radius: 4px;
+    padding: 6px 12px; font-size: 10px; color: var(--purple);
+    font-family: "Consolas", monospace; pointer-events: none;
+  }
+  .playback {
+    display: flex; gap: 8px; align-items: center;
+    padding: 10px; background: var(--panel-2);
+    border: 1px solid var(--border); border-radius: 6px;
+    margin-bottom: 12px; flex-wrap: wrap;
+  }
+  .playback button {
+    background: var(--border); color: var(--text);
+    border: none; border-radius: 4px;
+    padding: 8px 14px; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: background 0.15s;
+  }
+  .playback button:hover { background: var(--panel-2); }
+  .playback button.primary { background: var(--green); color: var(--bg); }
+  .playback button.primary:hover { background: #2ea043; }
+  .speed-label { color: var(--muted); font-size: 12px; margin-left: auto; }
+  .speed-slider { width: 120px; accent-color: var(--cyan); }
+  .scenario-desc {
+    background: var(--panel-2); border-left: 4px solid var(--cyan);
+    border-radius: 4px; padding: 12px 16px;
+    margin-bottom: 12px; font-size: 13px;
+  }
+  .scenario-desc .title {
+    color: var(--cyan); font-weight: 700; margin-bottom: 6px;
+  }
+  .scenario-desc.highlight { border-left-color: var(--gold); }
+  .scenario-desc.highlight .title { color: var(--gold); }
+  .impact-box {
+    margin-top: 12px; background: var(--panel-2);
+    border: 1px solid var(--border); border-radius: 6px; padding: 14px;
+  }
+  .impact-title { color: var(--yellow); font-weight: 700; font-size: 13px; margin-bottom: 10px; }
+  .impact-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  @media (max-width: 900px) { .impact-grid { grid-template-columns: 1fr; } }
+  .impact-cell {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 4px; padding: 10px; font-size: 12px;
+  }
+  .impact-cell.bad { border-color: var(--red); }
+  .impact-cell.good { border-color: var(--green); }
+  .impact-cell.bad2 { border-color: var(--orange); }
+  .impact-cell .label {
+    font-weight: 700; margin-bottom: 4px; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .impact-cell.bad .label { color: var(--red); }
+  .impact-cell.good .label { color: var(--green); }
+  .impact-cell.bad2 .label { color: var(--orange); }
+  .sidebar { display: flex; flex-direction: column; gap: 16px; }
+  .settings-panel h3 { color: var(--purple); font-size: 14px; margin-bottom: 10px; margin-top: 14px; }
+  .settings-panel h3:first-child { margin-top: 0; }
+  .slider-row { margin-bottom: 12px; }
+  .slider-row .label-row {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;
+  }
+  .slider-row .slider-label { font-size: 12px; color: var(--text); }
+  .slider-row .slider-value {
+    color: var(--cyan); font-family: "Consolas", monospace;
+    font-size: 12px; font-weight: 700; min-width: 60px; text-align: right;
+  }
+  .slider-row input[type="range"] { width: 100%; accent-color: var(--cyan); margin: 2px 0; }
+  .slider-row .hint { font-size: 10px; color: var(--dim); font-style: italic; }
+  .preset-buttons {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .preset-btn {
+    flex: 1; min-width: 80px; background: var(--panel-2);
+    color: var(--text); border: 1px solid var(--border);
+    border-radius: 4px; padding: 6px 8px; font-size: 11px;
+    cursor: pointer; transition: all 0.2s; font-weight: 600;
+  }
+  .preset-btn:hover { background: var(--border); }
+  .preset-btn.permissive { border-color: var(--red); color: var(--red); }
+  .preset-btn.optimal { border-color: var(--green); color: var(--green); }
+  .preset-btn.strict { border-color: var(--orange); color: var(--orange); }
+  .profile-indicator {
+    background: var(--panel-2); border: 2px solid var(--border);
+    border-radius: 6px; padding: 14px; text-align: center; transition: all 0.3s;
+  }
+  .profile-indicator .profile-label {
+    font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .profile-indicator .profile-name { font-size: 18px; font-weight: 700; margin: 4px 0; }
+  .profile-indicator .profile-desc { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .profile-indicator.conservative { border-color: var(--cyan); }
+  .profile-indicator.conservative .profile-name { color: var(--cyan); }
+  .profile-indicator.balanced { border-color: var(--green); }
+  .profile-indicator.balanced .profile-name { color: var(--green); }
+  .profile-indicator.aggressive { border-color: var(--orange); }
+  .profile-indicator.aggressive .profile-name { color: var(--orange); }
+  .scoreboard {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px;
+  }
+  .score-card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 4px; padding: 8px; text-align: center;
+  }
+  .score-card .score-label { font-size: 10px; color: var(--muted); text-transform: uppercase; }
+  .score-card .score-value { font-size: 15px; font-weight: 700; margin-top: 2px; }
+  .legend {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 6px; padding: 14px; margin-top: 16px;
+  }
+  .legend h3 { color: var(--gold); font-size: 14px; margin-bottom: 10px; }
+  .legend-items {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px; font-size: 11px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .sim-config-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px; margin-bottom: 12px; padding: 12px;
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px;
+  }
+  .sim-field label {
+    font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    display: block; margin-bottom: 4px;
+  }
+  .sim-field input, .sim-field select {
+    width: 100%; padding: 6px 8px;
+    background: var(--panel); color: var(--text);
+    border: 1px solid var(--border); border-radius: 4px;
+    font-size: 12px; font-family: "Consolas", monospace;
+  }
+  .sim-field input:focus, .sim-field select:focus {
+    outline: none; border-color: var(--cyan);
+  }
+  .sim-stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 8px; margin-top: 12px;
+  }
+  .sim-stat {
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 10px; text-align: center;
+  }
+  .sim-stat .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; }
+  .sim-stat .stat-value {
+    font-size: 15px; font-weight: 700; margin-top: 4px;
+    font-family: "Consolas", monospace;
+  }
+  .import-zone {
+    background: var(--panel-2); border: 2px dashed var(--border);
+    border-radius: 8px; padding: 50px 20px;
+    text-align: center; transition: all 0.3s;
+  }
+  .import-zone:hover { border-color: var(--cyan); background: rgba(0, 212, 255, 0.03); }
+  .import-zone .icon { font-size: 48px; margin-bottom: 16px; }
+  .import-zone .title { color: var(--cyan); font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .import-zone .desc { color: var(--muted); font-size: 13px; max-width: 500px; margin: 0 auto 16px; }
+  .import-zone .btn {
+    background: var(--cyan); color: var(--bg);
+    border: none; border-radius: 6px; padding: 10px 20px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  .import-zone .btn:hover { background: #00b8e0; }
+  .file-input-hidden { display: none; }
+  .soon-banner {
+    background: linear-gradient(90deg, rgba(240, 183, 47, 0.1), rgba(240, 183, 47, 0.03));
+    border: 1px solid var(--gold); border-radius: 6px;
+    padding: 12px 16px; text-align: center; color: var(--gold);
+    font-weight: 600; margin-bottom: 20px; font-size: 13px;
+  }
+  .json-structure {
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 16px; margin-top: 16px;
+    font-family: "Consolas", monospace; font-size: 11px;
+    color: var(--text); white-space: pre; max-height: 400px;
+    overflow: auto;
+  }
+  .instruction-card {
+    background: var(--panel); border: 1px solid var(--cyan);
+    border-radius: 6px; padding: 14px; margin-top: 12px; font-size: 12px;
+  }
+  .instruction-card h4 { color: var(--cyan); margin-bottom: 8px; font-size: 14px; }
+  .instruction-card ol { padding-left: 20px; }
+  .instruction-card li { margin-bottom: 4px; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .pulse { animation: pulse 1.5s infinite; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in { animation: fadeIn 0.3s ease-out; }
+  footer {
+    text-align: center; color: var(--dim); font-size: 11px;
+    padding: 20px 0; margin-top: 30px; border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1>🟢 GREENROAD V7.1 — Simulateur RANGE_TRADER_RB</h1>
+    <p class="sub">Visualise, règle et comprends ta stratégie en temps réel</p>
+    <div class="version">V2 · SIMULATEUR LIBRE + RÉACTIVITÉ</div>
+  </header>
+
+  <div class="main-tabs">
+    <button class="main-tab active" data-tab="scenarios">🎬 Scénarios</button>
+    <button class="main-tab" data-tab="free">🧪 Simulateur libre</button>
+    <button class="main-tab" data-tab="mytrades">📊 Mes trades réels</button>
+  </div>
+
+  <!-- ONGLET SCÉNARIOS -->
+  <div class="tab-content active" id="tab-scenarios">
+    <div class="panel" style="margin-bottom: 20px;">
+      <h2>🎬 Choisir un scénario</h2>
+      <div class="scenario-pills" id="scenarioPills">
+        <button class="scenario-pill active" data-scenario="0">1. Range propre — gagnant</button>
+        <button class="scenario-pill" data-scenario="1">2. Break-even touché</button>
+        <button class="scenario-pill" data-scenario="2">3. Trailing mid-range</button>
+        <button class="scenario-pill" data-scenario="3">4. Cassure (PAUSE)</button>
+        <button class="scenario-pill highlight" data-scenario="4">5. Mode 2B Recovery ⭐</button>
+        <button class="scenario-pill highlight" data-scenario="5">6. Range confirmé ⭐</button>
+        <button class="scenario-pill" data-scenario="6">7. Prix bloqué sur mid</button>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <div>
+        <div class="scenario-desc fade-in" id="scenarioDesc">
+          <div class="title">Scénario 1 : Range propre — trade gagnant classique</div>
+          <div>Le prix oscille dans le range. Entrée LONG zone BUY → sortie TP (résistance). Cas idéal.</div>
+        </div>
+
+        <div class="chart-wrap">
+          <canvas id="chart"></canvas>
+          <div class="chart-info" id="chartInfo">Prix : $40.30<br>Support : $40.30<br>Résistance : $41.40</div>
+          <div class="chart-status" id="chartStatus">🟢 ACTIVE</div>
+          <div class="chart-overlay" id="chartOverlay" style="display:none;"></div>
+        </div>
+
+        <div class="playback">
+          <button class="primary" id="playBtn">▶ Play</button>
+          <button id="pauseBtn">⏸ Pause</button>
+          <button id="resetBtn">⟲ Reset</button>
+          <span class="speed-label">Vitesse :</span>
+          <input type="range" class="speed-slider" id="speedSlider" min="0.25" max="4" step="0.25" value="1">
+          <span id="speedValue" style="font-family: monospace; color: var(--cyan); font-size: 12px; min-width: 40px;">1.0x</span>
+        </div>
+
+        <div class="impact-box">
+          <div class="impact-title" id="impactTitle">💡 Impact des réglages</div>
+          <div class="impact-grid">
+            <div class="impact-cell bad">
+              <div class="label">❌ Trop permissif</div>
+              <div id="impactPermissive">-</div>
+            </div>
+            <div class="impact-cell good">
+              <div class="label">✅ Ta config (optimal)</div>
+              <div id="impactOptimal">-</div>
+            </div>
+            <div class="impact-cell bad2">
+              <div class="label">⚠ Trop strict</div>
+              <div id="impactStrict">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="legend">
+          <h3>🎨 Légende</h3>
+          <div class="legend-items">
+            <div class="legend-item"><div class="legend-dot" style="background: var(--green);"></div>Zone BUY / LONG</div>
+            <div class="legend-item"><div class="legend-dot" style="background: var(--red);"></div>Zone SELL / SL / Résistance</div>
+            <div class="legend-item"><div class="legend-dot" style="background: var(--cyan);"></div>Break-even</div>
+            <div class="legend-item"><div class="legend-dot" style="background: var(--purple);"></div>Trailing mid</div>
+            <div class="legend-item"><div class="legend-dot" style="background: var(--orange);"></div>Cassure / Mode 2B</div>
+            <div class="legend-item"><div class="legend-dot" style="background: var(--price);"></div>Prix</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar">
+        <div class="profile-indicator balanced" id="profileIndicator">
+          <div class="profile-label">Ton profil de trading</div>
+          <div class="profile-name" id="profileName">⚖️ Équilibré</div>
+          <div class="profile-desc" id="profileDesc">Bon équilibre entre réactivité et prudence</div>
+        </div>
+
+        <div class="panel settings-panel">
+          <h2>⚙ Régler tes paramètres</h2>
+          <div class="preset-buttons">
+            <button class="preset-btn permissive" onclick="applyPreset('permissive')">🔥 Permissif</button>
+            <button class="preset-btn optimal" onclick="applyPreset('optimal')">⚖️ Optimal</button>
+            <button class="preset-btn strict" onclick="applyPreset('strict')">🛡 Strict</button>
+          </div>
+
+          <h3>📐 Zones d'entrée</h3>
+          <div class="slider-row">
+            <div class="label-row"><span class="slider-label">Zone BUY (%)</span><span class="slider-value" id="valZoneBuy">0.26</span></div>
+            <input type="range" id="zoneBuy" min="0.1" max="1.0" step="0.01" value="0.26">
+            <div class="hint">Marge au-dessus du support</div>
+          </div>
+          <div class="slider-row">
+            <div class="label-row"><span class="slider-label">Zone SELL (%)</span><span class="slider-value" id="valZoneSell">0.30</span></div>
+            <input type="range" id="zoneSell" min="0.1" max="1.0" step="0.01" value="0.30">
+            <div class="hint">Marge sous la résistance</div>
+          </div>
+
+          <h3>🛡 Break-even</h3>
+          <div class="slider-row">
+            <div class="label-row"><span class="slider-label">Trigger BE (%)</span><span class="slider-value" id="valBeTrigger">0.70</span></div>
+            <input type="range" id="beTrigger" min="0.2" max="2.0" step="0.05" value="0.70">
+            <div class="hint">Profit déclenchant le BE</div>
+          </div>
+
+          <h3>🔒 Mode 2B Recovery <span style="color: var(--gold); font-size: 10px;">(LEVIER 1)</span></h3>
+          <div class="slider-row">
+            <div class="label-row"><span class="slider-label">Clôtures requises</span><span class="slider-value" id="valRecCandles">3</span></div>
+            <input type="range" id="recCandles" min="1" max="5" step="1" value="3">
+            <div class="hint">Nb clôtures bonnes pour valider</div>
+          </div>
+          <div class="slider-row">
+            <div class="label-row"><span class="slider-label">Score min recovery</span><span class="slider-value" id="valRecScore">35</span></div>
+            <input type="range" id="recScore" min="15" max="70" step="5" value="35">
+            <div class="hint">Score V7.1 min pendant recovery</div>
+          </div>
+          <div class="slider-row">
+            <div class="label-row"><span class="slider-label">Timeout (min)</span><span class="slider-value" id="valRecTimeout">120</span></div>
+            <input type="range" id="recTimeout" min="30" max="240" step="15" value="120">
+            <div class="hint">Temps max avant abandon</div>
+          </div>
+
+          <h3>🔍 Formation nouveau range <span style="color: var(--gold); font-size: 10px;">(LEVIER 2)</span></h3>
+          <div class="slider-row">
+            <div class="label-row"><span class="slider-label">Score seuil reprise</span><span class="slider-value" id="valScoreThresh">25</span></div>
+            <input type="range" id="scoreThresh" min="15" max="70" step="5" value="25">
+            <div class="hint">Score mini pour FORMING</div>
+          </div>
+          <div class="slider-row">
+            <div class="label-row"><span class="slider-label">Durée forming (h)</span><span class="slider-value" id="valFormingHours">6</span></div>
+            <input type="range" id="formingHours" min="1" max="24" step="1" value="6">
+            <div class="hint">Durée min en EN FORMATION</div>
+          </div>
+          <div class="slider-row">
+            <div class="label-row"><span class="slider-label">Rejets min/côté</span><span class="slider-value" id="valRejects">2</span></div>
+            <input type="range" id="rejects" min="1" max="5" step="1" value="2">
+            <div class="hint">Rebonds support/résistance</div>
+          </div>
+
+          <div class="scoreboard">
+            <div class="score-card">
+              <div class="score-label">Réactivité</div>
+              <div class="score-value" id="scoreReactivity" style="color: var(--green);">5/10</div>
+            </div>
+            <div class="score-card">
+              <div class="score-label">Protection</div>
+              <div class="score-value" id="scoreProtection" style="color: var(--cyan);">5/10</div>
+            </div>
+            <div class="score-card">
+              <div class="score-label">Sélectivité</div>
+              <div class="score-value" id="scoreSelectivity" style="color: var(--purple);">5/10</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ONGLET SIMULATEUR LIBRE -->
+  <div class="tab-content" id="tab-free">
+    <div class="panel" style="margin-bottom: 20px;">
+      <h2>🧪 Simulateur libre — génère ton propre scénario</h2>
+      <p style="color: var(--muted); font-size: 13px; margin-bottom: 12px;">
+        Le simulateur génère une courbe de prix aléatoire avec la volatilité que tu choisis.
+        Ta config (sliders de l'onglet Scénarios) est appliquée en temps réel.
+      </p>
+
+      <div class="sim-config-grid">
+        <div class="sim-field">
+          <label>Support ($)</label>
+          <input type="number" id="simSupport" value="40.30" step="0.01">
+        </div>
+        <div class="sim-field">
+          <label>Résistance ($)</label>
+          <input type="number" id="simResistance" value="41.40" step="0.01">
+        </div>
+        <div class="sim-field">
+          <label>Volatilité</label>
+          <select id="simVolatility">
+            <option value="low">Basse (marché calme)</option>
+            <option value="medium" selected>Moyenne (normal)</option>
+            <option value="high">Haute (volatile)</option>
+            <option value="extreme">Extrême (cassures fréquentes)</option>
+          </select>
+        </div>
+        <div class="sim-field">
+          <label>Durée simulée (h)</label>
+          <select id="simDuration">
+            <option value="4">4h</option>
+            <option value="12" selected>12h</option>
+            <option value="24">24h</option>
+            <option value="48">48h</option>
+          </select>
+        </div>
+        <div class="sim-field">
+          <label>Seed (optionnel)</label>
+          <input type="text" id="simSeed" value="auto" placeholder="auto ou nombre">
+        </div>
+      </div>
+
+      <button class="preset-btn optimal" id="simRegenerate" style="flex: none; padding: 10px 24px; font-size: 13px;">
+        🎲 Générer nouveau scénario
+      </button>
+    </div>
+
+    <div class="main-grid">
+      <div>
+        <div class="chart-wrap">
+          <canvas id="chartFree"></canvas>
+          <div class="chart-info" id="chartInfoFree">Prix : —<br>Support : —<br>Résistance : —</div>
+          <div class="chart-status" id="chartStatusFree">🟢 ACTIVE</div>
+        </div>
+
+        <div class="playback">
+          <button class="primary" id="playBtnFree">▶ Play</button>
+          <button id="pauseBtnFree">⏸ Pause</button>
+          <button id="resetBtnFree">⟲ Reset</button>
+          <span class="speed-label">Vitesse :</span>
+          <input type="range" class="speed-slider" id="speedSliderFree" min="0.25" max="8" step="0.25" value="2">
+          <span id="speedValueFree" style="font-family: monospace; color: var(--cyan); font-size: 12px; min-width: 40px;">2.0x</span>
+        </div>
+
+        <div class="sim-stats">
+          <div class="sim-stat">
+            <div class="stat-label">Trades</div>
+            <div class="stat-value" id="simStatTrades" style="color: var(--cyan);">0</div>
+          </div>
+          <div class="sim-stat">
+            <div class="stat-label">Wins</div>
+            <div class="stat-value" id="simStatWins" style="color: var(--green);">0</div>
+          </div>
+          <div class="sim-stat">
+            <div class="stat-label">Losses</div>
+            <div class="stat-value" id="simStatLosses" style="color: var(--red);">0</div>
+          </div>
+          <div class="sim-stat">
+            <div class="stat-label">Win Rate</div>
+            <div class="stat-value" id="simStatWR" style="color: var(--yellow);">—</div>
+          </div>
+          <div class="sim-stat">
+            <div class="stat-label">P&L Total</div>
+            <div class="stat-value" id="simStatPnl" style="color: var(--green);">$0</div>
+          </div>
+          <div class="sim-stat">
+            <div class="stat-label">État</div>
+            <div class="stat-value" id="simStatState" style="color: var(--cyan); font-size: 12px;">ACTIVE</div>
+          </div>
+        </div>
+
+        <div class="instruction-card">
+          <h4>📖 Comment utiliser</h4>
+          <ol>
+            <li>Configure le scénario (support, résistance, volatilité, durée)</li>
+            <li>Retourne dans <strong>🎬 Scénarios</strong> pour ajuster tes paramètres de stratégie</li>
+            <li>Reviens ici et clique <strong>▶ Play</strong> pour voir ta config à l'œuvre</li>
+            <li>Génère plusieurs scénarios pour tester différents contextes de marché</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="sidebar">
+        <div class="panel">
+          <h2>📋 Scénario généré</h2>
+          <div style="font-size: 12px; color: var(--muted); line-height: 1.8;">
+            <div><span style="color: var(--text); font-weight: 700;">Amplitude</span> : <span id="simInfoAmpl">—</span></div>
+            <div><span style="color: var(--text); font-weight: 700;">Mid</span> : <span id="simInfoMid">—</span></div>
+            <div><span style="color: var(--text); font-weight: 700;">Volatilité</span> : <span id="simInfoVol">—</span></div>
+            <div><span style="color: var(--text); font-weight: 700;">Seed</span> : <span id="simInfoSeed">—</span></div>
+            <div><span style="color: var(--text); font-weight: 700;">Bougies 5m</span> : <span id="simInfoBars">—</span></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>💡 Astuces</h2>
+          <div style="font-size: 12px; color: var(--muted); line-height: 1.7;">
+            <p style="margin-bottom: 8px;"><strong style="color: var(--green);">Volatilité basse</strong> : range propre, nombreux trades TP</p>
+            <p style="margin-bottom: 8px;"><strong style="color: var(--yellow);">Volatilité moyenne</strong> : mix TP et SL, conditions réelles</p>
+            <p style="margin-bottom: 8px;"><strong style="color: var(--orange);">Volatilité haute</strong> : cassures possibles, Mode 2B déclenché</p>
+            <p><strong style="color: var(--red);">Volatilité extrême</strong> : cassures répétées, pas de trades durables</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ONGLET MES TRADES RÉELS -->
+  <div class="tab-content" id="tab-mytrades">
+    <div class="soon-banner">
+      ⏳ En attente de l'export JSON depuis ton bot (via Telegram) — Feature côté bot à venir
+    </div>
+
+    <div class="panel">
+      <h2>📊 Analyse de tes trades réels</h2>
+      <p style="color: var(--muted); font-size: 13px; margin-bottom: 20px;">
+        Importe le fichier JSON de tes trades exporté par ton bot GREENROAD pour analyser
+        tes vrais résultats, comparer avec les scénarios théoriques, et identifier tes points forts/faibles.
+      </p>
+
+      <div class="import-zone" id="importZone">
+        <div class="icon">📥</div>
+        <div class="title">Importer tes trades</div>
+        <div class="desc">
+          Clique ici pour sélectionner le fichier JSON exporté par ton bot via Telegram.<br>
+          Aucune donnée n'est envoyée sur internet — tout reste dans ton navigateur.
+        </div>
+        <button class="btn" id="importBtn">📁 Choisir le fichier JSON</button>
+        <input type="file" class="file-input-hidden" id="fileInput" accept=".json,application/json">
+      </div>
+
+      <div class="instruction-card">
+        <h4>📖 Procédure (quand le bot supportera l'export)</h4>
+        <ol>
+          <li>Dans ton bot GREENROAD : onglet <strong>📜 Historique</strong> → bouton <strong>"📤 Exporter JSON vers Telegram"</strong></li>
+          <li>Le bot envoie un fichier <code style="color: var(--cyan);">greenroad_trades_YYYYMMDD.json</code> sur ton Telegram</li>
+          <li>Depuis Telegram sur ton iPad : sauvegarde le fichier (ex: dans Fichiers)</li>
+          <li>Ici, clique <strong>"📁 Choisir le fichier JSON"</strong> et sélectionne-le</li>
+          <li>Les stats et graphiques s'affichent automatiquement</li>
+        </ol>
+      </div>
+
+      <div id="tradesAnalysis" style="display: none; margin-top: 20px;">
+        <h2 style="color: var(--cyan); margin-bottom: 16px;">📊 Analyse de tes trades</h2>
+        <div class="sim-stats" id="realStats"></div>
+        <div style="margin-top: 20px; background: var(--panel-2); padding: 14px; border-radius: 6px;">
+          <h3 style="color: var(--purple); font-size: 14px; margin-bottom: 10px;">Distribution des raisons de fermeture</h3>
+          <div id="realReasons"></div>
+        </div>
+      </div>
+
+      <details style="margin-top: 20px;">
+        <summary style="cursor: pointer; color: var(--cyan); font-weight: 600; padding: 10px; background: var(--panel-2); border-radius: 6px;">
+          📄 Format JSON attendu (pour développeurs / associé)
+        </summary>
+        <div class="json-structure">{
+  <span class="key">"version"</span>: <span class="value">"1.0"</span>,
+  <span class="key">"bot_version"</span>: <span class="value">"7.1.55"</span>,
+  <span class="key">"exported_at"</span>: <span class="value">"2026-04-24T11:45:00+02:00"</span>,
+  <span class="key">"coin"</span>: <span class="value">"HYPE"</span>,
+  <span class="key">"period_days"</span>: <span class="value">30</span>,
+  <span class="key">"config_snapshot"</span>: {
+    <span class="key">"range_period"</span>: <span class="value">"12h"</span>,
+    <span class="key">"zone_buy_pct"</span>: <span class="value">0.26</span>,
+    <span class="key">"zone_sell_pct"</span>: <span class="value">0.30</span>,
+    <span class="key">"breakeven_trigger_pct"</span>: <span class="value">0.7</span>,
+    <span class="key">"rb_recovery_candles"</span>: <span class="value">3</span>,
+    <span class="key">"rb_recovery_min_score"</span>: <span class="value">35</span>
+    <span class="comment">// ...autres paramètres</span>
+  },
+  <span class="key">"trades"</span>: [
+    {
+      <span class="key">"id"</span>: <span class="value">1</span>,
+      <span class="key">"datetime"</span>: <span class="value">"2026-04-23T13:32:33+02:00"</span>,
+      <span class="key">"coin"</span>: <span class="value">"HYPE"</span>,
+      <span class="key">"side"</span>: <span class="value">"SHORT"</span>,
+      <span class="key">"entry"</span>: <span class="value">41.20</span>,
+      <span class="key">"exit"</span>: <span class="value">41.15</span>,
+      <span class="key">"qty"</span>: <span class="value">1.15</span>,
+      <span class="key">"pnl_net"</span>: <span class="value">0.04</span>,
+      <span class="key">"fee"</span>: <span class="value">0.03</span>,
+      <span class="key">"reason"</span>: <span class="value">"TRAILING_MID"</span>,
+      <span class="key">"duration_min"</span>: <span class="value">23</span>
+    }
+  ]
+}</div>
+      </details>
+    </div>
+  </div>
+
+  <footer>
+    GREENROAD V7.1.55 · Simulateur V2 · Scénarios réactifs + simulateur libre + import trades prêt
+  </footer>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// ÉTAT GLOBAL
+// ═══════════════════════════════════════════════════════
+const state = {
+  activeTab: 'scenarios',
+  scenario: 0,
+  playing: false,
+  speed: 1,
+  t: 0,
+  animId: null,
+  lastFrameTime: null,
+  params: {
+    zoneBuy: 0.26, zoneSell: 0.30,
+    beTrigger: 0.70,
+    recCandles: 3, recScore: 35, recTimeout: 120,
+    scoreThresh: 25, formingHours: 6, rejects: 2
+  },
+  // Simulateur libre
+  free: {
+    playing: false, t: 0, animId: null, lastFrameTime: null, speed: 2,
+    bars: [],              // bougies générées
+    support: 40.30, resistance: 41.40,
+    volatility: 'medium', durationH: 12,
+    seed: null, rng: null,
+    trades: [],            // trades exécutés
+    currentPos: null,      // position ouverte
+    state: 'ACTIVE',
+    stateStart: 0,
+    recoveryTarget: null,
+    rejectsSupport: 0, rejectsResistance: 0,
+    formingStart: null,
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// DÉFINITION DES 7 SCÉNARIOS
+// ═══════════════════════════════════════════════════════
+const scenarios = [
+  {
+    name: "Range propre — trade gagnant classique",
+    description: "Le prix oscille dans le range. Entrée LONG zone BUY → TP (résistance). Cas idéal.",
+    support: 40.30, resistance: 41.40, initialStatus: "🟢 ACTIVE", highlight: false,
+    getPath: (t) => {
+      if (t < 20) return 40.80 + 0.15 * Math.sin(t * 0.5);
+      if (t < 35) return 40.80 - (t - 20) * 0.030;
+      if (t < 50) return 40.35 + Math.sin((t - 35) * 0.5) * 0.08;
+      if (t < 75) return 40.35 + (t - 50) * 0.040;
+      return 41.35 + 0.05 * Math.sin((t - 75) * 0.4);
+    },
+    events: [
+      { at: 38, type: "entry", side: "LONG", price: 40.35, label: "Entrée LONG" },
+      { at: 95, type: "exit", reason: "TP", price: 41.38, label: "🎯 TP touché !" }
+    ],
+    impact: {
+      permissive: "Zone 1% = tu entres loin du support, R/R dégradé",
+      optimal: "Zone BUY 0.26% / SELL 0.30% = entrée franche",
+      strict: "Zone 0.05% = rare que le prix touche, peu de trades"
+    }
+  },
+  {
+    name: "Break-even activé → touché (sortie neutre)",
+    description: "Trade profitable, BE remonte le SL à l'entry. Le prix retourne, touche le BE → sortie 0 perte.",
+    support: 40.30, resistance: 41.40, initialStatus: "🟢 ACTIVE", highlight: false,
+    getPath: (t) => {
+      if (t < 15) return 40.50 - (t - 7) * 0.01;
+      if (t < 25) return 40.42 - (t - 15) * 0.007;
+      if (t < 45) return 40.35 + (t - 25) * 0.015;
+      if (t < 65) return 40.65 + 0.04 * Math.sin((t - 45) * 0.3);
+      if (t < 85) return 40.65 - (t - 65) * 0.013;
+      return 40.38 - (t - 85) * 0.002;
+    },
+    events: [
+      { at: 28, type: "entry", side: "LONG", price: 40.35, label: "Entrée LONG" },
+      { at: 55, type: "be-activate", price: 40.63, label: "🛡 BE activé" },
+      { at: 95, type: "exit", reason: "BE", price: 40.36, label: "BE touché" }
+    ],
+    impact: {
+      permissive: "Trigger 0.3% = BE touché trop souvent, sortie tôt avec mini profit",
+      optimal: "Trigger 0.7% = BE après vrai mouvement, sécurise intelligemment",
+      strict: "Trigger 1.5% = BE rarement activé, expose tout le SL"
+    }
+  },
+  {
+    name: "Trailing mid-range — SL suit le prix",
+    description: "Prix franchit le mid, SL remonte au milieu. Prix retourne → sortie profit partiel.",
+    support: 40.30, resistance: 41.40, initialStatus: "🟢 ACTIVE", highlight: false,
+    getPath: (t) => {
+      if (t < 20) return 40.48 - t * 0.005;
+      if (t < 32) return 40.38 - (t - 20) * 0.002;
+      if (t < 55) return 40.35 + (t - 32) * 0.025;
+      if (t < 75) return 40.92 + (t - 55) * 0.015;
+      if (t < 90) return 41.22 - (t - 75) * 0.025;
+      return 40.85 + 0.02;
+    },
+    events: [
+      { at: 30, type: "entry", side: "LONG", price: 40.35, label: "Entrée LONG" },
+      { at: 54, type: "trail-activate", price: 40.86, label: "📐 Trailing activé" },
+      { at: 93, type: "exit", reason: "TRAIL", price: 40.87, label: "Trailing touché" }
+    ],
+    impact: {
+      permissive: "OFF = SL initial maintenu, gain max possible mais risque complet",
+      optimal: "ON = sécurise dès franchissement du mid",
+      strict: "(pas de version 'trop strict' : trailing binaire ON/OFF)"
+    }
+  },
+  {
+    name: "Cassure du range — Bot passe en PAUSE",
+    description: "Prix casse résistance avec clôture nette + volume. Bot en BROKEN, pas de trade.",
+    support: 40.30, resistance: 41.40, initialStatus: "🟢 ACTIVE", highlight: false,
+    getPath: (t) => {
+      if (t < 15) return 40.60 + 0.15 * Math.sin(t * 0.8);
+      if (t < 30) return 41.00 + 0.12 * Math.sin(t * 0.6);
+      if (t < 45) return 41.10 + (t - 30) * 0.008;
+      if (t < 55) return 41.30 + (t - 45) * 0.060;
+      if (t < 70) return 41.90 + 0.08 * Math.sin((t - 55) * 0.4);
+      return 42.05 + 0.06 * Math.sin((t - 70) * 0.3);
+    },
+    events: [
+      { at: 52, type: "cassure", price: 41.48, label: "🚨 CASSURE" },
+      { at: 55, type: "status-change", status: "⏸ BOT EN PAUSE" }
+    ],
+    impact: {
+      permissive: "Seuils bas (0.1x ATR, 1.2x vol) = fausses alertes fréquentes",
+      optimal: "0.3x ATR + 1.5x vol + 2 clôtures = détection rapide ET fiable",
+      strict: "Seuils hauts (1.0x ATR, 3x vol) = rate des cassures = trades dans mauvais marché"
+    }
+  },
+  {
+    name: "Mode 2B : SL touché → rachat rapide → ACTIVE",
+    description: "SL par mèche. Bot surveille rachat rapide. 3 clôtures bonnes → ACTIVE en ~15-30 min.",
+    support: 40.30, resistance: 41.40, initialStatus: "🟢 ACTIVE", highlight: true,
+    getPath: (t) => {
+      if (t < 15) return 41.00 - t * 0.01;
+      if (t < 25) return 40.85 - (t - 15) * 0.005;
+      if (t < 35) return 41.15 + (t - 25) * 0.015;
+      if (t < 45) return 41.30 + (t - 35) * 0.020;
+      if (t < 55) return 41.50 + (t - 45) * 0.008;
+      if (t < 65) return 41.58 - (t - 55) * 0.040;
+      if (t < 85) return 41.18 + 0.05 * Math.sin((t - 65) * 0.4);
+      return 41.10 + 0.04 * Math.sin((t - 85) * 0.3);
+    },
+    events: [
+      { at: 28, type: "entry", side: "SHORT", price: 41.18, label: "SHORT" },
+      { at: 50, type: "exit", reason: "SL", price: 41.58, label: "🛑 SL (mèche)" },
+      { at: 52, type: "status-change", status: "🔒 RECOVERY" },
+      { at: 80, type: "recovery-done", price: 41.15, label: "✅ 3 clôtures" },
+      { at: 82, type: "status-change", status: "🟢 ACTIVE REPRIS" }
+    ],
+    impact: {
+      permissive: "1 clôture + score 20 = re-trade après vraie cassure → SL en chaîne = PERTES",
+      optimal: "3 clôtures + score 35 + 120 min = Protège ET capte les faux SL",
+      strict: "5 clôtures + score 60 = rate les mèches fausses = opportunités ratées"
+    }
+  },
+  {
+    name: "Nouveau range confirmé après cassure",
+    description: "Formation nouveau range. 6h + 2 rejets chaque côté + amplitude cible → ACTIVE.",
+    support: 41.80, resistance: 42.80, oldResistance: 41.40,
+    initialStatus: "⏸ EN PAUSE", highlight: true,
+    getPath: (t) => {
+      if (t < 15) return 41.20 + t * 0.017;
+      if (t < 25) return 41.45 + (t - 15) * 0.045;
+      if (t < 45) return 41.90 + 0.15 * Math.sin((t - 25) * 0.3);
+      if (t < 60) return 42.30 + 0.35 * Math.sin((t - 45) * 0.5);
+      if (t < 80) return 42.30 + 0.40 * Math.sin((t - 60) * 0.45);
+      return 42.00 + 0.25 * Math.sin((t - 80) * 0.4);
+    },
+    events: [
+      { at: 20, type: "cassure", price: 41.80, label: "🚨 Cassure" },
+      { at: 25, type: "status-change", status: "🔍 EN FORMATION" },
+      { at: 38, type: "rejet", side: "R", price: 42.70, label: "Rejet R" },
+      { at: 48, type: "rejet", side: "S", price: 41.87, label: "Rejet S" },
+      { at: 62, type: "rejet", side: "R", price: 42.68, label: "Rejet R" },
+      { at: 72, type: "rejet", side: "S", price: 41.90, label: "Rejet S" },
+      { at: 82, type: "validation", price: 42.15, label: "✅ VALIDÉ" },
+      { at: 84, type: "status-change", status: "🟢 ACTIVE" }
+    ],
+    impact: {
+      permissive: "Score 15 + 1h + 1 rejet = valide marché encore agité → PERTES",
+      optimal: "Score 25 + 6h + 2 rejets + 1.3-2.5% = Patient mais pas trop",
+      strict: "Score 60 + 24h + 4 rejets = rate des bons ranges crypto"
+    }
+  },
+  {
+    name: "Prix bloqué sur le mid — aucun trade",
+    description: "Le prix oscille autour du milieu sans jamais toucher les zones BUY/SELL. Le bot attend. Aucune opportunité.",
+    support: 40.30, resistance: 41.40, initialStatus: "🟢 ACTIVE · EN ATTENTE", highlight: false,
+    getPath: (t) => {
+      const mid = 40.85;
+      return mid + 0.15 * Math.sin(t * 0.3) + 0.08 * Math.sin(t * 0.7 + 1) + 0.05 * Math.sin(t * 1.3);
+    },
+    events: [
+      { at: 98, type: "status-change", status: "🟢 ACTIVE · 0 trade" }
+    ],
+    impact: {
+      permissive: "Zones BUY/SELL 1% = tu couvrirais plus de terrain = peut-être quelques trades mais médiocres",
+      optimal: "Zones serrées 0.26% = tu attends l'entrée parfaite aux bornes, même si rare",
+      strict: "Zones 0.05% = quasi impossible que le prix touche, 0 trade presque garanti"
+    }
+  }
+];
+
+// ═══════════════════════════════════════════════════════
+// CANVAS SETUP (scénarios)
+// ═══════════════════════════════════════════════════════
+const canvas = document.getElementById('chart');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas(cv) {
+  const rect = cv.getBoundingClientRect();
+  cv.width = rect.width * window.devicePixelRatio;
+  cv.height = rect.height * window.devicePixelRatio;
+  cv.getContext('2d').scale(window.devicePixelRatio, window.devicePixelRatio);
+}
+resizeCanvas(canvas);
+window.addEventListener('resize', () => {
+  resizeCanvas(canvas);
+  draw();
+  if (state.free.bars.length > 0) { resizeCanvas(canvasFree); drawFree(); }
+});
+
+const PAD = { top: 30, right: 85, bottom: 40, left: 58 };
+
+function getBounds(scenario) {
+  const values = [];
+  for (let t = 0; t <= 100; t += 1) values.push(scenario.getPath(t));
+  values.push(scenario.support, scenario.resistance);
+  if (scenario.oldResistance) values.push(scenario.oldResistance);
+  // Inclure les lignes BE potentielles
+  const mid = (scenario.support + scenario.resistance) / 2;
+  values.push(mid);
+  let mn = Math.min(...values) - 0.15;
+  let mx = Math.max(...values) + 0.20;
+  return { mn, mx };
+}
+
+function toX(t, w) { return PAD.left + (t / 100) * (w - PAD.left - PAD.right); }
+function toY(p, h, mn, mx) { return PAD.top + ((mx - p) / (mx - mn)) * (h - PAD.top - PAD.bottom); }
+
+function draw() {
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  ctx.fillStyle = '#152030';
+  ctx.fillRect(0, 0, w, h);
+
+  const s = scenarios[state.scenario];
+  const { mn, mx } = getBounds(s);
+
+  // Grille
+  ctx.strokeStyle = 'rgba(139, 148, 158, 0.1)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const y = PAD.top + (i / 5) * (h - PAD.top - PAD.bottom);
+    ctx.beginPath();
+    ctx.moveTo(PAD.left, y);
+    ctx.lineTo(w - PAD.right, y);
+    ctx.stroke();
+    const price = mx - (i / 5) * (mx - mn);
+    ctx.fillStyle = '#8b949e';
+    ctx.font = '11px Consolas, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('$' + price.toFixed(2), PAD.left - 6, y + 4);
+  }
+  for (let i = 0; i <= 10; i++) {
+    const x = PAD.left + (i / 10) * (w - PAD.left - PAD.right);
+    ctx.beginPath();
+    ctx.moveTo(x, PAD.top);
+    ctx.lineTo(x, h - PAD.bottom);
+    ctx.stroke();
+  }
+
+  // Zones BUY/SELL (scénarios où elles sont pertinentes)
+  if ([0, 1, 2, 6].includes(state.scenario)) {
+    const zoneBuyTop = s.support * (1 + state.params.zoneBuy / 100);
+    const zoneSellBot = s.resistance * (1 - state.params.zoneSell / 100);
+    ctx.fillStyle = 'rgba(63, 185, 80, 0.18)';
+    ctx.fillRect(PAD.left, toY(zoneBuyTop, h, mn, mx),
+      w - PAD.left - PAD.right,
+      toY(s.support, h, mn, mx) - toY(zoneBuyTop, h, mn, mx));
+    ctx.fillStyle = 'rgba(248, 81, 73, 0.18)';
+    ctx.fillRect(PAD.left, toY(s.resistance, h, mn, mx),
+      w - PAD.left - PAD.right,
+      toY(zoneSellBot, h, mn, mx) - toY(s.resistance, h, mn, mx));
+    // Labels
+    ctx.fillStyle = '#3fb950';
+    ctx.font = 'bold 9px Segoe UI';
+    ctx.textAlign = 'left';
+    ctx.fillText(`Zone BUY ${state.params.zoneBuy}%`, PAD.left + 4, toY(zoneBuyTop, h, mn, mx) - 3);
+    ctx.fillStyle = '#f85149';
+    ctx.fillText(`Zone SELL ${state.params.zoneSell}%`, PAD.left + 4, toY(s.resistance, h, mn, mx) - 3);
+  }
+
+  // Scénarios spéciaux : zones PAUSE / RECOVERY / FORMING
+  if (state.scenario === 3 && state.t >= 55) {
+    const x1 = toX(55, w);
+    const x2 = toX(Math.min(state.t, 100), w);
+    ctx.fillStyle = 'rgba(248, 81, 73, 0.10)';
+    ctx.fillRect(x1, PAD.top, x2 - x1, h - PAD.top - PAD.bottom);
+  }
+
+  // Scénario 5 (Mode 2B) : zone recovery ajustée au timeout slider
+  if (state.scenario === 4 && state.t >= 50) {
+    const recoveryWindowFraction = state.params.recTimeout / 120; // baseline 120min = 25 unités
+    const recEnd = Math.min(50 + 25 * recoveryWindowFraction, 75);
+    const x1 = toX(50, w);
+    const x2 = toX(Math.min(state.t, recEnd), w);
+    ctx.fillStyle = 'rgba(255, 140, 0, 0.14)';
+    ctx.fillRect(x1, PAD.top, x2 - x1, h - PAD.top - PAD.bottom);
+    // Label timeout
+    if (state.t >= 52) {
+      ctx.fillStyle = '#ff8c00';
+      ctx.font = 'bold 10px Segoe UI';
+      ctx.textAlign = 'center';
+      const labelX = (x1 + toX(recEnd, w)) / 2;
+      ctx.fillText(`⏱ Recovery ${state.params.recTimeout}min`, labelX, h - PAD.bottom - 8);
+    }
+  }
+
+  // Scénario 6 : zone forming ajustée au slider durée
+  if (state.scenario === 5 && state.t >= 25) {
+    const formingScale = state.params.formingHours / 6; // baseline 6h
+    const formEnd = Math.min(25 + 50 * formingScale, 95);
+    const x1 = toX(25, w);
+    const x2 = toX(Math.min(state.t, formEnd), w);
+    ctx.fillStyle = 'rgba(255, 140, 0, 0.12)';
+    ctx.fillRect(x1, PAD.top, x2 - x1, h - PAD.top - PAD.bottom);
+    // Label durée
+    ctx.fillStyle = '#ff8c00';
+    ctx.font = 'bold 10px Segoe UI';
+    ctx.textAlign = 'center';
+    const labelX = (x1 + toX(formEnd, w)) / 2;
+    ctx.fillText(`⏱ FORMING ${state.params.formingHours}h | ${state.params.rejects} rejets/côté | score ≥ ${state.params.scoreThresh}`, labelX, PAD.top - 8);
+  }
+
+  // Support / Résistance
+  const ySupport = toY(s.support, h, mn, mx);
+  ctx.strokeStyle = '#3fb950';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(PAD.left, ySupport);
+  ctx.lineTo(w - PAD.right, ySupport);
+  ctx.stroke();
+  ctx.fillStyle = '#3fb950';
+  ctx.textAlign = 'left';
+  ctx.font = 'bold 11px Segoe UI';
+  ctx.fillText('Support $' + s.support.toFixed(2), w - PAD.right + 4, ySupport + 4);
+
+  const yResistance = toY(s.resistance, h, mn, mx);
+  ctx.strokeStyle = '#f85149';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(PAD.left, yResistance);
+  ctx.lineTo(w - PAD.right, yResistance);
+  ctx.stroke();
+  ctx.fillStyle = '#f85149';
+  ctx.fillText('Résistance $' + s.resistance.toFixed(2), w - PAD.right + 4, yResistance + 4);
+
+  // Ancienne résistance (scenario 6)
+  if (s.oldResistance) {
+    const yOld = toY(s.oldResistance, h, mn, mx);
+    ctx.strokeStyle = 'rgba(248, 81, 73, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    ctx.moveTo(PAD.left, yOld);
+    ctx.lineTo(PAD.left + 60, yOld);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(248, 81, 73, 0.5)';
+    ctx.font = 'italic 9px Segoe UI';
+    ctx.fillText('Ancienne', PAD.left + 65, yOld + 3);
+  }
+
+  // Mid (scénarios 0-2, 6)
+  if ([0, 1, 2, 6].includes(state.scenario)) {
+    const mid = (s.support + s.resistance) / 2;
+    const yMid = toY(mid, h, mn, mx);
+    ctx.strokeStyle = '#c59cff';
+    ctx.lineWidth = state.scenario === 2 ? 1.5 : 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(PAD.left, yMid);
+    ctx.lineTo(w - PAD.right, yMid);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#c59cff';
+    ctx.font = '10px Segoe UI';
+    ctx.fillText('Mid $' + mid.toFixed(2), w - PAD.right + 4, yMid + 3);
+  }
+
+  // Affichage niveau BE théorique (scénario 2)
+  if (state.scenario === 1) {
+    // Trouve l'entry
+    const entry = s.events.find(e => e.type === 'entry');
+    if (entry) {
+      const beLevel = entry.side === 'LONG'
+        ? entry.price * (1 + state.params.beTrigger / 100)
+        : entry.price * (1 - state.params.beTrigger / 100);
+      const yBeLevel = toY(beLevel, h, mn, mx);
+      ctx.strokeStyle = 'rgba(0, 212, 255, 0.5)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 3]);
+      ctx.beginPath();
+      ctx.moveTo(toX(entry.at, w), yBeLevel);
+      ctx.lineTo(w - PAD.right, yBeLevel);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(0, 212, 255, 0.7)';
+      ctx.font = 'italic 9px Segoe UI';
+      ctx.fillText(`Trigger BE +${state.params.beTrigger}%`, toX(entry.at, w) + 4, yBeLevel - 3);
+    }
+  }
+
+  // Courbe prix jusqu'à t
+  ctx.strokeStyle = '#79c0ff';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  let first = true;
+  for (let tt = 0; tt <= state.t; tt += 0.5) {
+    const x = toX(tt, w);
+    const y = toY(s.getPath(tt), h, mn, mx);
+    if (first) { ctx.moveTo(x, y); first = false; }
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Point courant
+  if (state.t > 0 && state.t < 100) {
+    const x = toX(state.t, w);
+    const y = toY(s.getPath(state.t), h, mn, mx);
+    ctx.fillStyle = '#79c0ff';
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // Événements (avec ajustements dynamiques)
+  const scenarioEvents = getDynamicEvents(s);
+  scenarioEvents.forEach(ev => {
+    if (state.t >= ev.at - 1) {
+      const x = toX(ev.at, w);
+      let y;
+      if (ev.type === "entry") {
+        y = toY(ev.price, h, mn, mx);
+        drawMarker(x, y, ev.side === 'LONG' ? '▲' : '▼',
+          ev.side === 'LONG' ? '#3fb950' : '#f85149', ev.label);
+      } else if (ev.type === "exit") {
+        y = toY(ev.price, h, mn, mx);
+        let color, marker;
+        if (ev.reason === 'TP') { color = '#3fb950'; marker = '★'; }
+        else if (ev.reason === 'SL') { color = '#f85149'; marker = '✕'; }
+        else if (ev.reason === 'BE') { color = '#00d4ff'; marker = '✕'; }
+        else if (ev.reason === 'TRAIL') { color = '#c59cff'; marker = '✕'; }
+        else { color = '#8b949e'; marker = '●'; }
+        drawMarker(x, y, marker, color, ev.label);
+      } else if (ev.type === "be-activate") {
+        y = toY(ev.price, h, mn, mx);
+        drawMarker(x, y, '◆', '#00d4ff', ev.label);
+        if (state.t >= ev.at) drawHLine(y, '#00d4ff', ev.at, 100, w, h, 2, []);
+      } else if (ev.type === "trail-activate") {
+        y = toY(ev.price, h, mn, mx);
+        drawMarker(x, y, '◆', '#c59cff', ev.label);
+        if (state.t >= ev.at) {
+          const mid = (s.support + s.resistance) / 2;
+          const yMid = toY(mid, h, mn, mx);
+          drawHLine(yMid, '#c59cff', ev.at, 100, w, h, 2.2, []);
+        }
+      } else if (ev.type === "cassure") {
+        y = toY(ev.price, h, mn, mx);
+        drawMarker(x, y, '▼', '#f85149', ev.label, 18);
+      } else if (ev.type === "rejet") {
+        y = toY(ev.price, h, mn, mx);
+        const m = ev.side === 'R' ? '▼' : '▲';
+        drawMarker(x, y, m, '#c59cff', ev.label, 10, ev.side === 'S' ? -20 : 14);
+      } else if (ev.type === "validation" || ev.type === "recovery-done") {
+        y = toY(ev.price, h, mn, mx);
+        drawMarker(x, y, '★', '#3fb950', ev.label, 16);
+      }
+    }
+  });
+}
+
+// Génère les events en les adaptant aux sliders (scénario 6: nb rejets)
+function getDynamicEvents(s) {
+  if (state.scenario !== 5) return s.events;
+  // Scénario 6 : ajuste le nombre de rejets
+  const baseEvents = [
+    { at: 20, type: "cassure", price: 41.80, label: "🚨 Cassure" },
+    { at: 25, type: "status-change", status: "🔍 EN FORMATION" }
+  ];
+  const rejectsCount = state.params.rejects;
+  // Distribue les rejets entre at=30 et at=80
+  const rejectsSpan = 50;
+  const rejectsStep = rejectsSpan / (rejectsCount * 2);
+  let evAt = 30;
+  for (let i = 0; i < rejectsCount; i++) {
+    // Rejet résistance
+    baseEvents.push({ at: evAt, type: "rejet", side: "R", price: 42.70, label: "Rejet R" });
+    evAt += rejectsStep;
+    // Rejet support
+    baseEvents.push({ at: evAt, type: "rejet", side: "S", price: 41.87, label: "Rejet S" });
+    evAt += rejectsStep;
+  }
+  const formingScale = state.params.formingHours / 6;
+  const valAt = Math.min(25 + 55 * formingScale, 95);
+  baseEvents.push({ at: valAt, type: "validation", price: 42.15, label: "✅ VALIDÉ" });
+  baseEvents.push({ at: valAt + 2, type: "status-change", status: "🟢 ACTIVE" });
+  return baseEvents;
+}
+
+function drawMarker(x, y, symbol, color, label, size = 14, yOffset = 0) {
+  ctx.fillStyle = color;
+  ctx.font = `bold ${size}px Segoe UI`;
+  ctx.textAlign = 'center';
+  ctx.fillText(symbol, x, y + size / 3);
+  if (label) {
+    ctx.font = 'bold 10px Segoe UI';
+    const textW = ctx.measureText(label).width;
+    const labelY = y - 14 + yOffset;
+    const boxX = x - textW / 2 - 4;
+    const boxY = labelY - 8;
+    const boxW = textW + 8;
+    const boxH = 13;
+    ctx.fillStyle = 'rgba(13, 21, 32, 0.95)';
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(boxX, boxY, boxW, boxH);
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center';
+    ctx.fillText(label, x, labelY + 2);
+  }
+}
+
+function drawHLine(y, color, xStart, xEnd, w, h, lw, dash) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lw;
+  ctx.setLineDash(dash || []);
+  ctx.beginPath();
+  ctx.moveTo(toX(xStart, w), y);
+  ctx.lineTo(toX(xEnd, w), y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+// ═══════════════════════════════════════════════════════
+// ANIMATION SCÉNARIOS
+// ═══════════════════════════════════════════════════════
+function animate(ts) {
+  if (!state.playing) return;
+  if (state.lastFrameTime === null) state.lastFrameTime = ts;
+  const dt = (ts - state.lastFrameTime) / 1000;
+  state.lastFrameTime = ts;
+  state.t += dt * 10 * state.speed;
+  if (state.t >= 100) { state.t = 100; state.playing = false; updatePlaybackButtons(); }
+  updateChartInfo();
+  updateStatus();
+  draw();
+  if (state.playing) state.animId = requestAnimationFrame(animate);
+}
+
+function updateChartInfo() {
+  const s = scenarios[state.scenario];
+  const info = document.getElementById('chartInfo');
+  info.innerHTML =
+    `Prix : $${s.getPath(state.t).toFixed(4)}<br>` +
+    `Support : $${s.support.toFixed(2)}<br>` +
+    `Résistance : $${s.resistance.toFixed(2)}<br>` +
+    `Progression : ${state.t.toFixed(0)}%`;
+}
+
+function updateStatus() {
+  const s = scenarios[state.scenario];
+  const status = document.getElementById('chartStatus');
+  const overlay = document.getElementById('chartOverlay');
+  let current = s.initialStatus;
+  const evs = getDynamicEvents(s);
+  for (const ev of evs) {
+    if (ev.type === "status-change" && state.t >= ev.at) current = ev.status;
+  }
+  status.textContent = current;
+  if (current.includes('PAUSE') || current.includes('CASSURE')) {
+    status.style.borderColor = 'var(--red)';
+    status.style.color = 'var(--red)';
+  } else if (current.includes('RECOVERY') || current.includes('FORMATION')) {
+    status.style.borderColor = 'var(--orange)';
+    status.style.color = 'var(--orange)';
+  } else {
+    status.style.borderColor = 'var(--green)';
+    status.style.color = 'var(--green)';
+  }
+
+  // Overlay : score threshold pour scénario 6
+  if (state.scenario === 5) {
+    overlay.style.display = 'block';
+    overlay.textContent = `Score seuil ${state.params.scoreThresh}/100 · ${state.params.rejects} rejets req.`;
+  } else {
+    overlay.style.display = 'none';
+  }
+}
+
+function updatePlaybackButtons() {
+  document.getElementById('playBtn').textContent = state.playing ? '⏸ Pause' : '▶ Play';
+}
+
+// Handlers scénarios
+document.getElementById('playBtn').addEventListener('click', () => {
+  if (state.t >= 100) state.t = 0;
+  state.playing = !state.playing;
+  updatePlaybackButtons();
+  if (state.playing) { state.lastFrameTime = null; state.animId = requestAnimationFrame(animate); }
+  else if (state.animId) cancelAnimationFrame(state.animId);
+});
+document.getElementById('pauseBtn').addEventListener('click', () => {
+  state.playing = false;
+  updatePlaybackButtons();
+  if (state.animId) cancelAnimationFrame(state.animId);
+});
+document.getElementById('resetBtn').addEventListener('click', () => {
+  state.t = 0; state.playing = false;
+  updatePlaybackButtons();
+  if (state.animId) cancelAnimationFrame(state.animId);
+  updateChartInfo(); updateStatus(); draw();
+});
+document.getElementById('speedSlider').addEventListener('input', (e) => {
+  state.speed = parseFloat(e.target.value);
+  document.getElementById('speedValue').textContent = state.speed.toFixed(2) + 'x';
+});
+
+// Tabs scénarios
+document.querySelectorAll('.scenario-pill').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.scenario-pill').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    state.scenario = parseInt(tab.dataset.scenario);
+    state.t = 0;
+    state.playing = false;
+    updatePlaybackButtons();
+    if (state.animId) cancelAnimationFrame(state.animId);
+    const s = scenarios[state.scenario];
+    const desc = document.getElementById('scenarioDesc');
+    desc.className = 'scenario-desc fade-in' + (s.highlight ? ' highlight' : '');
+    desc.querySelector('.title').textContent = `Scénario ${state.scenario + 1} : ${s.name}`;
+    desc.querySelector('div:last-child').textContent = s.description;
+    document.getElementById('impactPermissive').textContent = s.impact.permissive;
+    document.getElementById('impactOptimal').textContent = s.impact.optimal;
+    document.getElementById('impactStrict').textContent = s.impact.strict;
+    updateChartInfo(); updateStatus(); draw();
+  });
+});
+
+// Sliders
+const sliderMappings = [
+  { id: 'zoneBuy', param: 'zoneBuy', valEl: 'valZoneBuy', dec: 2 },
+  { id: 'zoneSell', param: 'zoneSell', valEl: 'valZoneSell', dec: 2 },
+  { id: 'beTrigger', param: 'beTrigger', valEl: 'valBeTrigger', dec: 2 },
+  { id: 'recCandles', param: 'recCandles', valEl: 'valRecCandles', dec: 0 },
+  { id: 'recScore', param: 'recScore', valEl: 'valRecScore', dec: 0 },
+  { id: 'recTimeout', param: 'recTimeout', valEl: 'valRecTimeout', dec: 0 },
+  { id: 'scoreThresh', param: 'scoreThresh', valEl: 'valScoreThresh', dec: 0 },
+  { id: 'formingHours', param: 'formingHours', valEl: 'valFormingHours', dec: 0 },
+  { id: 'rejects', param: 'rejects', valEl: 'valRejects', dec: 0 }
+];
+sliderMappings.forEach(m => {
+  const el = document.getElementById(m.id);
+  el.addEventListener('input', (e) => {
+    const v = parseFloat(e.target.value);
+    state.params[m.param] = v;
+    document.getElementById(m.valEl).textContent = v.toFixed(m.dec);
+    updateProfile();
+    draw();
+    updateStatus();
+  });
+});
+
+function applyPreset(type) {
+  const presets = {
+    permissive: { zoneBuy: 0.60, zoneSell: 0.60, beTrigger: 0.30,
+                  recCandles: 1, recScore: 20, recTimeout: 60,
+                  scoreThresh: 15, formingHours: 1, rejects: 1 },
+    optimal:    { zoneBuy: 0.26, zoneSell: 0.30, beTrigger: 0.70,
+                  recCandles: 3, recScore: 35, recTimeout: 120,
+                  scoreThresh: 25, formingHours: 6, rejects: 2 },
+    strict:     { zoneBuy: 0.10, zoneSell: 0.10, beTrigger: 1.50,
+                  recCandles: 5, recScore: 60, recTimeout: 60,
+                  scoreThresh: 60, formingHours: 24, rejects: 4 }
+  };
+  const p = presets[type];
+  Object.keys(p).forEach(k => {
+    state.params[k] = p[k];
+    const m = sliderMappings.find(x => x.param === k);
+    if (m) {
+      document.getElementById(m.id).value = p[k];
+      document.getElementById(m.valEl).textContent = p[k].toFixed(m.dec);
+    }
+  });
+  updateProfile();
+  draw();
+  updateStatus();
+}
+
+function updateProfile() {
+  const p = state.params;
+  let lever1 = 0, lever2 = 0;
+  lever1 += (5 - p.recCandles) * 2;
+  lever1 += (70 - p.recScore) / 10;
+  lever1 += (p.recTimeout - 30) / 30;
+  lever2 += (70 - p.scoreThresh) / 10;
+  lever2 += (24 - p.formingHours) / 4;
+  lever2 += (5 - p.rejects) * 2;
+  const totalPerm = lever1 + lever2;
+  const indicator = document.getElementById('profileIndicator');
+  const name = document.getElementById('profileName');
+  const desc = document.getElementById('profileDesc');
+  indicator.className = 'profile-indicator';
+  if (totalPerm > 28) {
+    indicator.classList.add('aggressive');
+    name.textContent = '🔥 Agressif';
+    desc.textContent = 'Reprise rapide, plus de trades mais plus de risques';
+  } else if (totalPerm < 16) {
+    indicator.classList.add('conservative');
+    name.textContent = '🛡 Conservateur';
+    desc.textContent = 'Très sélectif, peu de trades mais plus sûrs';
+  } else {
+    indicator.classList.add('balanced');
+    name.textContent = '⚖️ Équilibré';
+    desc.textContent = 'Bon compromis entre réactivité et prudence';
+  }
+  const reactivity = Math.max(0, Math.min(10, Math.round(totalPerm / 4)));
+  const protection = Math.max(0, Math.min(10, 10 - Math.round(totalPerm / 4)));
+  const selectivity = Math.max(0, Math.min(10, 10 - Math.round(Math.abs(totalPerm - 20) / 2.5)));
+  document.getElementById('scoreReactivity').textContent = reactivity + '/10';
+  document.getElementById('scoreProtection').textContent = protection + '/10';
+  document.getElementById('scoreSelectivity').textContent = selectivity + '/10';
+}
+
+// ═══════════════════════════════════════════════════════
+// ONGLET NAV
+// ═══════════════════════════════════════════════════════
+document.querySelectorAll('.main-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const tabId = tab.dataset.tab;
+    document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tabId).classList.add('active');
+    state.activeTab = tabId;
+    // Force redraw si simulateur libre
+    if (tabId === 'free') {
+      setTimeout(() => { resizeCanvas(canvasFree); drawFree(); }, 100);
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+// SIMULATEUR LIBRE
+// ═══════════════════════════════════════════════════════
+const canvasFree = document.getElementById('chartFree');
+const ctxFree = canvasFree.getContext('2d');
+resizeCanvas(canvasFree);
+
+// PRNG seedable
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function generateBars() {
+  const f = state.free;
+  let seedVal = document.getElementById('simSeed').value;
+  if (seedVal === 'auto' || seedVal === '') {
+    seedVal = Date.now() % 1000000;
+  } else {
+    seedVal = parseInt(seedVal) || 42;
+  }
+  f.seed = seedVal;
+  f.rng = mulberry32(seedVal);
+  document.getElementById('simInfoSeed').textContent = seedVal;
+
+  f.support = parseFloat(document.getElementById('simSupport').value) || 40.30;
+  f.resistance = parseFloat(document.getElementById('simResistance').value) || 41.40;
+  f.volatility = document.getElementById('simVolatility').value;
+  f.durationH = parseInt(document.getElementById('simDuration').value) || 12;
+
+  const numBars = f.durationH * 12; // 12 bougies 5m par heure
+  const mid = (f.support + f.resistance) / 2;
+  const amplitude = f.resistance - f.support;
+
+  // Volatilité : contrôle ampleur des mouvements
+  const volMap = { low: 0.15, medium: 0.30, high: 0.55, extreme: 1.00 };
+  const volMult = volMap[f.volatility] || 0.30;
+
+  const bars = [];
+  let price = mid;
+  let trend = 0; // momentum
+
+  for (let i = 0; i < numBars; i++) {
+    // Force de retour vers le mid (range bound) + bruit
+    const distFromMid = price - mid;
+    const retournement = -distFromMid * 0.05; // force qui ramène au mid
+    const noise = (f.rng() - 0.5) * amplitude * volMult * 0.08;
+
+    // Occasionnellement, une cassure (1% de chance en high, 3% en extreme)
+    const breakoutChance = volMult > 0.5 ? 0.015 : 0.002;
+    let breakout = 0;
+    if (f.rng() < breakoutChance) {
+      breakout = (f.rng() < 0.5 ? -1 : 1) * amplitude * 0.5;
+    }
+
+    trend = trend * 0.9 + noise + retournement + breakout;
+    price = price + trend;
+
+    // Soft clamp : garde le prix dans une plage raisonnable
+    const maxDist = amplitude * 1.5;
+    if (price > mid + maxDist) price = mid + maxDist;
+    if (price < mid - maxDist) price = mid - maxDist;
+
+    // Génère open/close/high/low à partir du prix
+    const open = i === 0 ? mid : bars[i - 1].close;
+    const close = price;
+    const h = Math.max(open, close) + Math.abs(f.rng() - 0.5) * amplitude * 0.04;
+    const l = Math.min(open, close) - Math.abs(f.rng() - 0.5) * amplitude * 0.04;
+    bars.push({ open, high: h, low: l, close, idx: i });
+  }
+
+  f.bars = bars;
+  document.getElementById('simInfoAmpl').textContent = `${(amplitude / mid * 100).toFixed(2)}%`;
+  document.getElementById('simInfoMid').textContent = '$' + mid.toFixed(4);
+  document.getElementById('simInfoVol').textContent = f.volatility;
+  document.getElementById('simInfoBars').textContent = numBars;
+
+  resetFreeSim();
+}
+
+function resetFreeSim() {
+  const f = state.free;
+  f.t = 0;
+  f.playing = false;
+  f.trades = [];
+  f.currentPos = null;
+  f.state = 'ACTIVE';
+  f.recoveryTarget = null;
+  f.rejectsSupport = 0;
+  f.rejectsResistance = 0;
+  f.formingStart = null;
+  if (f.animId) cancelAnimationFrame(f.animId);
+  document.getElementById('playBtnFree').textContent = '▶ Play';
+  updateSimStats();
+  drawFree();
+}
+
+function drawFree() {
+  const f = state.free;
+  if (f.bars.length === 0) {
+    // Message vide
+    const rect = canvasFree.getBoundingClientRect();
+    ctxFree.fillStyle = '#152030';
+    ctxFree.fillRect(0, 0, rect.width, rect.height);
+    ctxFree.fillStyle = '#8b949e';
+    ctxFree.font = 'italic 14px Segoe UI';
+    ctxFree.textAlign = 'center';
+    ctxFree.fillText('🎲 Clique sur "Générer nouveau scénario" pour commencer',
+      rect.width / 2, rect.height / 2);
+    return;
+  }
+
+  const rect = canvasFree.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  ctxFree.fillStyle = '#152030';
+  ctxFree.fillRect(0, 0, w, h);
+
+  // Bounds
+  const allPrices = f.bars.flatMap(b => [b.high, b.low]);
+  allPrices.push(f.support, f.resistance);
+  let mn = Math.min(...allPrices) - 0.10;
+  let mx = Math.max(...allPrices) + 0.10;
+  const spread = mx - mn;
+
+  const toXF = (idx) => PAD.left + (idx / (f.bars.length - 1)) * (w - PAD.left - PAD.right);
+  const toYF = (p) => PAD.top + ((mx - p) / spread) * (h - PAD.top - PAD.bottom);
+
+  // Grille
+  ctxFree.strokeStyle = 'rgba(139, 148, 158, 0.1)';
+  ctxFree.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const y = PAD.top + (i / 5) * (h - PAD.top - PAD.bottom);
+    ctxFree.beginPath();
+    ctxFree.moveTo(PAD.left, y);
+    ctxFree.lineTo(w - PAD.right, y);
+    ctxFree.stroke();
+    const price = mx - (i / 5) * spread;
+    ctxFree.fillStyle = '#8b949e';
+    ctxFree.font = '11px Consolas, monospace';
+    ctxFree.textAlign = 'right';
+    ctxFree.fillText('$' + price.toFixed(2), PAD.left - 6, y + 4);
+  }
+
+  // Zones BUY/SELL
+  const zoneBuyTop = f.support * (1 + state.params.zoneBuy / 100);
+  const zoneSellBot = f.resistance * (1 - state.params.zoneSell / 100);
+  ctxFree.fillStyle = 'rgba(63, 185, 80, 0.18)';
+  ctxFree.fillRect(PAD.left, toYF(zoneBuyTop), w - PAD.left - PAD.right,
+    toYF(f.support) - toYF(zoneBuyTop));
+  ctxFree.fillStyle = 'rgba(248, 81, 73, 0.18)';
+  ctxFree.fillRect(PAD.left, toYF(f.resistance), w - PAD.left - PAD.right,
+    toYF(zoneSellBot) - toYF(f.resistance));
+
+  // Support / Résistance
+  ctxFree.strokeStyle = '#3fb950';
+  ctxFree.lineWidth = 2;
+  ctxFree.setLineDash([]);
+  ctxFree.beginPath();
+  ctxFree.moveTo(PAD.left, toYF(f.support));
+  ctxFree.lineTo(w - PAD.right, toYF(f.support));
+  ctxFree.stroke();
+  ctxFree.fillStyle = '#3fb950';
+  ctxFree.font = 'bold 11px Segoe UI';
+  ctxFree.textAlign = 'left';
+  ctxFree.fillText('$' + f.support.toFixed(2), w - PAD.right + 4, toYF(f.support) + 4);
+
+  ctxFree.strokeStyle = '#f85149';
+  ctxFree.beginPath();
+  ctxFree.moveTo(PAD.left, toYF(f.resistance));
+  ctxFree.lineTo(w - PAD.right, toYF(f.resistance));
+  ctxFree.stroke();
+  ctxFree.fillStyle = '#f85149';
+  ctxFree.fillText('$' + f.resistance.toFixed(2), w - PAD.right + 4, toYF(f.resistance) + 4);
+
+  // Mid
+  const mid = (f.support + f.resistance) / 2;
+  ctxFree.strokeStyle = '#c59cff';
+  ctxFree.lineWidth = 1;
+  ctxFree.setLineDash([4, 4]);
+  ctxFree.beginPath();
+  ctxFree.moveTo(PAD.left, toYF(mid));
+  ctxFree.lineTo(w - PAD.right, toYF(mid));
+  ctxFree.stroke();
+  ctxFree.setLineDash([]);
+
+  // Bougies (jusqu'à t)
+  const maxBar = Math.min(Math.floor(f.t), f.bars.length - 1);
+  if (f.bars.length > 0) {
+    const barWidth = Math.max(1, (w - PAD.left - PAD.right) / f.bars.length * 0.8);
+    for (let i = 0; i <= maxBar; i++) {
+      const b = f.bars[i];
+      const x = toXF(i);
+      const isGreen = b.close >= b.open;
+      ctxFree.strokeStyle = isGreen ? '#3fb950' : '#f85149';
+      ctxFree.fillStyle = isGreen ? 'rgba(63, 185, 80, 0.6)' : 'rgba(248, 81, 73, 0.6)';
+      ctxFree.lineWidth = 1;
+      // Mèche
+      ctxFree.beginPath();
+      ctxFree.moveTo(x, toYF(b.high));
+      ctxFree.lineTo(x, toYF(b.low));
+      ctxFree.stroke();
+      // Corps
+      const yHigh = toYF(Math.max(b.open, b.close));
+      const yLow = toYF(Math.min(b.open, b.close));
+      ctxFree.fillRect(x - barWidth / 2, yHigh, barWidth, Math.max(1, yLow - yHigh));
+    }
+  }
+
+  // Trades markers
+  f.trades.forEach(tr => {
+    const xE = toXF(tr.entryBar);
+    const yE = toYF(tr.entry);
+    // Entrée
+    ctxFree.fillStyle = tr.side === 'LONG' ? '#3fb950' : '#f85149';
+    ctxFree.font = 'bold 14px Segoe UI';
+    ctxFree.textAlign = 'center';
+    ctxFree.fillText(tr.side === 'LONG' ? '▲' : '▼', xE, yE + 4);
+
+    // Sortie si définie
+    if (tr.exitBar !== undefined) {
+      const xX = toXF(tr.exitBar);
+      const yX = toYF(tr.exit);
+      let col, mk;
+      if (tr.reason === 'TP') { col = '#3fb950'; mk = '★'; }
+      else if (tr.reason === 'SL') { col = '#f85149'; mk = '✕'; }
+      else if (tr.reason === 'BE') { col = '#00d4ff'; mk = '✕'; }
+      else if (tr.reason === 'TRAIL') { col = '#c59cff'; mk = '✕'; }
+      else { col = '#8b949e'; mk = '●'; }
+      ctxFree.fillStyle = col;
+      ctxFree.font = 'bold 14px Segoe UI';
+      ctxFree.fillText(mk, xX, yX + 4);
+      // Ligne entry → exit
+      ctxFree.strokeStyle = tr.pnl >= 0 ? 'rgba(63, 185, 80, 0.5)' : 'rgba(248, 81, 73, 0.5)';
+      ctxFree.lineWidth = 1;
+      ctxFree.setLineDash([2, 3]);
+      ctxFree.beginPath();
+      ctxFree.moveTo(xE, yE);
+      ctxFree.lineTo(xX, yX);
+      ctxFree.stroke();
+      ctxFree.setLineDash([]);
+    }
+  });
+
+  // Position ouverte : montre SL/TP
+  if (f.currentPos) {
+    const pos = f.currentPos;
+    // SL
+    ctxFree.strokeStyle = '#f85149';
+    ctxFree.lineWidth = 1.5;
+    ctxFree.setLineDash([4, 3]);
+    ctxFree.beginPath();
+    ctxFree.moveTo(toXF(pos.entryBar), toYF(pos.sl));
+    ctxFree.lineTo(toXF(maxBar), toYF(pos.sl));
+    ctxFree.stroke();
+    // TP
+    ctxFree.strokeStyle = '#3fb950';
+    ctxFree.beginPath();
+    ctxFree.moveTo(toXF(pos.entryBar), toYF(pos.tp));
+    ctxFree.lineTo(toXF(maxBar), toYF(pos.tp));
+    ctxFree.stroke();
+    ctxFree.setLineDash([]);
+  }
+
+  // Overlay état (zones spéciales)
+  if (f.state === 'BROKEN') {
+    const xStart = toXF(f.stateStart);
+    ctxFree.fillStyle = 'rgba(248, 81, 73, 0.10)';
+    ctxFree.fillRect(xStart, PAD.top, toXF(maxBar) - xStart, h - PAD.top - PAD.bottom);
+  } else if (f.state === 'RECOVERY') {
+    const xStart = toXF(f.stateStart);
+    ctxFree.fillStyle = 'rgba(255, 140, 0, 0.14)';
+    ctxFree.fillRect(xStart, PAD.top, toXF(maxBar) - xStart, h - PAD.top - PAD.bottom);
+  } else if (f.state === 'FORMING') {
+    const xStart = toXF(f.stateStart);
+    ctxFree.fillStyle = 'rgba(255, 140, 0, 0.12)';
+    ctxFree.fillRect(xStart, PAD.top, toXF(maxBar) - xStart, h - PAD.top - PAD.bottom);
+  }
+}
+
+// Moteur simulation simplifié
+function simulateStep(barIdx) {
+  const f = state.free;
+  const b = f.bars[barIdx];
+  const price = b.close;
+  const p = state.params;
+
+  // Position ouverte ?
+  if (f.currentPos) {
+    const pos = f.currentPos;
+    // Check SL/TP hit
+    let exitPrice = null, exitReason = '';
+    if (pos.side === 'LONG') {
+      if (b.low <= pos.sl) {
+        exitPrice = pos.sl;
+        exitReason = pos.beApplied ? 'BE' : (pos.trailApplied ? 'TRAIL' : 'SL');
+      } else if (b.high >= pos.tp) {
+        exitPrice = pos.tp;
+        exitReason = 'TP';
+      }
+    } else {
+      if (b.high >= pos.sl) {
+        exitPrice = pos.sl;
+        exitReason = pos.beApplied ? 'BE' : (pos.trailApplied ? 'TRAIL' : 'SL');
+      } else if (b.low <= pos.tp) {
+        exitPrice = pos.tp;
+        exitReason = 'TP';
+      }
+    }
+
+    if (exitPrice !== null) {
+      const pnl = pos.side === 'LONG'
+        ? (exitPrice - pos.entry)
+        : (pos.entry - exitPrice);
+      f.trades.push({
+        ...pos, exit: exitPrice, exitBar: barIdx,
+        reason: exitReason, pnl: pnl
+      });
+      f.currentPos = null;
+      if (exitReason === 'SL') {
+        f.state = 'RECOVERY';
+        f.stateStart = barIdx;
+        f.recoveryTarget = barIdx + Math.ceil(p.recTimeout / 5);
+      }
+    } else {
+      // Update BE
+      const pnlPct = pos.side === 'LONG'
+        ? (price - pos.entry) / pos.entry * 100
+        : (pos.entry - price) / pos.entry * 100;
+      if (!pos.beApplied && pnlPct >= p.beTrigger) {
+        pos.beApplied = true;
+        if (pos.side === 'LONG') pos.sl = Math.max(pos.sl, pos.entry * 1.0006);
+        else pos.sl = Math.min(pos.sl, pos.entry * 0.9994);
+      }
+      // Update trailing (franchit mid)
+      const mid = (f.support + f.resistance) / 2;
+      if (!pos.trailApplied) {
+        if (pos.side === 'LONG' && b.high >= mid) {
+          pos.trailApplied = true;
+          pos.sl = Math.max(pos.sl, mid);
+        } else if (pos.side === 'SHORT' && b.low <= mid) {
+          pos.trailApplied = true;
+          pos.sl = Math.min(pos.sl, mid);
+        }
+      }
+    }
+  }
+
+  // État RECOVERY : check timeout ou reprise
+  if (f.state === 'RECOVERY') {
+    if (barIdx >= f.recoveryTarget) {
+      f.state = 'ACTIVE';
+      f.recoveryTarget = null;
+    }
+    return;  // pas de nouveau trade en recovery
+  }
+
+  // Si pas de position ouverte ET ACTIVE : cherche entrée
+  if (!f.currentPos && f.state === 'ACTIVE') {
+    const zoneBuyTop = f.support * (1 + p.zoneBuy / 100);
+    const zoneSellBot = f.resistance * (1 - p.zoneSell / 100);
+    if (price <= zoneBuyTop && price >= f.support * 0.995) {
+      // LONG
+      f.currentPos = {
+        side: 'LONG',
+        entry: price,
+        entryBar: barIdx,
+        sl: f.support * (1 - 0.004), // marge 0.4%
+        tp: f.resistance,
+        beApplied: false,
+        trailApplied: false
+      };
+    } else if (price >= zoneSellBot && price <= f.resistance * 1.005) {
+      // SHORT
+      f.currentPos = {
+        side: 'SHORT',
+        entry: price,
+        entryBar: barIdx,
+        sl: f.resistance * 1.004,
+        tp: f.support,
+        beApplied: false,
+        trailApplied: false
+      };
+    }
+  }
+}
+
+function updateSimStats() {
+  const f = state.free;
+  const trades = f.trades;
+  const wins = trades.filter(t => t.pnl > 0).length;
+  const losses = trades.filter(t => t.pnl <= 0).length;
+  const totalPnl = trades.reduce((s, t) => s + t.pnl, 0);
+  const wr = trades.length > 0 ? (wins / trades.length * 100).toFixed(0) + '%' : '—';
+  document.getElementById('simStatTrades').textContent = trades.length;
+  document.getElementById('simStatWins').textContent = wins;
+  document.getElementById('simStatLosses').textContent = losses;
+  document.getElementById('simStatWR').textContent = wr;
+  document.getElementById('simStatPnl').textContent =
+    (totalPnl >= 0 ? '+$' : '-$') + Math.abs(totalPnl).toFixed(3);
+  document.getElementById('simStatPnl').style.color =
+    totalPnl >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('simStatState').textContent = f.state;
+
+  // Chart info
+  if (f.bars.length > 0 && f.t > 0) {
+    const idx = Math.min(Math.floor(f.t), f.bars.length - 1);
+    const b = f.bars[idx];
+    document.getElementById('chartInfoFree').innerHTML =
+      `Prix : $${b.close.toFixed(4)}<br>` +
+      `Support : $${f.support.toFixed(2)}<br>` +
+      `Résistance : $${f.resistance.toFixed(2)}<br>` +
+      `Bougie : ${idx}/${f.bars.length}`;
+  }
+
+  const statusEl = document.getElementById('chartStatusFree');
+  if (f.state === 'ACTIVE') {
+    statusEl.textContent = f.currentPos ? `🟢 ACTIVE · ${f.currentPos.side}` : '🟢 ACTIVE';
+    statusEl.style.borderColor = 'var(--green)'; statusEl.style.color = 'var(--green)';
+  } else if (f.state === 'RECOVERY') {
+    statusEl.textContent = '🔒 RECOVERY';
+    statusEl.style.borderColor = 'var(--orange)'; statusEl.style.color = 'var(--orange)';
+  } else if (f.state === 'BROKEN') {
+    statusEl.textContent = '⏸ BROKEN';
+    statusEl.style.borderColor = 'var(--red)'; statusEl.style.color = 'var(--red)';
+  } else if (f.state === 'FORMING') {
+    statusEl.textContent = '🔍 FORMING';
+    statusEl.style.borderColor = 'var(--orange)'; statusEl.style.color = 'var(--orange)';
+  }
+}
+
+function animateFree(ts) {
+  const f = state.free;
+  if (!f.playing) return;
+  if (f.lastFrameTime === null) f.lastFrameTime = ts;
+  const dt = (ts - f.lastFrameTime) / 1000;
+  f.lastFrameTime = ts;
+  // Vitesse : bougies par seconde
+  const oldT = f.t;
+  f.t += dt * 5 * f.speed;  // 5 bougies/s à vitesse 1x
+  // Exécute les bougies entre oldT et f.t
+  const startIdx = Math.ceil(oldT);
+  const endIdx = Math.min(Math.floor(f.t), f.bars.length - 1);
+  for (let i = startIdx; i <= endIdx; i++) {
+    simulateStep(i);
+  }
+  if (f.t >= f.bars.length) {
+    f.t = f.bars.length;
+    f.playing = false;
+    document.getElementById('playBtnFree').textContent = '▶ Play';
+  }
+  updateSimStats();
+  drawFree();
+  if (f.playing) f.animId = requestAnimationFrame(animateFree);
+}
+
+document.getElementById('simRegenerate').addEventListener('click', generateBars);
+document.getElementById('playBtnFree').addEventListener('click', () => {
+  const f = state.free;
+  if (f.bars.length === 0) { generateBars(); return; }
+  if (f.t >= f.bars.length) resetFreeSim();
+  f.playing = !f.playing;
+  document.getElementById('playBtnFree').textContent = f.playing ? '⏸ Pause' : '▶ Play';
+  if (f.playing) { f.lastFrameTime = null; f.animId = requestAnimationFrame(animateFree); }
+  else if (f.animId) cancelAnimationFrame(f.animId);
+});
+document.getElementById('pauseBtnFree').addEventListener('click', () => {
+  state.free.playing = false;
+  document.getElementById('playBtnFree').textContent = '▶ Play';
+  if (state.free.animId) cancelAnimationFrame(state.free.animId);
+});
+document.getElementById('resetBtnFree').addEventListener('click', () => {
+  resetFreeSim();
+});
+document.getElementById('speedSliderFree').addEventListener('input', (e) => {
+  state.free.speed = parseFloat(e.target.value);
+  document.getElementById('speedValueFree').textContent = state.free.speed.toFixed(2) + 'x';
+});
+
+// ═══════════════════════════════════════════════════════
+// IMPORT JSON TRADES RÉELS
+// ═══════════════════════════════════════════════════════
+document.getElementById('importBtn').addEventListener('click', () => {
+  document.getElementById('fileInput').click();
+});
+document.getElementById('importZone').addEventListener('click', (e) => {
+  if (e.target.id !== 'importBtn') {
+    document.getElementById('fileInput').click();
+  }
+});
+document.getElementById('fileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      analyzeRealTrades(data);
+    } catch (err) {
+      alert('❌ Fichier JSON invalide : ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+});
+
+function analyzeRealTrades(data) {
+  const container = document.getElementById('tradesAnalysis');
+  const statsEl = document.getElementById('realStats');
+  const reasonsEl = document.getElementById('realReasons');
+
+  if (!data.trades || !Array.isArray(data.trades) || data.trades.length === 0) {
+    alert('❌ Aucun trade trouvé dans le fichier JSON');
+    return;
+  }
+
+  container.style.display = 'block';
+  const trades = data.trades;
+  const wins = trades.filter(t => t.pnl_net > 0);
+  const losses = trades.filter(t => t.pnl_net <= 0);
+  const totalPnl = trades.reduce((s, t) => s + (t.pnl_net || 0), 0);
+  const wr = wins.length / trades.length * 100;
+
+  // Stats
+  statsEl.innerHTML = `
+    <div class="sim-stat"><div class="stat-label">Trades</div><div class="stat-value" style="color: var(--cyan);">${trades.length}</div></div>
+    <div class="sim-stat"><div class="stat-label">Wins</div><div class="stat-value" style="color: var(--green);">${wins.length}</div></div>
+    <div class="sim-stat"><div class="stat-label">Losses</div><div class="stat-value" style="color: var(--red);">${losses.length}</div></div>
+    <div class="sim-stat"><div class="stat-label">Win Rate</div><div class="stat-value" style="color: var(--yellow);">${wr.toFixed(0)}%</div></div>
+    <div class="sim-stat"><div class="stat-label">P&L Total</div><div class="stat-value" style="color: ${totalPnl >= 0 ? 'var(--green)' : 'var(--red)'};">${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(2)}</div></div>
+  `;
+
+  // Raisons
+  const reasonsCount = {};
+  trades.forEach(t => {
+    const r = t.reason || 'UNKNOWN';
+    reasonsCount[r] = (reasonsCount[r] || 0) + 1;
+  });
+  const sorted = Object.entries(reasonsCount).sort((a, b) => b[1] - a[1]);
+  reasonsEl.innerHTML = sorted.map(([r, c]) => {
+    const pct = (c / trades.length * 100).toFixed(0);
+    let color = 'var(--muted)';
+    if (r.includes('TP') || r.includes('TAKE')) color = 'var(--green)';
+    else if (r.includes('TRAIL')) color = 'var(--purple)';
+    else if (r.includes('BE') || r.includes('BREAK-EVEN')) color = 'var(--cyan)';
+    else if (r.includes('SL') || r.includes('STOP')) color = 'var(--red)';
+    return `<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+      <span style="color: ${color}; font-weight: 700; min-width: 180px;">${r}</span>
+      <span style="font-family: Consolas, monospace; color: var(--text);">${c} (${pct}%)</span>
+      <div style="flex: 1; height: 8px; background: ${color}; opacity: 0.6; max-width: ${pct * 3}px; border-radius: 2px;"></div>
+    </div>`;
+  }).join('');
+}
+
+// Init
+updateChartInfo();
+updateStatus();
+updateProfile();
+draw();
+setTimeout(() => { draw(); resizeCanvas(canvasFree); drawFree(); }, 100);
+
+</script>
+</body>
+</html>
