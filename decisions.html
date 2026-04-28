@@ -1,0 +1,1760 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#03060a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>GREENROAD · State Machine</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌿%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Bricolage+Grotesque:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-deep:      #03060a;
+    --glass-bg:        rgba(13, 18, 28, 0.55);
+    --glass-bg-strong: rgba(13, 18, 28, 0.78);
+    --glass-border:    rgba(255, 255, 255, 0.08);
+    --glass-border-bright: rgba(255, 255, 255, 0.14);
+    --glass-shine:     rgba(255, 255, 255, 0.04);
+
+    /* Phases RB couleurs */
+    --c-active:    #00ffae;   /* vert mint */
+    --c-broken:    #ff2e5e;   /* rouge */
+    --c-forming:   #ff8a00;   /* orange */
+    --c-recovery:  #b865ff;   /* violet */
+
+    /* Semantic */
+    --pos:          #00ffae;
+    --neg:          #ff2e5e;
+    --warn:         #ff8a00;
+    --info:         #00e5ff;
+
+    /* Text */
+    --text:        #f0f7f3;
+    --text-mute:   #8a9eb0;
+    --text-faint:  #4a6175;
+  }
+
+  html, body {
+    background: var(--bg-deep);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     AURORA BACKGROUND
+  ═══════════════════════════════════════════════════════════════ */
+  .aurora {
+    position: fixed; inset: 0; z-index: -3; overflow: hidden;
+    background: var(--bg-deep);
+  }
+  .orb {
+    position: absolute; border-radius: 50%;
+    filter: blur(100px); opacity: 0.5;
+    animation: orbFloat 20s ease-in-out infinite;
+  }
+  .orb-1 { width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(0, 255, 174, 0.4) 0%, transparent 70%);
+    top: -200px; left: -100px; }
+  .orb-2 { width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(184, 101, 255, 0.35) 0%, transparent 70%);
+    top: 40%; right: -150px; animation-delay: -7s; }
+  .orb-3 { width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(0, 229, 255, 0.3) 0%, transparent 70%);
+    bottom: -100px; left: 30%; animation-delay: -14s; }
+  @keyframes orbFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(80px, -40px) scale(1.1); }
+    66% { transform: translate(-60px, 50px) scale(0.95); }
+  }
+  .grid-overlay {
+    position: fixed; inset: 0; z-index: -2;
+    background-image:
+      linear-gradient(rgba(0, 255, 174, 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 255, 174, 0.025) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 100% 80% at 50% 30%, #000 30%, transparent 80%);
+  }
+  #particles { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+
+  /* ═══════════════════════════════════════════════════════════════
+     LAYOUT
+  ═══════════════════════════════════════════════════════════════ */
+  .wrap {
+    max-width: 920px; margin: 0 auto;
+    padding: 24px 16px 80px;
+    position: relative;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     HEADER
+  ═══════════════════════════════════════════════════════════════ */
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 18px 24px; margin-bottom: 24px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 var(--glass-shine);
+  }
+  .logo {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 26px; font-weight: 800; letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #00ffae 0%, #00d4ff 50%, #b865ff 100%);
+    background-size: 200% 200%;
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+    animation: gradShift 6s ease-in-out infinite;
+  }
+  @keyframes gradShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .logo-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--text-faint);
+    letter-spacing: 3px; text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .back-btn {
+    color: var(--text-mute); font-size: 11px; text-decoration: none;
+    letter-spacing: 1.5px; font-family: 'JetBrains Mono', monospace;
+    padding: 8px 14px; border: 1px solid var(--glass-border);
+    border-radius: 999px; transition: all 0.2s;
+    background: rgba(0, 0, 0, 0.3);
+  }
+  .back-btn:hover { color: var(--pos); border-color: var(--pos); }
+
+  /* ═══════════════════════════════════════════════════════════════
+     PAGE TITLE
+  ═══════════════════════════════════════════════════════════════ */
+  .page-title { text-align: center; margin-bottom: 20px; }
+  .page-title h1 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 22px; font-weight: 700;
+    color: var(--text);
+    letter-spacing: 1.5px; margin-bottom: 4px;
+  }
+  .page-title .sub {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-faint); font-size: 11px; letter-spacing: 2px;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     LIVE STATUS PILL
+  ═══════════════════════════════════════════════════════════════ */
+  .live-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--glass-border-bright);
+    border-radius: 999px; padding: 8px 14px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--text); transition: all 0.3s;
+  }
+  .live-pill.bot-stopped {
+    background: rgba(255, 46, 94, 0.12);
+    border-color: rgba(255, 46, 94, 0.45);
+    color: var(--neg);
+    animation: stoppedPulse 2.5s ease-in-out infinite;
+  }
+  .live-pill.bot-stopped .dot {
+    background: var(--neg) !important;
+    box-shadow: 0 0 12px var(--neg) !important;
+    animation: none !important;
+  }
+  .live-pill.bot-stopped .dot::after { display: none !important; }
+  @keyframes stoppedPulse {
+    0%, 100% { box-shadow: 0 0 18px rgba(255, 46, 94, 0.3); }
+    50% { box-shadow: 0 0 32px rgba(255, 46, 94, 0.6); }
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--pos); box-shadow: 0 0 10px var(--pos);
+    animation: pulse 1.6s ease-in-out infinite;
+    flex-shrink: 0; position: relative;
+  }
+  .dot::after {
+    content: '';
+    position: absolute; inset: -4px;
+    border-radius: 50%;
+    border: 1px solid var(--pos); opacity: 0;
+    animation: ping 1.6s ease-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(0.85); }
+  }
+  @keyframes ping {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(2.6); opacity: 0; }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     CARD GLASS
+  ═══════════════════════════════════════════════════════════════ */
+  .card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 22px 24px;
+    margin-bottom: 16px;
+    position: relative; overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 var(--glass-shine);
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+    pointer-events: none;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     STATE HERO — la grosse carte d'état RB
+  ═══════════════════════════════════════════════════════════════ */
+  .state-hero {
+    text-align: center;
+    padding: 30px 24px;
+    border: 2px solid var(--glass-border-bright);
+    transition: all 0.4s;
+  }
+  .state-hero.actif    { border-color: rgba(0, 255, 174, 0.45);
+                        box-shadow: 0 0 50px rgba(0, 255, 174, 0.15); }
+  .state-hero.broken   { border-color: rgba(255, 46, 94, 0.45);
+                        box-shadow: 0 0 50px rgba(255, 46, 94, 0.15); }
+  .state-hero.forming  { border-color: rgba(255, 138, 0, 0.45);
+                        box-shadow: 0 0 50px rgba(255, 138, 0, 0.15); }
+  .state-hero.recovery { border-color: rgba(184, 101, 255, 0.45);
+                        box-shadow: 0 0 50px rgba(184, 101, 255, 0.15); }
+  .state-hero.stopped  { border-color: rgba(74, 97, 117, 0.45);
+                        box-shadow: 0 0 30px rgba(74, 97, 117, 0.15);
+                        opacity: 0.85; }
+
+  .state-emoji {
+    font-size: 56px; line-height: 1; margin-bottom: 14px;
+    animation: float3d 4s ease-in-out infinite;
+    filter: drop-shadow(0 6px 24px rgba(0, 255, 174, 0.3));
+  }
+  @keyframes float3d {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .state-name {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 32px; font-weight: 800;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .state-hero.actif    .state-name { color: var(--c-active);
+                        text-shadow: 0 0 28px rgba(0, 255, 174, 0.5); }
+  .state-hero.broken   .state-name { color: var(--c-broken);
+                        text-shadow: 0 0 28px rgba(255, 46, 94, 0.5); }
+  .state-hero.forming  .state-name { color: var(--c-forming);
+                        text-shadow: 0 0 28px rgba(255, 138, 0, 0.5); }
+  .state-hero.recovery .state-name { color: var(--c-recovery);
+                        text-shadow: 0 0 28px rgba(184, 101, 255, 0.5); }
+  .state-hero.stopped  .state-name { color: var(--text-mute); }
+
+  .state-desc {
+    color: var(--text-mute); font-size: 14px;
+    line-height: 1.6; max-width: 480px;
+    margin: 0 auto 16px; font-style: italic;
+  }
+
+  /* Score circle dans hero */
+  .score-circle {
+    width: 90px; height: 90px; border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    border: 3px solid var(--c-active);
+    display: inline-flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    box-shadow: inset 0 0 20px rgba(0, 255, 174, 0.2),
+                0 0 30px rgba(0, 255, 174, 0.3);
+    position: relative; margin-top: 8px;
+  }
+  .score-circle::before {
+    content: '';
+    position: absolute; inset: -3px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    border-top-color: currentColor; border-right-color: currentColor;
+    animation: spin 3s linear infinite;
+    opacity: 0.5;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .score-num {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 28px; font-weight: 800;
+    color: var(--c-active); line-height: 1;
+  }
+  .score-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--text-faint);
+    letter-spacing: 2px; margin-top: 2px;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     STATE MACHINE FLOW VISUAL
+  ═══════════════════════════════════════════════════════════════ */
+  .flow-section {
+    margin-top: 8px;
+  }
+  .flow-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--text-faint);
+    letter-spacing: 3px; text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .flow-title::before {
+    content: ''; width: 4px; height: 16px;
+    background: linear-gradient(180deg, var(--pos), var(--info));
+    border-radius: 2px;
+    box-shadow: 0 0 10px rgba(0, 255, 174, 0.6);
+  }
+  .flow-title::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(90deg, var(--glass-border-bright), transparent);
+  }
+
+  /* Diagramme state machine */
+  .state-machine {
+    display: grid;
+    gap: 14px;
+    padding: 22px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+  }
+  .sm-row {
+    display: flex; align-items: center;
+    gap: 14px; flex-wrap: wrap;
+  }
+  .sm-node {
+    flex: 1; min-width: 140px;
+    padding: 14px 16px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid var(--glass-border);
+    border-radius: 14px;
+    text-align: center;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+  }
+  .sm-node.active {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px currentColor;
+  }
+  .sm-node.actif    { color: var(--c-active); }
+  .sm-node.broken   { color: var(--c-broken); }
+  .sm-node.forming  { color: var(--c-forming); }
+  .sm-node.recovery { color: var(--c-recovery); }
+  .sm-node.active.actif    { border-color: var(--c-active);
+                            background: rgba(0, 255, 174, 0.08); }
+  .sm-node.active.broken   { border-color: var(--c-broken);
+                            background: rgba(255, 46, 94, 0.08); }
+  .sm-node.active.forming  { border-color: var(--c-forming);
+                            background: rgba(255, 138, 0, 0.08); }
+  .sm-node.active.recovery { border-color: var(--c-recovery);
+                            background: rgba(184, 101, 255, 0.08); }
+  .sm-node.passed {
+    opacity: 0.6;
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .sm-node-emoji { font-size: 22px; margin-bottom: 4px; display: block; }
+  .sm-node-label {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 1.2px; text-transform: uppercase;
+  }
+  .sm-node.active .sm-node-label::after {
+    content: ' ●';
+    animation: blink 1.2s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .sm-arrow {
+    flex-shrink: 0; color: var(--text-faint);
+    font-size: 18px; align-self: center;
+  }
+  .sm-arrow.down {
+    width: 100%; text-align: center;
+    margin: -4px 0;
+  }
+
+  /* OR badge entre forming et recovery */
+  .sm-or {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 1.5px;
+    color: var(--text-faint); margin: 0 auto;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     CONTEXT DETAILS — affiché selon état
+  ═══════════════════════════════════════════════════════════════ */
+  .context {
+    margin-top: 16px;
+    padding: 18px 22px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 16px;
+    border: 1px solid var(--glass-border);
+  }
+  .context-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--text-faint);
+    letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .ctx-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px;
+  }
+  .ctx-item {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+  }
+  .ctx-item .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--text-faint);
+    letter-spacing: 1.5px; text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .ctx-item .value {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 16px; font-weight: 700;
+    color: var(--text);
+  }
+  .ctx-item.pos { border-color: rgba(0, 255, 174, 0.25); }
+  .ctx-item.pos .value { color: var(--pos); }
+  .ctx-item.warn { border-color: rgba(255, 138, 0, 0.25); }
+  .ctx-item.warn .value { color: var(--warn); }
+  .ctx-item.recovery { border-color: rgba(184, 101, 255, 0.25); }
+  .ctx-item.recovery .value { color: var(--c-recovery); }
+  .ctx-item.info { border-color: rgba(0, 229, 255, 0.25); }
+  .ctx-item.info .value { color: var(--info); }
+
+  /* Forming progress bars */
+  .forming-progress {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 12px; margin-top: 14px;
+  }
+  .fp-card {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px; padding: 12px 14px;
+    transition: all 0.3s;
+    position: relative; overflow: hidden;
+  }
+  .fp-card.complete {
+    border-color: var(--pos);
+    box-shadow: 0 0 16px rgba(0, 255, 174, 0.2);
+  }
+  .fp-card.complete::after {
+    content: '✓';
+    position: absolute; top: 10px; right: 12px;
+    color: var(--pos); font-size: 18px; font-weight: bold;
+    text-shadow: 0 0 8px rgba(0, 255, 174, 0.5);
+  }
+  .fp-emoji { font-size: 20px; margin-bottom: 6px; display: block; }
+  .fp-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--text-faint);
+    text-transform: uppercase; letter-spacing: 1.2px;
+    margin-bottom: 8px;
+  }
+  .fp-value {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 16px; font-weight: 700;
+    color: var(--text); margin-bottom: 8px; line-height: 1;
+  }
+  .fp-bar-bg {
+    height: 5px; background: rgba(0, 0, 0, 0.5);
+    border-radius: 3px; overflow: hidden;
+  }
+  .fp-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--warn), var(--pos));
+    border-radius: 3px;
+    transition: width 0.8s;
+    box-shadow: 0 0 8px rgba(0, 255, 174, 0.4);
+  }
+
+  /* Recovery dots */
+  .rec-target-num {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 28px; font-weight: 800;
+    color: var(--c-recovery);
+    text-shadow: 0 0 24px rgba(184, 101, 255, 0.5);
+    text-align: center; margin: 4px 0 12px;
+  }
+  .rec-dots {
+    display: flex; justify-content: center; gap: 12px;
+    margin: 12px 0 8px;
+  }
+  .rec-dot {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid var(--c-recovery);
+    transition: all 0.4s cubic-bezier(0.5, 1.5, 0.5, 1);
+  }
+  .rec-dot.filled {
+    background: var(--c-recovery);
+    box-shadow: 0 0 14px var(--c-recovery);
+    transform: scale(1.15);
+  }
+
+  /* Position card */
+  .pos-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 12px 18px; margin-top: 8px;
+  }
+  .pos-cell {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .pos-key {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--text-faint);
+    letter-spacing: 1.2px; text-transform: uppercase;
+  }
+  .pos-val {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 16px; font-weight: 700;
+    color: var(--text);
+  }
+  .side-badge {
+    display: inline-block; padding: 3px 10px;
+    border-radius: 999px;
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+  .side-LONG  { background: rgba(0, 255, 174, 0.15); color: var(--pos);
+                border: 1px solid rgba(0, 255, 174, 0.4); }
+  .side-SHORT { background: rgba(255, 46, 94, 0.15); color: var(--neg);
+                border: 1px solid rgba(255, 46, 94, 0.4); }
+
+  /* ═══════════════════════════════════════════════════════════════
+     ACTIVE SECTION — Surveillance détaillée
+  ═══════════════════════════════════════════════════════════════ */
+  .active-section {
+    margin-top: 8px;
+  }
+  .active-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 16px;
+    margin-top: 12px;
+  }
+  /* Gauge verticale */
+  .price-gauge {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 18px 14px;
+    display: flex; flex-direction: column; gap: 10px;
+    align-items: center; min-height: 280px;
+  }
+  .gauge-label-top, .gauge-label-bot {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    width: 100%; text-align: center;
+  }
+  .gauge-label-top {
+    color: var(--neg);
+  }
+  .gauge-label-bot {
+    color: var(--pos);
+  }
+  .gauge-track {
+    flex: 1;
+    width: 16px;
+    background: linear-gradient(180deg,
+      rgba(255, 46, 94, 0.18) 0%,
+      rgba(255, 46, 94, 0.10) 25%,
+      rgba(255, 255, 255, 0.05) 45%,
+      rgba(255, 255, 255, 0.05) 55%,
+      rgba(0, 255, 174, 0.10) 75%,
+      rgba(0, 255, 174, 0.18) 100%);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    position: relative; min-height: 180px;
+  }
+  /* Zone BUY surlignée en bas */
+  .gauge-zone-buy, .gauge-zone-sell {
+    position: absolute; left: 0; right: 0;
+  }
+  .gauge-zone-buy {
+    background: rgba(0, 255, 174, 0.25);
+  }
+  .gauge-zone-sell {
+    background: rgba(255, 46, 94, 0.25);
+  }
+  /* Curseur prix */
+  .gauge-cursor {
+    position: absolute;
+    left: -10px; right: -10px;
+    height: 4px;
+    background: var(--info);
+    border-radius: 2px;
+    box-shadow: 0 0 14px var(--info), 0 0 28px var(--info);
+    transition: top 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .gauge-cursor::before {
+    content: '';
+    position: absolute;
+    left: -8px; top: -4px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--info);
+    box-shadow: 0 0 14px var(--info);
+    animation: pulseCursor 1.5s ease-in-out infinite;
+  }
+  @keyframes pulseCursor {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+  }
+  .gauge-price-label {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 18px; font-weight: 800;
+    color: var(--info);
+    text-shadow: 0 0 14px rgba(0, 229, 255, 0.5);
+  }
+  .gauge-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--text-faint);
+    letter-spacing: 1.5px;
+  }
+
+  /* Distances + signal */
+  .active-info {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .dist-card {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+  }
+  .dist-card.long-near { border-color: rgba(0, 255, 174, 0.4);
+                          box-shadow: 0 0 18px rgba(0, 255, 174, 0.12); }
+  .dist-card.short-near { border-color: rgba(255, 46, 94, 0.4);
+                           box-shadow: 0 0 18px rgba(255, 46, 94, 0.12); }
+  .dist-emoji { font-size: 28px; }
+  .dist-info { flex: 1; }
+  .dist-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--text-faint);
+    letter-spacing: 1.5px; text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .dist-value {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 18px; font-weight: 700;
+  }
+  .dist-value.pos { color: var(--pos); }
+  .dist-value.neg { color: var(--neg); }
+  .dist-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--text-mute);
+    margin-top: 2px;
+  }
+
+  /* Signal + RSI + Tendance + Countdown */
+  .active-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px; margin-top: 14px;
+  }
+  .meta-cell {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  .meta-cell .meta-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--text-faint);
+    letter-spacing: 1.5px; text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .meta-cell .meta-value {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 17px; font-weight: 700;
+    color: var(--text); line-height: 1.2;
+  }
+  .meta-cell.signal-buy .meta-value { color: var(--pos); }
+  .meta-cell.signal-sell .meta-value { color: var(--neg); }
+  .meta-cell.signal-hold .meta-value { color: var(--text-mute); }
+  .meta-cell .meta-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--text-faint);
+    margin-top: 4px;
+  }
+
+  /* RSI bar */
+  .rsi-bar-bg {
+    height: 6px; background: rgba(0, 0, 0, 0.5);
+    border-radius: 3px; overflow: hidden;
+    margin-top: 8px;
+    position: relative;
+  }
+  .rsi-bar-fill {
+    height: 100%; background: linear-gradient(90deg, var(--pos), var(--info), var(--neg));
+    border-radius: 3px;
+    transition: width 0.6s;
+  }
+  /* Marqueurs 30/70 */
+  .rsi-bar-bg::before, .rsi-bar-bg::after {
+    content: ''; position: absolute; top: 0; bottom: 0; width: 1px;
+    background: rgba(255,255,255,0.3);
+  }
+  .rsi-bar-bg::before { left: 30%; }
+  .rsi-bar-bg::after  { left: 70%; }
+
+  /* Next action */
+  .next-action {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-top: 14px;
+  }
+  .next-action .na-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--text-faint);
+    letter-spacing: 1.5px; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .next-action .na-text {
+    font-size: 13px; color: var(--text);
+    line-height: 1.6;
+  }
+  .next-action .na-line {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 6px;
+  }
+  .next-action .na-line.buy { color: var(--pos); }
+  .next-action .na-line.sell { color: var(--neg); }
+  .next-action .na-emoji { font-size: 16px; }
+  .info-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .info-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 14px 16px; text-align: center;
+  }
+  .info-card .card-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--text-faint);
+    letter-spacing: 1.5px; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .info-card .card-value {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 18px; font-weight: 700;
+    color: var(--text); line-height: 1;
+  }
+  .v-pos { color: var(--pos); }
+  .v-neg { color: var(--neg); }
+  .v-mute { color: var(--text-mute); }
+
+  /* ═══════════════════════════════════════════════════════════════
+     FOOTER
+  ═══════════════════════════════════════════════════════════════ */
+  .footer {
+    text-align: center; margin-top: 36px;
+    padding: 20px;
+    border-top: 1px solid var(--glass-border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--text-faint);
+    line-height: 2;
+  }
+  .footer a {
+    color: var(--info); text-decoration: none;
+  }
+  .footer a:hover { color: var(--pos); }
+  .sync-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px; background: rgba(0, 255, 174, 0.08);
+    border: 1px solid rgba(0, 255, 174, 0.3);
+    border-radius: 999px;
+    color: var(--pos); font-weight: 700;
+    margin: 8px 0;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     RESPONSIVE
+  ═══════════════════════════════════════════════════════════════ */
+  @media (max-width: 720px) {
+    .wrap { padding: 14px 12px 60px; }
+    header { padding: 14px 18px; flex-wrap: wrap; gap: 10px; }
+    .logo { font-size: 22px; }
+    .card { padding: 18px; border-radius: 16px; }
+    .state-name { font-size: 24px; letter-spacing: 1.5px; }
+    .state-emoji { font-size: 44px; }
+    .info-bar { grid-template-columns: repeat(2, 1fr); }
+    .ctx-grid { grid-template-columns: 1fr; }
+    .forming-progress { grid-template-columns: 1fr; }
+    .sm-row { flex-direction: column; gap: 8px; }
+    .sm-arrow { transform: rotate(90deg); }
+    .sm-node { width: 100%; }
+  }
+  @media (max-width: 480px) {
+    .info-bar { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .info-card .card-value { font-size: 15px; }
+  }
+
+  .hidden { display: none !important; }
+  .skel {
+    background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 100%);
+    background-size: 200% 100%;
+    animation: skelLoad 1.5s ease-in-out infinite;
+    border-radius: 4px; color: transparent !important;
+  }
+  @keyframes skelLoad {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Fade in animation */
+  .fade-in-up {
+    animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- AURORA BG -->
+<div class="aurora">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+<div class="grid-overlay"></div>
+<canvas id="particles"></canvas>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header class="fade-in-up" style="animation-delay:0s">
+    <div>
+      <div class="logo">GREENROAD</div>
+      <div class="logo-tag">State Machine · v2</div>
+    </div>
+    <a href="https://cgform-source.github.io/greenroad-remote/index.html" class="back-btn">← Menu</a>
+  </header>
+
+  <!-- TITLE + LIVE PILL -->
+  <div class="page-title fade-in-up" style="animation-delay:0.05s">
+    <h1>🧠 Cerveau du bot</h1>
+    <div class="sub">État de la stratégie en temps réel</div>
+    <div style="margin-top:12px">
+      <div class="live-pill" id="livePill">
+        <div class="dot" id="statusDot"></div>
+        <span id="statusTxt">Initialisation…</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATE HERO -->
+  <div class="card state-hero stopped fade-in-up" id="stateHero" style="animation-delay:0.1s">
+    <div class="state-emoji" id="stateEmoji">⏳</div>
+    <div class="state-name" id="stateName">CHARGEMENT</div>
+    <div class="state-desc" id="stateDesc">Connexion au bot…</div>
+    <div class="score-circle" id="scoreCircle" style="display:none">
+      <div class="score-num" id="scoreNum">—</div>
+      <div class="score-label">SCORE</div>
+    </div>
+  </div>
+
+  <!-- STATE MACHINE FLOW -->
+  <div class="card fade-in-up" style="animation-delay:0.15s">
+    <div class="flow-title">📊 State Machine — Cycle de la stratégie</div>
+    <div class="state-machine">
+      <!-- Row 1 : ACTIF -->
+      <div class="sm-row">
+        <div class="sm-node actif" id="smActif">
+          <span class="sm-node-emoji">🟢</span>
+          <div class="sm-node-label">Actif</div>
+        </div>
+      </div>
+      <!-- Down arrow -->
+      <div class="sm-arrow down">↓ <span style="font-size:10px; color:var(--text-faint)">SL touché</span></div>
+      <!-- Row 2 : EN PAUSE -->
+      <div class="sm-row">
+        <div class="sm-node broken" id="smBroken">
+          <span class="sm-node-emoji">🔴</span>
+          <div class="sm-node-label">En pause</div>
+        </div>
+      </div>
+      <!-- Down arrow + OR -->
+      <div class="sm-arrow down">↓ <span style="font-size:10px; color:var(--text-faint)">2 chemins possibles</span></div>
+      <!-- Row 3 : RECOVERY + FORMATION (parallèle) -->
+      <div class="sm-row">
+        <div class="sm-node recovery" id="smRecovery">
+          <span class="sm-node-emoji">🟣</span>
+          <div class="sm-node-label">Rachat</div>
+          <div style="font-size:9px; color:var(--text-faint); margin-top:4px; font-family:'JetBrains Mono'">Rapide ⚡</div>
+        </div>
+        <div class="sm-arrow">⇆</div>
+        <div class="sm-node forming" id="smForming">
+          <span class="sm-node-emoji">🟠</span>
+          <div class="sm-node-label">Formation</div>
+          <div style="font-size:9px; color:var(--text-faint); margin-top:4px; font-family:'JetBrains Mono'">Lent 🐢</div>
+        </div>
+      </div>
+      <!-- Up arrow back to ACTIF -->
+      <div class="sm-arrow down">↑ <span style="font-size:10px; color:var(--text-faint)">Reprise validée</span></div>
+    </div>
+  </div>
+
+  <!-- CONTEXT DETAILS (forming details if forming) -->
+  <div class="card hidden fade-in-up" id="formingCard" style="animation-delay:0.2s">
+    <div class="flow-title">🟠 Formation en cours — Conditions à valider</div>
+    <div class="forming-progress">
+      <div class="fp-card" id="fpDuration">
+        <span class="fp-emoji">⏱</span>
+        <div class="fp-label">Durée</div>
+        <div class="fp-value">—</div>
+        <div class="fp-bar-bg"><div class="fp-bar-fill" style="width:0%"></div></div>
+      </div>
+      <div class="fp-card" id="fpSupport">
+        <span class="fp-emoji">🟢</span>
+        <div class="fp-label">Rebonds Support</div>
+        <div class="fp-value">—</div>
+        <div class="fp-bar-bg"><div class="fp-bar-fill" style="width:0%"></div></div>
+      </div>
+      <div class="fp-card" id="fpResistance">
+        <span class="fp-emoji">🔴</span>
+        <div class="fp-label">Rebonds Résistance</div>
+        <div class="fp-value">—</div>
+        <div class="fp-bar-bg"><div class="fp-bar-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div class="ctx-grid" id="formingCandidates" style="margin-top:14px">
+      <!-- Candidat low/high -->
+    </div>
+  </div>
+
+  <!-- RECOVERY card -->
+  <div class="card hidden fade-in-up" id="recoveryCard" style="animation-delay:0.2s">
+    <div class="flow-title">🟣 Mode Rachat — Surveillance retour</div>
+    <div style="text-align:center">
+      <div style="font-family:'JetBrains Mono', monospace; font-size:10px; color:var(--text-faint); letter-spacing:1.5px; text-transform:uppercase">📍 Niveau de rachat à atteindre</div>
+      <div class="rec-target-num" id="recTargetVal">—</div>
+      <div class="rec-dots" id="recDots"></div>
+      <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-mute); margin-top:8px" id="recTimeout">—</div>
+    </div>
+  </div>
+
+  <!-- POSITION card -->
+  <div class="card hidden fade-in-up" id="positionCard" style="animation-delay:0.2s">
+    <div class="flow-title">🎯 Position en cours</div>
+    <div id="posContent">
+      <!-- Generated by JS -->
+    </div>
+  </div>
+
+  <!-- ACTIVE SECTION — Surveillance détaillée (visible si bot ACTIF) -->
+  <div class="card hidden fade-in-up" id="activeCard" style="animation-delay:0.22s">
+    <div class="flow-title">🟢 Surveillance active — Que fait le bot ?</div>
+
+    <div class="active-grid">
+      <!-- Gauge verticale du prix dans le range -->
+      <div class="price-gauge">
+        <div class="gauge-label-top" id="gaugeLabelTop">— Résistance —</div>
+        <div class="gauge-track" id="gaugeTrack">
+          <div class="gauge-zone-sell" id="gaugeZoneSell"></div>
+          <div class="gauge-zone-buy" id="gaugeZoneBuy"></div>
+          <div class="gauge-cursor" id="gaugeCursor" style="top:50%"></div>
+        </div>
+        <div class="gauge-label-bot" id="gaugeLabelBot">— Support —</div>
+        <div class="gauge-price-label" id="gaugePriceLabel">—</div>
+        <div class="gauge-pct" id="gaugePct">—</div>
+      </div>
+
+      <!-- Distances + Signal -->
+      <div class="active-info">
+        <div class="dist-card" id="distLong">
+          <div class="dist-emoji">📈</div>
+          <div class="dist-info">
+            <div class="dist-label">Distance LONG</div>
+            <div class="dist-value">—</div>
+            <div class="dist-sub">—</div>
+          </div>
+        </div>
+        <div class="dist-card" id="distShort">
+          <div class="dist-emoji">📉</div>
+          <div class="dist-info">
+            <div class="dist-label">Distance SHORT</div>
+            <div class="dist-value">—</div>
+            <div class="dist-sub">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Meta : Signal, Tendance, RSI, Countdown -->
+    <div class="active-meta-grid">
+      <div class="meta-cell" id="metaSignal">
+        <div class="meta-label">🎯 Dernier signal</div>
+        <div class="meta-value">—</div>
+        <div class="meta-sub">—</div>
+      </div>
+      <div class="meta-cell">
+        <div class="meta-label">📊 Tendance</div>
+        <div class="meta-value" id="metaTrend">—</div>
+        <div class="meta-sub" id="metaTrendSub">—</div>
+      </div>
+      <div class="meta-cell">
+        <div class="meta-label">📉 RSI</div>
+        <div class="meta-value" id="metaRsi">—</div>
+        <div class="rsi-bar-bg"><div class="rsi-bar-fill" id="rsiBarFill" style="width:50%"></div></div>
+        <div class="meta-sub" id="metaRsiInterp">—</div>
+      </div>
+      <div class="meta-cell">
+        <div class="meta-label">⏱ Prochaine bougie</div>
+        <div class="meta-value" id="metaCountdown">—</div>
+        <div class="meta-sub" id="metaCountdownSub">—</div>
+      </div>
+    </div>
+
+    <!-- Prochaine action -->
+    <div class="next-action">
+      <div class="na-label">🔮 Prochaine action probable</div>
+      <div class="na-text" id="naMain">—</div>
+      <div class="na-line buy hidden" id="naLineBuy">
+        <span class="na-emoji">📈</span>
+        <span id="naBuyText">—</span>
+      </div>
+      <div class="na-line sell hidden" id="naLineSell">
+        <span class="na-emoji">📉</span>
+        <span id="naSellText">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RANGE CUSTOM info -->
+  <div class="card hidden fade-in-up" id="rangeCard" style="animation-delay:0.25s">
+    <div class="flow-title">📐 Range custom <span style="font-family:'JetBrains Mono'; color:var(--text-faint); font-weight:400; letter-spacing:0; text-transform:none; margin-left:6px" id="rangePeriod">—</span></div>
+    <div class="ctx-grid">
+      <div class="ctx-item pos">
+        <div class="label">📍 Support</div>
+        <div class="value" id="rangeLow">—</div>
+      </div>
+      <div class="ctx-item warn">
+        <div class="label">📍 Résistance</div>
+        <div class="value" id="rangeHigh">—</div>
+      </div>
+      <div class="ctx-item info">
+        <div class="label">🔵 Mid</div>
+        <div class="value" id="rangeMid">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- META INFOS -->
+  <div class="card fade-in-up" style="animation-delay:0.3s">
+    <div class="flow-title">⚙️ Configuration active</div>
+    <div class="ctx-grid">
+      <div class="ctx-item">
+        <div class="label">📊 Stratégie</div>
+        <div class="value" id="metaStrategy">—</div>
+      </div>
+      <div class="ctx-item">
+        <div class="label">💰 Coin</div>
+        <div class="value" id="metaCoin">—</div>
+      </div>
+      <div class="ctx-item">
+        <div class="label">⏱ Timeframe</div>
+        <div class="value" id="metaInterval">—</div>
+      </div>
+      <div class="ctx-item">
+        <div class="label">🎚 Mode</div>
+        <div class="value" id="metaMode">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INFO BAR (Capital, P&L, etc.) -->
+  <div class="info-bar fade-in-up" style="animation-delay:0.35s">
+    <div class="info-card">
+      <div class="card-label">💰 Capital</div>
+      <div class="card-value v-pos" id="infoCapital">—</div>
+    </div>
+    <div class="info-card">
+      <div class="card-label">📊 P&L Session</div>
+      <div class="card-value v-mute" id="infoPnl">—</div>
+    </div>
+    <div class="info-card">
+      <div class="card-label">📈 Trades</div>
+      <div class="card-value" id="infoTrades">—</div>
+    </div>
+    <div class="info-card">
+      <div class="card-label">⚡ Activité</div>
+      <div class="card-value v-pos" id="infoActivity">—</div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="sync-pill" id="syncPill">⟳ Sync…</div>
+    <div>MADE WITH ♥ by GREENROAD · <a href="https://cgform-source.github.io/greenroad-remote/index.html">Menu</a></div>
+  </div>
+
+</div>
+
+<script>
+const GIST = "https://gist.githubusercontent.com/cgform-source/1c4e2920a94766263d6b729873b1e525/raw/greenroad_stats.json";
+const REFRESH_MS = 10000;
+
+// Particles
+(function setupParticles() {
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+  const particles = [];
+  const N = 40;
+  function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+  addEventListener('resize', resize); resize();
+  for (let i = 0; i < N; i++) {
+    particles.push({
+      x: Math.random() * W, y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
+      r: Math.random() * 1.4 + 0.4,
+      opacity: Math.random() * 0.4 + 0.15,
+      hue: Math.random() < 0.5 ? 165 : (Math.random() < 0.5 ? 195 : 280)
+    });
+  }
+  function loop() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0 || p.x > W) p.vx *= -1;
+      if (p.y < 0 || p.y > H) p.vy *= -1;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${p.hue}, 100%, 65%, ${p.opacity})`;
+      ctx.shadowColor = `hsla(${p.hue}, 100%, 65%, 0.7)`;
+      ctx.shadowBlur = 7;
+      ctx.fill();
+    });
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d < 100) {
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(0, 255, 174, ${(1 - d / 100) * 0.10})`;
+          ctx.lineWidth = 0.4;
+          ctx.shadowBlur = 0;
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+function $(id) { return document.getElementById(id); }
+function fmt(n, dec = 2) {
+  if (n === null || n === undefined || isNaN(n)) return "—";
+  return Number(n).toLocaleString("fr-FR", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+function fmtPnl(n) {
+  if (n === null || n === undefined || isNaN(n)) return "—";
+  const sign = n > 0 ? "+" : "";
+  return sign + "$" + Number(n).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function setLivePill(state, msg) {
+  const dot = $("statusDot");
+  const pill = $("livePill");
+  pill.classList.remove("bot-stopped");
+  if (state === "stopped") {
+    pill.classList.add("bot-stopped");
+  }
+  $("statusTxt").textContent = msg;
+}
+
+// Hide all conditional cards initially
+function resetCards() {
+  ["formingCard", "recoveryCard", "positionCard", "activeCard"].forEach(id => $(id).classList.add("hidden"));
+}
+
+// Reset state machine nodes
+function resetSMNodes() {
+  ["smActif", "smBroken", "smForming", "smRecovery"].forEach(id => {
+    const n = $(id);
+    n.classList.remove("active", "passed");
+  });
+}
+
+async function refresh() {
+  try {
+    const r = await fetch(GIST + "?t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const data = await r.json();
+    render(data);
+    $("syncPill").textContent = "⟳ MAJ " + new Date().toLocaleTimeString('fr-FR');
+  } catch (err) {
+    $("syncPill").textContent = "⚠ Erreur connexion";
+    console.error(err);
+  }
+}
+
+function render(data) {
+  const bot = data.bot || {};
+  const sobre = data.sobre || {};
+  const today = data.today || {};
+
+  const botRunning = bot.running === true || sobre.bot_running === true;
+  const rbState = bot.rb_state || "active";
+  const isRecovery = bot.rb_recovery_active === true;
+  const score = bot.rb_score !== null && bot.rb_score !== undefined ? bot.rb_score : null;
+  const scoreThreshold = bot.rb_score_threshold || 25;
+
+  // ─── LIVE PILL ──────────────────────────
+  if (!botRunning) {
+    setLivePill("stopped", "🛑 BOT ARRÊTÉ");
+  } else {
+    setLivePill("ok", "● Connecté");
+  }
+
+  // ─── STATE HERO ─────────────────────────
+  const hero = $("stateHero");
+  const heroEmoji = $("stateEmoji");
+  const heroName = $("stateName");
+  const heroDesc = $("stateDesc");
+  const scoreCircle = $("scoreCircle");
+  const scoreNum = $("scoreNum");
+
+  hero.className = "card state-hero fade-in-up";
+
+  resetCards();
+  resetSMNodes();
+
+  if (!botRunning) {
+    hero.classList.add("stopped");
+    heroEmoji.textContent = "💤";
+    heroName.textContent = "BOT ARRÊTÉ";
+    heroDesc.textContent = "Aucune surveillance en cours. Démarre le bot pour reprendre.";
+    scoreCircle.style.display = "none";
+  } else if (isRecovery) {
+    hero.classList.add("recovery");
+    heroEmoji.textContent = "🟣";
+    heroName.textContent = "MODE RACHAT";
+    heroDesc.textContent = "Le bot surveille un retour rapide vers l'ancien niveau cassé.";
+    $("smRecovery").classList.add("active");
+    $("smActif").classList.add("passed");
+    $("smBroken").classList.add("passed");
+    $("recoveryCard").classList.remove("hidden");
+    renderRecoveryCard(bot);
+  } else if (rbState === "forming") {
+    hero.classList.add("forming");
+    heroEmoji.textContent = "🟠";
+    heroName.textContent = "EN FORMATION";
+    heroDesc.textContent = "Un nouveau range se dessine. Surveillance des conditions de validation.";
+    $("smForming").classList.add("active");
+    $("smActif").classList.add("passed");
+    $("smBroken").classList.add("passed");
+    $("formingCard").classList.remove("hidden");
+    renderFormingCard(bot);
+  } else if (rbState === "broken") {
+    hero.classList.add("broken");
+    heroEmoji.textContent = "🔴";
+    heroName.textContent = "EN PAUSE";
+    heroDesc.textContent = "Le range a été cassé. Le bot est en attente d'un nouveau setup.";
+    $("smBroken").classList.add("active");
+    $("smActif").classList.add("passed");
+  } else if (rbState === "active") {
+    hero.classList.add("actif");
+    heroEmoji.textContent = "🟢";
+    heroName.textContent = "ACTIF";
+    heroDesc.textContent = "Le bot trade dans le range. Conditions favorables détectées.";
+    $("smActif").classList.add("active");
+    $("activeCard").classList.remove("hidden");
+    renderActiveCard(bot, sobre);
+  } else {
+    hero.classList.add("stopped");
+    heroEmoji.textContent = "⏳";
+    heroName.textContent = "INITIALISATION";
+    heroDesc.textContent = "Le bot s'initialise...";
+    scoreCircle.style.display = "none";
+  }
+
+  // ─── SCORE ──────────────────────────────
+  if (botRunning && score !== null) {
+    scoreCircle.style.display = "inline-flex";
+    scoreNum.textContent = score;
+    let col;
+    if (score >= scoreThreshold + 25) col = "#00ffae";
+    else if (score >= scoreThreshold) col = "#00d4ff";
+    else col = "#ff8a00";
+    scoreCircle.style.borderColor = col;
+    scoreNum.style.color = col;
+    scoreCircle.style.color = col;
+  } else if (botRunning) {
+    scoreCircle.style.display = "inline-flex";
+    scoreNum.textContent = "—";
+  }
+
+  // ─── POSITION ──────────────────────────
+  renderPosition(sobre);
+
+  // ─── RANGE CUSTOM ──────────────────────
+  renderRangeCard(bot);
+
+  // ─── META ──────────────────────────────
+  $("metaStrategy").textContent = bot.strategy || "—";
+  $("metaCoin").textContent = bot.coin || sobre.position_coin || "—";
+  $("metaInterval").textContent = bot.interval || "—";
+  $("metaMode").textContent = bot.mode || "—";
+
+  // ─── INFO BAR ──────────────────────────
+  const capital = sobre.capital_usd || 0;
+  $("infoCapital").textContent = "$" + fmt(capital, 2);
+
+  const pnlSession = today.pnl_usd !== undefined ? today.pnl_usd
+                  : (sobre.pnl_session !== undefined ? sobre.pnl_session : 0);
+  const pnlEl = $("infoPnl");
+  pnlEl.textContent = fmtPnl(pnlSession);
+  pnlEl.className = "card-value " + (pnlSession > 0 ? "v-pos" : pnlSession < 0 ? "v-neg" : "v-mute");
+
+  const tradesToday = today.trades !== undefined ? today.trades
+                   : (sobre.trades_today !== undefined ? sobre.trades_today : 0);
+  $("infoTrades").textContent = tradesToday;
+
+  // Activity
+  const activityPct = sobre.activity_pct || 0;
+  $("infoActivity").textContent = activityPct + "%";
+}
+
+function renderFormingCard(bot) {
+  const dur = bot.rb_forming_hours || 0;
+  const minDur = bot.rb_min_forming_hours || 6;
+  const supRej = bot.rb_support_rejections || 0;
+  const resRej = bot.rb_resistance_rejections || 0;
+  const minRej = bot.rb_min_rejections || 2;
+
+  // Duration
+  const durPct = Math.min(100, (dur / minDur) * 100);
+  const durDone = dur >= minDur;
+  const fpDur = $("fpDuration");
+  fpDur.classList.toggle("complete", durDone);
+  fpDur.querySelector(".fp-value").textContent = fmt(dur, 1) + "h / " + minDur + "h";
+  fpDur.querySelector(".fp-bar-fill").style.width = durPct + "%";
+
+  // Support
+  const supPct = Math.min(100, (supRej / minRej) * 100);
+  const supDone = supRej >= minRej;
+  const fpSup = $("fpSupport");
+  fpSup.classList.toggle("complete", supDone);
+  fpSup.querySelector(".fp-value").textContent = supRej + " / " + minRej;
+  fpSup.querySelector(".fp-bar-fill").style.width = supPct + "%";
+
+  // Resistance
+  const resPct = Math.min(100, (resRej / minRej) * 100);
+  const resDone = resRej >= minRej;
+  const fpRes = $("fpResistance");
+  fpRes.classList.toggle("complete", resDone);
+  fpRes.querySelector(".fp-value").textContent = resRej + " / " + minRej;
+  fpRes.querySelector(".fp-bar-fill").style.width = resPct + "%";
+
+  // Candidat low/high
+  const candEl = $("formingCandidates");
+  let html = "";
+  if (bot.rb_candidate_low) {
+    html += `<div class="ctx-item warn">
+      <div class="label">📍 Support en formation</div>
+      <div class="value">$${fmt(bot.rb_candidate_low, 4)}</div>
+    </div>`;
+  }
+  if (bot.rb_candidate_high) {
+    html += `<div class="ctx-item warn">
+      <div class="label">📍 Résistance en formation</div>
+      <div class="value">$${fmt(bot.rb_candidate_high, 4)}</div>
+    </div>`;
+  }
+  candEl.innerHTML = html;
+}
+
+function renderRecoveryCard(bot) {
+  const target = bot.rb_recovery_target;
+  const count = bot.rb_recovery_count || 0;
+  const targetCount = bot.rb_recovery_target_count || 3;
+  const remainingMin = bot.rb_recovery_remaining_min;
+
+  $("recTargetVal").textContent = target ? "$" + fmt(target, 4) : "—";
+
+  const dotsEl = $("recDots");
+  let dotsHtml = "";
+  for (let i = 0; i < targetCount; i++) {
+    dotsHtml += `<div class="rec-dot ${i < count ? 'filled' : ''}"></div>`;
+  }
+  dotsEl.innerHTML = dotsHtml;
+
+  if (remainingMin !== null && remainingMin !== undefined) {
+    const h = Math.floor(remainingMin / 60);
+    const m = remainingMin % 60;
+    const txt = h > 0 ? `${h}h${m > 0 ? m + 'min' : ''}` : `${m}min`;
+    $("recTimeout").innerHTML = `⏱ Reste <strong>${txt}</strong> avant timeout`;
+  } else {
+    $("recTimeout").textContent = "—";
+  }
+}
+
+function renderPosition(sobre) {
+  const card = $("positionCard");
+  const content = $("posContent");
+
+  const hasPos = sobre.has_position === true || (sobre.position_side && sobre.position_side.length > 0);
+  if (!hasPos) {
+    card.classList.add("hidden");
+    return;
+  }
+  card.classList.remove("hidden");
+
+  const side = sobre.position_side || "?";
+  const size = sobre.position_size || 0;
+  const entry = sobre.position_entry || 0;
+  const pnl = sobre.position_pnl || 0;
+  const pnlPct = sobre.position_pnl_pct || 0;
+  const sl = sobre.position_sl;
+  const tp = sobre.position_tp;
+  const coin = sobre.position_coin || "";
+  const dec = (entry && entry < 10) ? 4 : 2;
+  const pnlCls = pnl > 0 ? "v-pos" : pnl < 0 ? "v-neg" : "v-mute";
+
+  content.innerHTML = `
+    <div class="pos-grid">
+      <div class="pos-cell">
+        <div class="pos-key">Côté</div>
+        <div class="pos-val"><span class="side-badge side-${side}">${side}</span></div>
+      </div>
+      <div class="pos-cell">
+        <div class="pos-key">Taille</div>
+        <div class="pos-val">${fmt(size, 4)} ${coin}</div>
+      </div>
+      <div class="pos-cell">
+        <div class="pos-key">Prix d'entrée</div>
+        <div class="pos-val">$${fmt(entry, dec)}</div>
+      </div>
+      <div class="pos-cell">
+        <div class="pos-key">P&L Live</div>
+        <div class="pos-val ${pnlCls}">${fmtPnl(pnl)} <span style="font-size:12px; color:var(--text-faint)">(${fmt(pnlPct, 2)}%)</span></div>
+      </div>
+      ${sl ? `<div class="pos-cell">
+        <div class="pos-key">🛑 Stop Loss</div>
+        <div class="pos-val v-neg">$${fmt(sl, sl < 10 ? 4 : 2)}</div>
+      </div>` : ''}
+      ${tp ? `<div class="pos-cell">
+        <div class="pos-key">🎯 Take Profit</div>
+        <div class="pos-val v-pos">$${fmt(tp, tp < 10 ? 4 : 2)}</div>
+      </div>` : ''}
+    </div>
+  `;
+}
+
+function renderRangeCard(bot) {
+  const card = $("rangeCard");
+  const rLow = bot.range_low ? parseFloat(bot.range_low) : null;
+  const rHigh = bot.range_high ? parseFloat(bot.range_high) : null;
+  const rMid = bot.range_mid ? parseFloat(bot.range_mid) : null;
+
+  if (!rLow && !rHigh && !rMid) {
+    card.classList.add("hidden");
+    return;
+  }
+  card.classList.remove("hidden");
+
+  $("rangePeriod").textContent = bot.range_period ? "[" + bot.range_period + "]" : "";
+  $("rangeLow").textContent = rLow ? "$" + fmt(rLow, 4) : "—";
+  $("rangeHigh").textContent = rHigh ? "$" + fmt(rHigh, 4) : "—";
+  $("rangeMid").textContent = rMid ? "$" + fmt(rMid, 4) : "—";
+}
+
+// V3 — État "ACTIF" : gauge + distances + signal + tendance + RSI + countdown + next action
+let _currentPriceCache = null;
+
+async function fetchCurrentPrice(coin) {
+  // Récupère le prix actuel depuis l'API HL (mark price)
+  try {
+    const r = await fetch("https://api.hyperliquid.xyz/info", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "allMids" })
+    });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const data = await r.json();
+    if (data && data[coin]) return parseFloat(data[coin]);
+  } catch (e) {
+    // Fallback : tenter via proxy CORS
+    try {
+      const r = await fetch("https://corsproxy.io/?url=https://api.hyperliquid.xyz/info", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-requested-with": "XMLHttpRequest"
+        },
+        body: JSON.stringify({ type: "allMids" })
+      });
+      const data = await r.json();
+      if (data && data[coin]) return parseFloat(data[coin]);
+    } catch (e2) {
+      return null;
+    }
+  }
+  return null;
+}
+
+async function renderActiveCard(bot, sobre) {
+  const rLow = bot.range_low ? parseFloat(bot.range_low) : null;
+  const rHigh = bot.range_high ? parseFloat(bot.range_high) : null;
+  const zBuyTop = bot.zone_buy_top ? parseFloat(bot.zone_buy_top) : null;
+  const zSellBot = bot.zone_sell_bot ? parseFloat(bot.zone_sell_bot) : null;
+
+  // Fetch prix actuel
+  const coin = bot.coin || sobre.position_coin || "ETH";
+  const price = await fetchCurrentPrice(coin);
+  _currentPriceCache = price;
+
+  // ─── GAUGE VERTICALE ──────────────────────────
+  if (rLow && rHigh) {
+    $("gaugeLabelTop").textContent = `Résistance $${fmt(rHigh, 4)}`;
+    $("gaugeLabelBot").textContent = `Support $${fmt(rLow, 4)}`;
+
+    // Zones BUY/SELL en %
+    const trackEl = $("gaugeTrack");
+    if (zSellBot) {
+      // Zone SELL = en haut
+      const sellPct = ((rHigh - zSellBot) / (rHigh - rLow)) * 100;
+      $("gaugeZoneSell").style.height = sellPct + "%";
+      $("gaugeZoneSell").style.top = "0";
+    }
+    if (zBuyTop) {
+      // Zone BUY = en bas
+      const buyPct = ((zBuyTop - rLow) / (rHigh - rLow)) * 100;
+      $("gaugeZoneBuy").style.height = buyPct + "%";
+      $("gaugeZoneBuy").style.bottom = "0";
+    }
+
+    // Curseur prix
+    if (price !== null) {
+      const pricePct = ((rHigh - price) / (rHigh - rLow)) * 100; // 0 = top, 100 = bottom
+      const cursorPct = Math.max(0, Math.min(100, pricePct));
+      $("gaugeCursor").style.top = cursorPct + "%";
+      $("gaugePriceLabel").textContent = "$" + fmt(price, 4);
+      const positionInRange = 100 - cursorPct; // 0 = bas (support), 100 = haut (résistance)
+      $("gaugePct").textContent = `${fmt(positionInRange, 1)}% du range`;
+    } else {
+      $("gaugePriceLabel").textContent = "—";
+      $("gaugePct").textContent = "Prix indisponible";
+    }
+  }
+
+  // ─── DISTANCES ──────────────────────────────
+  if (price !== null && rLow && rHigh && zBuyTop && zSellBot) {
+    // Distance LONG = à quel point on est proche de la zone BUY
+    const distLongPct = ((price - zBuyTop) / zBuyTop) * 100;
+    const distShortPct = ((price - zSellBot) / zSellBot) * 100;
+
+    const distLongCard = $("distLong");
+    const distShortCard = $("distShort");
+    distLongCard.classList.remove("long-near", "short-near");
+    distShortCard.classList.remove("long-near", "short-near");
+
+    // LONG : si prix au-dessus zone BUY → positif (en haut), si dans/sous zone → négatif/zéro
+    distLongCard.querySelector(".dist-value").textContent = (distLongPct >= 0 ? "+" : "") + fmt(distLongPct, 2) + "%";
+    distLongCard.querySelector(".dist-value").className = "dist-value " + (distLongPct < 0.5 ? "pos" : "neg");
+    if (distLongPct < 0) {
+      distLongCard.querySelector(".dist-sub").textContent = "✅ Dans la zone BUY — LONG possible";
+      distLongCard.classList.add("long-near");
+    } else if (distLongPct < 1) {
+      distLongCard.querySelector(".dist-sub").textContent = "⚡ Proche de la zone BUY";
+      distLongCard.classList.add("long-near");
+    } else {
+      distLongCard.querySelector(".dist-sub").textContent = `Le prix est à ${fmt(distLongPct, 2)}% au-dessus de la zone BUY`;
+    }
+
+    // SHORT : si prix en-dessous zone SELL → négatif (en bas), si dans/au-dessus zone → positif
+    distShortCard.querySelector(".dist-value").textContent = (distShortPct >= 0 ? "+" : "") + fmt(distShortPct, 2) + "%";
+    distShortCard.querySelector(".dist-value").className = "dist-value " + (distShortPct > -0.5 ? "neg" : "pos");
+    if (distShortPct > 0) {
+      distShortCard.querySelector(".dist-sub").textContent = "✅ Dans la zone SELL — SHORT possible";
+      distShortCard.classList.add("short-near");
+    } else if (distShortPct > -1) {
+      distShortCard.querySelector(".dist-sub").textContent = "⚡ Proche de la zone SELL";
+      distShortCard.classList.add("short-near");
+    } else {
+      distShortCard.querySelector(".dist-sub").textContent = `Le prix est à ${fmt(Math.abs(distShortPct), 2)}% en-dessous de la zone SELL`;
+    }
+  }
+
+  // ─── DERNIER SIGNAL ──────────────────────────
+  const signal = (bot.last_signal || "HOLD").toUpperCase();
+  const signalCell = $("metaSignal");
+  signalCell.classList.remove("signal-buy", "signal-sell", "signal-hold");
+  let sigEmoji, sigCls;
+  if (signal === "BUY" || signal === "LONG") {
+    sigEmoji = "🟢"; sigCls = "signal-buy";
+  } else if (signal === "SELL" || signal === "SHORT") {
+    sigEmoji = "🔴"; sigCls = "signal-sell";
+  } else {
+    sigEmoji = "⚪"; sigCls = "signal-hold";
+  }
+  signalCell.classList.add(sigCls);
+  signalCell.querySelector(".meta-value").textContent = sigEmoji + " " + signal;
+
+  // Heure du dernier signal (depuis updated_at)
+  if (bot.last_signal_detail) {
+    signalCell.querySelector(".meta-sub").textContent = (bot.last_signal_detail || "").substring(0, 50);
+  } else {
+    signalCell.querySelector(".meta-sub").textContent = "Pas de détail";
+  }
+
+  // ─── TENDANCE ──────────────────────────────
+  const trend = (bot.trend || "").toUpperCase();
+  let trendEmoji = "—";
+  let trendDesc = "Neutre";
+  if (trend.includes("HAUSSIÈRE") || trend === "BULLISH" || trend === "UP") {
+    trendEmoji = "📈 Haussière"; trendDesc = "Le marché monte";
+  } else if (trend.includes("BAISSIÈRE") || trend === "BEARISH" || trend === "DOWN") {
+    trendEmoji = "📉 Baissière"; trendDesc = "Le marché descend";
+  } else if (trend.includes("LATÉRALE") || trend === "FLAT" || trend === "NEUTRE") {
+    trendEmoji = "↔️ Latérale"; trendDesc = "Le marché ne tranche pas";
+  } else {
+    trendEmoji = "—"; trendDesc = "—";
+  }
+  $("metaTrend").textContent = trendEmoji;
+  $("metaTrendSub").textContent = trendDesc;
+
+  // ─── RSI ───────────────────────────────────
+  const rsi = bot.range_rsi !== null && bot.range_rsi !== undefined ? bot.range_rsi : null;
+  if (rsi !== null) {
+    $("metaRsi").textContent = fmt(rsi, 0);
+    const rsiPct = Math.max(0, Math.min(100, rsi));
+    $("rsiBarFill").style.width = rsiPct + "%";
+    let rsiInterp;
+    if (rsi >= 70) rsiInterp = "🔴 Suracheté — risque baisse";
+    else if (rsi >= 60) rsiInterp = "🟠 Fort";
+    else if (rsi >= 40) rsiInterp = "🟢 Neutre";
+    else if (rsi >= 30) rsiInterp = "🟡 Faible";
+    else rsiInterp = "🟢 Survendu — opportunité haussière";
+    $("metaRsiInterp").textContent = rsiInterp;
+  } else {
+    $("metaRsi").textContent = "—";
+    $("metaRsiInterp").textContent = "—";
+  }
+
+  // ─── COUNTDOWN PROCHAINE BOUGIE ──────────────
+  renderCountdown(bot.interval || "5m");
+
+  // ─── NEXT ACTION ─────────────────────────────
+  const naMain = $("naMain");
+  const naLineBuy = $("naLineBuy");
+  const naLineSell = $("naLineSell");
+  naLineBuy.classList.add("hidden");
+  naLineSell.classList.add("hidden");
+
+  if (price !== null && zBuyTop && zSellBot && rLow && rHigh) {
+    if (price <= zBuyTop) {
+      naMain.textContent = "✅ Le prix est dans la zone BUY. Le bot peut prendre un LONG au prochain signal favorable (filtre RSI, MTF, patterns).";
+    } else if (price >= zSellBot) {
+      naMain.textContent = "✅ Le prix est dans la zone SELL. Le bot peut prendre un SHORT au prochain signal favorable.";
+    } else {
+      naMain.textContent = "⏳ Le bot attend que le prix atteigne une des deux zones d'entrée.";
+      // Affiche les triggers
+      naLineBuy.classList.remove("hidden");
+      $("naBuyText").textContent = `LONG si prix ≤ $${fmt(zBuyTop, 4)} (encore ${fmt(((price - zBuyTop) / price) * 100, 2)}% de baisse)`;
+      naLineSell.classList.remove("hidden");
+      $("naSellText").textContent = `SHORT si prix ≥ $${fmt(zSellBot, 4)} (encore ${fmt(((zSellBot - price) / price) * 100, 2)}% de hausse)`;
+    }
+  } else {
+    naMain.textContent = "Données insuffisantes pour prédire la prochaine action.";
+  }
+}
+
+// Countdown prochaine bougie selon timeframe
+function renderCountdown(tf) {
+  const tfMs = {
+    "1m": 60_000, "5m": 300_000, "15m": 900_000, "30m": 1_800_000,
+    "1h": 3_600_000, "2h": 7_200_000, "4h": 14_400_000,
+    "12h": 43_200_000, "1d": 86_400_000
+  }[tf] || 300_000;
+
+  const now = Date.now();
+  const nextBoundary = Math.ceil(now / tfMs) * tfMs;
+  const remainingMs = nextBoundary - now;
+  const totalMin = Math.floor(remainingMs / 60000);
+  const sec = Math.floor((remainingMs % 60000) / 1000);
+  if (totalMin >= 60) {
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    $("metaCountdown").textContent = `${h}h${m.toString().padStart(2, '0')}`;
+  } else {
+    $("metaCountdown").textContent = `${totalMin}m${sec.toString().padStart(2, '0')}s`;
+  }
+  $("metaCountdownSub").textContent = `TF ${tf} · prochaine clôture`;
+}
+
+// Init
+refresh();
+setInterval(refresh, REFRESH_MS);
+
+// V3 — Countdown se met à jour chaque seconde (sans refetch)
+setInterval(() => {
+  // Si la card active est visible, on rafraîchit juste le countdown
+  const activeCard = $("activeCard");
+  if (activeCard && !activeCard.classList.contains("hidden")) {
+    // Récupère le timeframe depuis la config affichée
+    const tf = $("metaInterval").textContent || "5m";
+    if (tf && tf !== "—") renderCountdown(tf);
+  }
+}, 1000);
+</script>
+</body>
+</html>
