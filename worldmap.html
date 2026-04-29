@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#000308">
+<title>GREENROAD · Globe Trading 3D</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+  body {
+    background: #000308;
+    color: #e6edf3;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    position: relative;
+  }
+
+  /* === CANVAS 3D plein écran === */
+  #scene {
+    position: fixed; inset: 0; z-index: 1;
+    cursor: grab;
+  }
+  #scene:active { cursor: grabbing; }
+
+  /* === Vignette dégradé === */
+  .vignette {
+    position: fixed; inset: 0; z-index: 2; pointer-events: none;
+    background:
+      radial-gradient(ellipse at center, transparent 40%, rgba(0,3,8,0.7) 100%),
+      linear-gradient(180deg, rgba(0,3,8,0.4) 0%, transparent 20%, transparent 80%, rgba(0,3,8,0.6) 100%);
+  }
+
+  /* === Scanlines + grille HUD === */
+  .scanlines {
+    position: fixed; inset: 0; z-index: 3; pointer-events: none;
+    background-image: repeating-linear-gradient(
+      0deg, rgba(0,255,170,0.03) 0px, rgba(0,255,170,0.03) 1px, transparent 1px, transparent 3px);
+    mix-blend-mode: screen;
+    opacity: 0.5;
+  }
+
+  /* === HEADER === */
+  .top-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+    padding: 20px 28px;
+    display: flex; justify-content: space-between; align-items: center;
+    background: linear-gradient(180deg, rgba(0,3,8,0.85) 0%, transparent 100%);
+    pointer-events: none;
+  }
+  .top-bar > * { pointer-events: auto; }
+  .logo-m {
+    font-size: 22px; font-weight: 900; letter-spacing: 4px;
+    background: linear-gradient(135deg, #00ffaa 0%, #00d4ff 50%, #c59cff 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 12px rgba(0,212,255,0.4));
+  }
+  .top-center {
+    text-align: center;
+  }
+  .top-center .title {
+    font-size: 11px; letter-spacing: 6px; color: #00ffaa;
+    text-transform: uppercase; font-weight: 700;
+    text-shadow: 0 0 10px rgba(0,255,170,0.5);
+  }
+  .top-center .sub {
+    font-size: 9px; letter-spacing: 2px; color: #5a7a8a;
+    margin-top: 3px;
+  }
+  .back-btn {
+    color: #00ffaa; font-size: 10px; text-decoration: none; letter-spacing: 2px;
+    padding: 8px 14px; border: 1px solid rgba(0,255,170,0.3); border-radius: 4px;
+    background: rgba(0,255,170,0.04);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    transition: all 0.3s;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-weight: 700;
+  }
+  .back-btn:hover { background: rgba(0,255,170,0.15); box-shadow: 0 0 16px rgba(0,255,170,0.3); }
+
+  /* === HUD frame corners === */
+  .corner {
+    position: fixed; z-index: 5; pointer-events: none;
+    width: 60px; height: 60px;
+    border: 1px solid rgba(0,255,170,0.5);
+    filter: drop-shadow(0 0 6px rgba(0,255,170,0.4));
+  }
+  .corner.tl { top: 70px; left: 20px; border-right: none; border-bottom: none; }
+  .corner.tr { top: 70px; right: 20px; border-left: none; border-bottom: none; }
+  .corner.bl { bottom: 20px; left: 20px; border-right: none; border-top: none; }
+  .corner.br { bottom: 20px; right: 20px; border-left: none; border-top: none; }
+
+  /* === LEFT PANEL : Time + Energy === */
+  .left-panel {
+    position: fixed; left: 28px; top: 90px; z-index: 8;
+    width: 290px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  .panel {
+    background: rgba(0, 18, 26, 0.55);
+    border: 1px solid rgba(0,255,170,0.25);
+    border-radius: 6px;
+    padding: 16px 18px;
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    position: relative;
+    overflow: hidden;
+  }
+  .panel::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, #00ffaa 50%, transparent);
+    opacity: 0.6;
+  }
+
+  .panel-label {
+    font-size: 9px; letter-spacing: 3px; color: #5a7a8a;
+    text-transform: uppercase; margin-bottom: 8px;
+    font-family: 'Consolas', monospace;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel-label::before {
+    content: ''; width: 6px; height: 6px; background: #00ffaa;
+    border-radius: 50%; box-shadow: 0 0 6px #00ffaa;
+    animation: blink 1.4s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .clock-main {
+    font-size: 38px; font-weight: 800;
+    font-family: 'Consolas', monospace;
+    color: #00ffaa;
+    letter-spacing: 3px;
+    text-shadow: 0 0 16px rgba(0,255,170,0.6), 0 0 32px rgba(0,255,170,0.3);
+    line-height: 1;
+  }
+  .clock-row {
+    display: flex; justify-content: space-between;
+    margin-top: 10px;
+    font-family: 'Consolas', monospace;
+  }
+  .clock-row .item { font-size: 10px; }
+  .clock-row .item .lbl { color: #5a7a8a; letter-spacing: 1px; }
+  .clock-row .item .val { color: #00d4ff; font-weight: 700; }
+
+  /* Energy */
+  .energy-value {
+    font-size: 48px; font-weight: 800;
+    font-family: 'Consolas', monospace;
+    letter-spacing: 2px;
+    line-height: 1;
+    text-shadow: 0 0 18px currentColor;
+  }
+  .energy-status { font-size: 11px; color: #c0d0e0; margin-top: 6px; line-height: 1.3; }
+  .energy-bar {
+    width: 100%; height: 6px;
+    background: rgba(0,255,170,0.08);
+    border-radius: 3px; overflow: hidden;
+    margin-top: 12px;
+    position: relative;
+  }
+  .energy-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, #5fa07f, #00d4ff 50%, #00ffaa);
+    transition: width 1s ease;
+    box-shadow: 0 0 10px rgba(0,255,170,0.6);
+    position: relative;
+  }
+  .energy-fill::after {
+    content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 8px;
+    background: white;
+    box-shadow: 0 0 12px white;
+    animation: pulseFill 1.2s ease-in-out infinite;
+  }
+  @keyframes pulseFill { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* Sessions strip */
+  .timeline {
+    position: relative; height: 28px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .timeline-session {
+    position: absolute; top: 0; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 800; letter-spacing: 1px;
+    color: #000;
+    font-family: 'Consolas', monospace;
+  }
+  .session-asia   { background: linear-gradient(90deg, rgba(255,140,80,0.6), rgba(255,180,100,0.6)); }
+  .session-europe { background: linear-gradient(90deg, rgba(80,255,140,0.55), rgba(0,255,170,0.55)); }
+  .session-us     { background: linear-gradient(90deg, rgba(80,180,255,0.55), rgba(140,160,255,0.55)); }
+  .now-marker {
+    position: absolute; top: -3px; bottom: -3px; width: 2px;
+    background: #ff3366; z-index: 3;
+    box-shadow: 0 0 10px #ff3366, 0 0 20px #ff3366;
+    animation: blink 1s ease-in-out infinite;
+  }
+  .now-marker::before {
+    content: ''; position: absolute; left: 50%; top: -4px;
+    transform: translateX(-50%);
+    width: 8px; height: 8px; background: #ff3366;
+    border-radius: 50%; box-shadow: 0 0 8px #ff3366;
+  }
+  .timeline-hours {
+    display: flex; justify-content: space-between;
+    font-size: 8px; color: #5a7a8a; letter-spacing: 1px;
+    font-family: 'Consolas', monospace;
+    margin-top: 6px;
+  }
+
+  /* === RIGHT PANEL : Hubs === */
+  .right-panel {
+    position: fixed; right: 28px; top: 90px; bottom: 30px; z-index: 8;
+    width: 290px;
+    display: flex; flex-direction: column;
+    gap: 10px;
+  }
+  .hubs-header {
+    background: rgba(0, 18, 26, 0.55);
+    border: 1px solid rgba(0,255,170,0.25);
+    border-radius: 6px;
+    padding: 12px 16px;
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    font-family: 'Consolas', monospace;
+  }
+  .hubs-header .h-label {
+    font-size: 10px; letter-spacing: 3px; color: #00ffaa;
+    text-transform: uppercase; font-weight: 700;
+  }
+  .hubs-header .h-stats {
+    font-size: 22px; color: #fff; font-weight: 800; margin-top: 4px;
+    text-shadow: 0 0 10px rgba(0,255,170,0.4);
+  }
+  .hubs-header .h-stats span { color: #00ffaa; }
+
+  .hubs-scroll {
+    flex: 1; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 8px;
+    padding-right: 4px;
+  }
+  .hubs-scroll::-webkit-scrollbar { width: 4px; }
+  .hubs-scroll::-webkit-scrollbar-track { background: rgba(0,255,170,0.05); }
+  .hubs-scroll::-webkit-scrollbar-thumb { background: rgba(0,255,170,0.3); border-radius: 2px; }
+
+  .hub-card {
+    background: rgba(0, 18, 26, 0.6);
+    border: 1px solid rgba(90, 122, 138, 0.25);
+    border-radius: 5px;
+    padding: 10px 12px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    font-family: 'Consolas', monospace;
+  }
+  .hub-card::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: rgba(90,122,138,0.4);
+    transition: all 0.3s;
+  }
+  .hub-card:hover { transform: translateX(-4px); border-color: rgba(0,255,170,0.5); }
+
+  .hub-card.active {
+    border-color: rgba(0,255,170,0.5);
+    background: rgba(0,255,170,0.07);
+    box-shadow: 0 0 20px rgba(0,255,170,0.12);
+  }
+  .hub-card.active::before { background: #00ffaa; box-shadow: 0 0 8px #00ffaa; }
+
+  .hub-row1 {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 4px;
+  }
+  .hub-name {
+    font-size: 13px; font-weight: 800; color: #e6edf3;
+    letter-spacing: 1.5px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .hub-card.active .hub-name { color: #00ffaa; }
+  .hub-time {
+    font-size: 14px; font-weight: 700; color: #00d4ff;
+    letter-spacing: 1px;
+  }
+  .hub-card.active .hub-time { color: #00ffaa; }
+  .hub-row2 {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 9px;
+  }
+  .hub-info { color: #5a7a8a; letter-spacing: 0.5px; }
+  .hub-status {
+    font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
+    padding: 2px 6px; border-radius: 2px; font-weight: 800;
+  }
+  .hub-status.open    { background: rgba(0,255,170,0.18); color: #00ffaa; }
+  .hub-status.closed  { background: rgba(90,122,138,0.18); color: #8b949e; }
+  .hub-status.weekend { background: rgba(197,156,255,0.18); color: #c59cff; }
+
+  /* Bottom indicator */
+  .bottom-indicator {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    z-index: 8;
+    background: rgba(0, 18, 26, 0.55);
+    border: 1px solid rgba(0,255,170,0.25);
+    border-radius: 30px;
+    padding: 8px 22px;
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    font-family: 'Consolas', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #00ffaa;
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .bottom-indicator .sep { color: rgba(0,255,170,0.3); }
+  .bottom-indicator .dim { color: #5a7a8a; }
+
+  /* Tooltip globe */
+  #tooltip {
+    position: fixed; z-index: 20; pointer-events: none;
+    background: rgba(0,18,26,0.95);
+    border: 1px solid #00ffaa;
+    padding: 8px 12px; border-radius: 4px;
+    font-family: 'Consolas', monospace;
+    font-size: 11px;
+    color: #00ffaa;
+    box-shadow: 0 0 20px rgba(0,255,170,0.4);
+    transform: translate(-50%, -120%);
+    opacity: 0; transition: opacity 0.2s;
+    white-space: nowrap;
+    backdrop-filter: blur(8px);
+  }
+  #tooltip.visible { opacity: 1; }
+  #tooltip .tt-name { font-weight: 800; color: #fff; font-size: 12px; }
+  #tooltip .tt-time { color: #00d4ff; margin-top: 2px; }
+
+  /* loader */
+  #loader {
+    position: fixed; inset: 0; z-index: 100;
+    background: #000308;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 20px;
+    transition: opacity 0.8s;
+    font-family: 'Consolas', monospace;
+  }
+  #loader.hidden { opacity: 0; pointer-events: none; }
+  .loader-ring {
+    width: 80px; height: 80px;
+    border: 2px solid rgba(0,255,170,0.15);
+    border-top-color: #00ffaa;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    box-shadow: 0 0 30px rgba(0,255,170,0.3);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader-txt { color: #00ffaa; letter-spacing: 4px; font-size: 11px; text-shadow: 0 0 10px #00ffaa; }
+
+  /* responsive */
+  @media (max-width: 980px) {
+    .left-panel, .right-panel { width: 240px; }
+    .clock-main { font-size: 30px; }
+    .energy-value { font-size: 38px; }
+  }
+  @media (max-width: 720px) {
+    .left-panel { left: 12px; top: 70px; width: calc(100vw - 24px); }
+    .right-panel { display: none; }
+    .corner { display: none; }
+    .top-center .title { font-size: 9px; letter-spacing: 3px; }
+    .top-center .sub { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="loader-ring"></div>
+  <div class="loader-txt">INITIALIZING GLOBE...</div>
+</div>
+
+<canvas id="scene"></canvas>
+<div class="vignette"></div>
+<div class="scanlines"></div>
+
+<div class="corner tl"></div>
+<div class="corner tr"></div>
+<div class="corner bl"></div>
+<div class="corner br"></div>
+
+<div class="top-bar">
+  <div class="logo-m">GREENROAD</div>
+  <div class="top-center">
+    <div class="title">◉ GLOBAL TRADING NETWORK</div>
+    <div class="sub">REAL-TIME · CRYPTO MARKET · 24/7</div>
+  </div>
+  <a href="https://cgform-source.github.io/greenroad-remote/index.html" class="back-btn">← MENU</a>
+</div>
+
+<div class="left-panel">
+  <div class="panel">
+    <div class="panel-label">SYSTEM TIME · LIVE</div>
+    <div class="clock-main" id="nowClock">00:00:00</div>
+    <div class="clock-row">
+      <div class="item"><span class="lbl">PARIS</span> <span class="val" id="parisTime">—</span></div>
+      <div class="item"><span class="lbl">UTC</span> <span class="val" id="utcTime">—</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label">MARKET ENERGY · GLOBAL</div>
+    <div class="energy-value" id="energyValue">—</div>
+    <div class="energy-status" id="energyStatus">—</div>
+    <div class="energy-bar"><div class="energy-fill" id="energyFill" style="width: 0%"></div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label">SESSIONS · 24H · PARIS TIME</div>
+    <div class="timeline" id="timeline">
+      <div class="now-marker" id="nowMarker" style="left: 50%;"></div>
+    </div>
+    <div class="timeline-hours">
+      <span>00</span><span>06</span><span>12</span><span>18</span><span>24</span>
+    </div>
+  </div>
+</div>
+
+<div class="right-panel">
+  <div class="hubs-header">
+    <div class="h-label">◆ ACTIVE HUBS</div>
+    <div class="h-stats"><span id="activeHubsCount">0</span> / <span id="totalHubsCount">0</span></div>
+  </div>
+  <div class="hubs-scroll" id="hubsGrid"></div>
+</div>
+
+
+
+<div id="tooltip">
+  <div class="tt-name"></div>
+  <div class="tt-time"></div>
+</div>
+
+<!-- THREE.js -->
+<script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+
+<script>
+// ==========================================================================
+// === DATA  =================================================================
+// HUBs: lat/lon ajoutés pour positionnement 3D — données originales conservées
+// ==========================================================================
+const HUBS = [
+  { name: 'Tokyo',         flag: '🇯🇵', tz: 9,  openH: 9,  closeH: 17, type: 'traditional', weekendClosed: true,  lat: 35.68,  lon: 139.69 },
+  { name: 'Hong Kong',     flag: '🇭🇰', tz: 8,  openH: 9,  closeH: 16, type: 'traditional', weekendClosed: true,  lat: 22.30,  lon: 114.17 },
+  { name: 'Singapour',     flag: '🇸🇬', tz: 8,  openH: 9,  closeH: 17, type: 'traditional', weekendClosed: true,  lat: 1.35,   lon: 103.82 },
+  { name: 'Dubaï',         flag: '🇦🇪', tz: 4,  openH: 10, closeH: 22, type: 'crypto',      weekendClosed: false, lat: 25.20,  lon: 55.27 },
+  { name: 'Francfort',     flag: '🇩🇪', tz: 2,  openH: 9,  closeH: 17, type: 'traditional', weekendClosed: true,  lat: 50.11,  lon: 8.68 },
+  { name: 'Londres',       flag: '🇬🇧', tz: 1,  openH: 8,  closeH: 17, type: 'traditional', weekendClosed: true,  lat: 51.51,  lon: -0.13 },
+  { name: 'Paris',         flag: '🇫🇷', tz: 2,  openH: 9,  closeH: 18, type: 'traditional', weekendClosed: true,  lat: 48.86,  lon: 2.35 },
+  { name: 'New York',      flag: '🇺🇸', tz: -4, openH: 9,  closeH: 17, type: 'traditional', weekendClosed: true,  lat: 40.71,  lon: -74.01 },
+  { name: 'Miami',         flag: '🌴', tz: -4, openH: 9,  closeH: 22, type: 'crypto',      weekendClosed: false, lat: 25.76,  lon: -80.19 },
+  { name: 'San Francisco', flag: '🌉', tz: -7, openH: 6,  closeH: 22, type: 'crypto',      weekendClosed: false, lat: 37.77,  lon: -122.42 },
+];
+
+const SESSIONS = [
+  { name: 'ASIA',   startH: 1,  endH: 10, cssClass: 'session-asia' },
+  { name: 'EUROPE', startH: 8,  endH: 17, cssClass: 'session-europe' },
+  { name: 'US',     startH: 15, endH: 22, cssClass: 'session-us' }
+];
+
+// ==========================================================================
+// === DATA HELPERS (logique originale conservée) ============================
+// ==========================================================================
+function getLocalTime(tzOffset) {
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  return new Date(utc + tzOffset * 3600 * 1000);
+}
+
+function getHubState(hub) {
+  const localTime = getLocalTime(hub.tz);
+  const localHour = localTime.getHours();
+  const localMin  = localTime.getMinutes();
+  const localDay  = localTime.getDay();
+  const isWeekend = (localDay === 0 || localDay === 6);
+  const isOpen    = !isWeekend && localHour >= hub.openH && localHour < hub.closeH;
+  const isCryptoAlways = hub.type === 'crypto' && !hub.weekendClosed;
+  const isCryptoOpen   = isCryptoAlways || isOpen;
+
+  let statusClass, statusText;
+  if (isCryptoAlways)        { statusClass = 'open';    statusText = '24/7'; }
+  else if (isWeekend)        { statusClass = 'weekend'; statusText = 'WEEKEND'; }
+  else if (isOpen)           { statusClass = 'open';    statusText = '● OUVERT'; }
+  else                       { statusClass = 'closed';  statusText = 'FERMÉ'; }
+
+  return {
+    localTime, localHour, localMin, isWeekend, isOpen,
+    isCryptoAlways, isCryptoOpen, statusClass, statusText
+  };
+}
+
+function computeEnergy() {
+  const now = new Date();
+  const parisTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+  const parisHour = parisTime.getHours() + parisTime.getMinutes() / 60;
+  const isWeekend = (parisTime.getDay() === 0 || parisTime.getDay() === 6);
+
+  let activeSessions = 0;
+  SESSIONS.forEach(s => { if (parisHour >= s.startH && parisHour < s.endH) activeSessions++; });
+
+  let activeHubs = 0;
+  HUBS.forEach(hub => { if (getHubState(hub).isCryptoOpen) activeHubs++; });
+
+  let energy;
+  if (isWeekend) {
+    energy = 20 + (activeHubs - 3) * 5;
+    energy = Math.max(10, Math.min(40, energy));
+  } else {
+    energy = 20 + activeSessions * 20 + activeHubs * 3;
+    energy = Math.max(15, Math.min(100, energy));
+  }
+
+  let status, color;
+  if (energy >= 85)      { status = '🔥 Très haute — Sessions qui se chevauchent'; color = '#00ffaa'; }
+  else if (energy >= 65) { status = '⚡ Élevée — Plusieurs marchés actifs';        color = '#00d4ff'; }
+  else if (energy >= 40) { status = '🟡 Moyenne — Transition entre sessions';      color = '#d29922'; }
+  else if (energy >= 25) { status = '🌙 Faible — Heures calmes';                   color = '#8b949e'; }
+  else                   { status = '💤 Très faible — Nuit profonde / weekend';   color = '#5fa07f'; }
+
+  return { energy, status, color, parisHour, activeHubs };
+}
+
+// ==========================================================================
+// === HUD DOM rendering =====================================================
+// ==========================================================================
+function updateClock() {
+  const now = new Date();
+  document.getElementById('nowClock').textContent =
+    now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  document.getElementById('parisTime').textContent =
+    now.toLocaleString('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit' });
+  document.getElementById('utcTime').textContent = now.toUTCString().slice(17, 22);
+}
+
+function renderHubs() {
+  const grid = document.getElementById('hubsGrid');
+  grid.innerHTML = '';
+  let activeCount = 0;
+  HUBS.forEach((hub, idx) => {
+    const s = getHubState(hub);
+    if (s.isCryptoOpen) activeCount++;
+    const card = document.createElement('div');
+    card.className = 'hub-card' + (s.isCryptoOpen ? ' active' : '');
+    card.dataset.idx = idx;
+    card.innerHTML = `
+      <div class="hub-row1">
+        <div class="hub-name">${hub.flag} ${hub.name.toUpperCase()}</div>
+        <div class="hub-time">${String(s.localHour).padStart(2,'0')}:${String(s.localMin).padStart(2,'0')}</div>
+      </div>
+      <div class="hub-row2">
+        <span class="hub-info">${hub.openH}h–${hub.closeH}h${hub.type === 'crypto' ? ' · CRYPTO' : ''}</span>
+        <span class="hub-status ${s.statusClass}">${s.statusText}</span>
+      </div>
+    `;
+    card.addEventListener('click', () => focusHub(idx));
+    grid.appendChild(card);
+  });
+  document.getElementById('activeHubsCount').textContent = activeCount;
+  document.getElementById('totalHubsCount').textContent = HUBS.length;
+}
+
+function renderTimeline() {
+  const tl = document.getElementById('timeline');
+  tl.querySelectorAll('.timeline-session').forEach(s => s.remove());
+  SESSIONS.forEach(sess => {
+    const startPct = (sess.startH / 24) * 100;
+    const widthPct = ((sess.endH - sess.startH) / 24) * 100;
+    const div = document.createElement('div');
+    div.className = 'timeline-session ' + sess.cssClass;
+    div.style.left = startPct + '%';
+    div.style.width = widthPct + '%';
+    div.textContent = sess.name;
+    tl.insertBefore(div, document.getElementById('nowMarker'));
+  });
+  const now = new Date();
+  const parisTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+  const parisHour = parisTime.getHours() + parisTime.getMinutes() / 60;
+  document.getElementById('nowMarker').style.left = (parisHour / 24) * 100 + '%';
+}
+
+function renderEnergy() {
+  const e = computeEnergy();
+  const ev = document.getElementById('energyValue');
+  ev.textContent = Math.round(e.energy) + '%';
+  ev.style.color = e.color;
+  document.getElementById('energyStatus').textContent = e.status;
+  document.getElementById('energyFill').style.width = e.energy + '%';
+}
+
+function refreshAll() {
+  updateClock();
+  renderHubs();
+  renderTimeline();
+  renderEnergy();
+}
+
+// ==========================================================================
+// === THREE.JS GLOBE 3D ====================================================
+// ==========================================================================
+let scene, camera, renderer, globe, globeGroup, atmosphere, hubMeshes = [];
+let arcs = [], particles = [], starField, raycaster, mouse;
+let isDragging = false, dragX = 0, dragY = 0;
+let rotationVelocityX = 0, rotationVelocityY = 0;
+let autoRotate = true;
+let zoomTarget = 1.0;
+let focusTarget = null, focusProgress = 0;
+const RADIUS = 100;
+
+function latLonToVec3(lat, lon, r) {
+  // Right-handed, Y-up. Camera looks down -Z from (0,*,+320).
+  // Convention chosen so that lon=0 (Greenwich) sits on the +Z hemisphere
+  // (front, facing camera) and East increases to the right of the camera.
+  // Used identically for hubs and GeoJSON borders.
+  const latRad = lat * Math.PI / 180;
+  const lonRad = lon * Math.PI / 180;
+  const x =  r * Math.cos(latRad) * Math.sin(lonRad);
+  const y =  r * Math.sin(latRad);
+  const z =  r * Math.cos(latRad) * Math.cos(lonRad);
+  return new THREE.Vector3(x, y, z);
+}
+
+function initThree() {
+  const canvas = document.getElementById('scene');
+  scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x000308, 0.0011);
+
+  camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 4000);
+  camera.position.set(0, 50, 320);
+
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x000308, 1);
+
+  raycaster = new THREE.Raycaster();
+  mouse = new THREE.Vector2(-2, -2);
+
+  globeGroup = new THREE.Group();
+  scene.add(globeGroup);
+
+  buildStarfield();
+  buildGlobe();
+  buildContinents();
+  buildCountryBorders();
+  buildAtmosphere();
+  buildHubs();
+  buildOrbitalRings();
+  buildParticleField();
+
+  // lights
+  const ambient = new THREE.AmbientLight(0x223344, 1.5);
+  scene.add(ambient);
+  const sun = new THREE.DirectionalLight(0x88eeff, 1.2);
+  sun.position.set(200, 100, 200);
+  scene.add(sun);
+  const rim = new THREE.PointLight(0x00ffaa, 1.4, 800);
+  rim.position.set(-200, 50, -150);
+  scene.add(rim);
+
+  setupInteraction();
+  window.addEventListener('resize', onResize);
+}
+
+// --- STARFIELD ---
+function buildStarfield() {
+  const geom = new THREE.BufferGeometry();
+  const count = 4000;
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+  const sizes = new Float32Array(count);
+  for (let i = 0; i < count; i++) {
+    const r = 1200 + Math.random() * 800;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    positions[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+    positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+    positions[i*3+2] = r * Math.cos(phi);
+    const t = Math.random();
+    if (t < 0.7) { colors[i*3]=0.9; colors[i*3+1]=0.95; colors[i*3+2]=1; }
+    else if (t < 0.9) { colors[i*3]=0.6; colors[i*3+1]=0.9; colors[i*3+2]=1; }
+    else { colors[i*3]=0.4; colors[i*3+1]=1; colors[i*3+2]=0.7; }
+    sizes[i] = Math.random() * 2 + 0.5;
+  }
+  geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geom.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+  const mat = new THREE.PointsMaterial({
+    size: 1.5, vertexColors: true, transparent: true, opacity: 0.9,
+    blending: THREE.AdditiveBlending, sizeAttenuation: true
+  });
+  starField = new THREE.Points(geom, mat);
+  scene.add(starField);
+
+  // far nebula
+  const nebGeom = new THREE.SphereGeometry(1800, 32, 32);
+  const nebMat = new THREE.ShaderMaterial({
+    uniforms: { time: { value: 0 } },
+    vertexShader: `
+      varying vec3 vPos;
+      void main() {
+        vPos = position;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float time;
+      varying vec3 vPos;
+      float hash(vec3 p) { return fract(sin(dot(p, vec3(12.9898,78.233,45.164))) * 43758.5453); }
+      float noise(vec3 p){
+        vec3 i=floor(p); vec3 f=fract(p); f=f*f*(3.0-2.0*f);
+        return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
+                   mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);
+      }
+      void main() {
+        vec3 dir = normalize(vPos);
+        float n = noise(dir * 3.0 + time*0.02);
+        n = pow(n, 3.0);
+        vec3 col = mix(vec3(0.0,0.05,0.1), vec3(0.0,0.6,0.4), n*0.5);
+        col += vec3(0.4,0.2,0.6) * pow(noise(dir*2.0 - time*0.01),4.0)*0.5;
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `,
+    side: THREE.BackSide
+  });
+  const nebula = new THREE.Mesh(nebGeom, nebMat);
+  nebula.userData.isNebula = true;
+  scene.add(nebula);
+  scene.userData.nebula = nebula;
+}
+
+// --- GLOBE WIREFRAME ---
+function buildGlobe() {
+  // Inner solid glow
+  const innerGeom = new THREE.SphereGeometry(RADIUS * 0.98, 64, 64);
+  const innerMat = new THREE.MeshPhongMaterial({
+    color: 0x001a26,
+    emissive: 0x002a3a,
+    shininess: 8,
+    transparent: true,
+    opacity: 0.85
+  });
+  const inner = new THREE.Mesh(innerGeom, innerMat);
+  globeGroup.add(inner);
+
+  // Wireframe sphere
+  const wireGeom = new THREE.SphereGeometry(RADIUS, 48, 32);
+  const wireMat = new THREE.MeshBasicMaterial({
+    color: 0x00ffaa, wireframe: true, transparent: true, opacity: 0.18
+  });
+  globe = new THREE.Mesh(wireGeom, wireMat);
+  globeGroup.add(globe);
+
+  // dotted equator + poles
+  const longGeom = new THREE.BufferGeometry();
+  const longPts = [];
+  for (let lon = -180; lon <= 180; lon += 30) {
+    for (let lat = -90; lat <= 90; lat += 5) {
+      const v = latLonToVec3(lat, lon, RADIUS * 1.001);
+      longPts.push(v.x, v.y, v.z);
+    }
+  }
+  longGeom.setAttribute('position', new THREE.Float32BufferAttribute(longPts, 3));
+  const longMat = new THREE.PointsMaterial({ color: 0x00ffaa, size: 0.6, transparent: true, opacity: 0.5 });
+  globeGroup.add(new THREE.Points(longGeom, longMat));
+
+  // latitude rings
+  for (let lat = -75; lat <= 75; lat += 15) {
+    const ringPts = [];
+    for (let lon = 0; lon <= 360; lon += 4) {
+      const v = latLonToVec3(lat, lon - 180, RADIUS * 1.002);
+      ringPts.push(v.x, v.y, v.z);
+    }
+    const rg = new THREE.BufferGeometry();
+    rg.setAttribute('position', new THREE.Float32BufferAttribute(ringPts, 3));
+    const op = (lat === 0) ? 0.4 : 0.1;
+    const col = (lat === 0) ? 0x00ffaa : 0x008866;
+    const rm = new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: op });
+    globeGroup.add(new THREE.Line(rg, rm));
+  }
+}
+
+// --- CONTINENTS (simplified land mass via dots) ---
+// On dessine une nappe de points verts là où c'est de la terre ferme,
+// approximée par un masque de continents simplifié.
+function buildContinents() {
+  // bounding boxes of major land masses (rough)
+  const land = [
+    // [latMin, latMax, lonMin, lonMax]
+    [10, 70, -10, 60],     // Europe / Russie ouest
+    [40, 75, 60, 180],     // Russie / Sibérie
+    [10, 50, 70, 145],     // Asie centrale / Chine / Inde
+    [-10, 25, 95, 145],    // Asie SE
+    [-45, 10, 110, 155],   // Australie
+    [-35, 35, -20, 55],    // Afrique
+    [25, 70, -130, -65],   // Amérique du Nord
+    [-55, 15, -80, -35],   // Amérique du Sud
+    [60, 85, -80, 0],      // Groenland / Arctique
+  ];
+  const dots = [];
+  const colors = [];
+  // dense sampling
+  for (let lat = -60; lat <= 80; lat += 1.6) {
+    for (let lon = -180; lon <= 180; lon += 1.6) {
+      let inLand = false;
+      for (const [a,b,c,d] of land) {
+        if (lat >= a && lat <= b && lon >= c && lon <= d) {
+          // small noise to give organic edges
+          const r = (Math.sin(lat*1.7)+Math.cos(lon*1.3)+Math.sin(lat*lon*0.01))*0.5+0.5;
+          if (r > 0.18) { inLand = true; break; }
+        }
+      }
+      if (inLand) {
+        const v = latLonToVec3(lat, lon, RADIUS * 1.005);
+        dots.push(v.x, v.y, v.z);
+        // color by latitude
+        const t = Math.abs(lat) / 80;
+        colors.push(0.0, 1.0 - t*0.4, 0.7 - t*0.2);
+      }
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(dots, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  const m = new THREE.PointsMaterial({
+    size: 0.7, vertexColors: true, transparent: true, opacity: 0.45,
+    blending: THREE.AdditiveBlending, sizeAttenuation: true
+  });
+  const continents = new THREE.Points(g, m);
+  globeGroup.add(continents);
+}
+
+// --- COUNTRY BORDERS (loaded async from GeoJSON) ---
+function buildCountryBorders() {
+  const geoUrl = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson';
+
+  fetch(geoUrl)
+    .then(r => r.json())
+    .then(data => {
+      const bordersGroup = new THREE.Group();
+      const matBright = new THREE.LineBasicMaterial({
+        color: 0x00ffaa, transparent: true, opacity: 0.6,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      });
+      const matDim = new THREE.LineBasicMaterial({
+        color: 0x00aa77, transparent: true, opacity: 0.4,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      });
+
+      const drawRing = (ring, mat) => {
+        const pts = [];
+        for (let i = 0; i < ring.length; i++) {
+          const [lon, lat] = ring[i];
+          const v = latLonToVec3(lat, lon, RADIUS * 1.012);
+          pts.push(v);
+        }
+        if (pts.length < 2) return;
+        const g = new THREE.BufferGeometry().setFromPoints(pts);
+        const line = new THREE.Line(g, mat);
+        bordersGroup.add(line);
+      };
+
+      data.features.forEach(feat => {
+        const geom = feat.geometry;
+        if (!geom) return;
+        if (geom.type === 'Polygon') {
+          geom.coordinates.forEach((ring, i) => drawRing(ring, i === 0 ? matBright : matDim));
+        } else if (geom.type === 'MultiPolygon') {
+          geom.coordinates.forEach(poly => {
+            poly.forEach((ring, i) => drawRing(ring, i === 0 ? matBright : matDim));
+          });
+        }
+      });
+
+      globeGroup.add(bordersGroup);
+      scene.userData.borders = bordersGroup;
+    })
+    .catch(err => console.warn('Borders load failed', err));
+}
+
+// --- ATMOSPHERE GLOW ---
+function buildAtmosphere() {
+  const geom = new THREE.SphereGeometry(RADIUS * 1.18, 64, 64);
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { time: { value: 0 }, glowColor: { value: new THREE.Color(0x00ffaa) } },
+    vertexShader: `
+      varying vec3 vNormal;
+      varying vec3 vViewDir;
+      void main() {
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        vNormal = normalize(normalMatrix * normal);
+        vViewDir = normalize(-mvPosition.xyz);
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 glowColor;
+      uniform float time;
+      varying vec3 vNormal;
+      varying vec3 vViewDir;
+      void main() {
+        float intensity = pow(1.0 - dot(vNormal, vViewDir), 3.0);
+        float pulse = 0.85 + sin(time*1.5)*0.15;
+        gl_FragColor = vec4(glowColor * intensity * pulse, intensity * 0.9);
+      }
+    `,
+    blending: THREE.AdditiveBlending,
+    side: THREE.BackSide,
+    transparent: true,
+    depthWrite: false
+  });
+  atmosphere = new THREE.Mesh(geom, mat);
+  globeGroup.add(atmosphere);
+
+  // outer atmosphere
+  const geom2 = new THREE.SphereGeometry(RADIUS * 1.35, 64, 64);
+  const mat2 = new THREE.ShaderMaterial({
+    uniforms: { time: { value: 0 }, glowColor: { value: new THREE.Color(0x0088ff) } },
+    vertexShader: mat.vertexShader,
+    fragmentShader: `
+      uniform vec3 glowColor;
+      uniform float time;
+      varying vec3 vNormal;
+      varying vec3 vViewDir;
+      void main() {
+        float intensity = pow(1.0 - dot(vNormal, vViewDir), 5.0);
+        gl_FragColor = vec4(glowColor * intensity, intensity * 0.6);
+      }
+    `,
+    blending: THREE.AdditiveBlending,
+    side: THREE.BackSide,
+    transparent: true,
+    depthWrite: false
+  });
+  const outer = new THREE.Mesh(geom2, mat2);
+  globeGroup.add(outer);
+  scene.userData.outerAtmosphere = outer;
+}
+
+// --- HUB PINS ---
+function buildHubs() {
+  HUBS.forEach((hub, idx) => {
+    const pos = latLonToVec3(hub.lat, hub.lon, RADIUS * 1.005);
+    const outward = pos.clone().normalize();
+
+    // group for this hub
+    const g = new THREE.Group();
+    g.position.copy(pos);
+    // orient group's +Y axis to point outward from globe center
+    g.up.set(0, 1, 0);
+    const m = new THREE.Matrix4();
+    m.lookAt(new THREE.Vector3(0,0,0), outward, new THREE.Vector3(0,1,0));
+    // We want local +Y == outward. Build quaternion that rotates (0,1,0) to outward:
+    const q = new THREE.Quaternion();
+    q.setFromUnitVectors(new THREE.Vector3(0,1,0), outward);
+    g.quaternion.copy(q);
+    g.userData = { hub, idx };
+
+    // Beam column (along local +Y, outward)
+    const beamGeom = new THREE.CylinderGeometry(0.6, 0.1, 14, 8, 1, true);
+    beamGeom.translate(0, 7, 0);
+    const beamMat = new THREE.MeshBasicMaterial({
+      color: 0x00ffaa, transparent: true, opacity: 0.7,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
+    });
+    const beam = new THREE.Mesh(beamGeom, beamMat);
+    g.add(beam);
+
+    // Glow sphere at base
+    const glowGeom = new THREE.SphereGeometry(2.0, 16, 16);
+    const glowMat = new THREE.MeshBasicMaterial({
+      color: 0x00ffaa, transparent: true, opacity: 0.6,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    });
+    const glow = new THREE.Mesh(glowGeom, glowMat);
+    g.add(glow);
+
+    // Solid core dot — slightly raised so it's outside the globe surface
+    const dotGeom = new THREE.SphereGeometry(1.2, 14, 14);
+    const dotMat = new THREE.MeshBasicMaterial({ color: 0xffffff, depthWrite: false });
+    const dot = new THREE.Mesh(dotGeom, dotMat);
+    dot.position.y = 0.5;
+    g.add(dot);
+
+    // Ring (pulse) — orient flat against globe surface (in local XZ plane)
+    const ringGeom = new THREE.RingGeometry(2.0, 2.4, 32);
+    ringGeom.rotateX(-Math.PI / 2);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0x00ffaa, transparent: true, opacity: 0.8,
+      side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false
+    });
+    const ring = new THREE.Mesh(ringGeom, ringMat);
+    g.add(ring);
+
+    g.userData.beam = beam;
+    g.userData.glow = glow;
+    g.userData.dot = dot;
+    g.userData.ring = ring;
+    g.userData.basePos = pos.clone();
+
+    globeGroup.add(g);
+    hubMeshes.push(g);
+  });
+}
+
+// --- ARCS between active hubs ---
+function buildArc(from, to) {
+  const start = latLonToVec3(from.lat, from.lon, RADIUS * 1.005);
+  const end = latLonToVec3(to.lat, to.lon, RADIUS * 1.005);
+  const distance = start.distanceTo(end);
+  const midPoint = start.clone().add(end).multiplyScalar(0.5);
+  const altitude = RADIUS + distance * 0.6;
+  midPoint.normalize().multiplyScalar(altitude);
+
+  const curve = new THREE.QuadraticBezierCurve3(start, midPoint, end);
+  const points = curve.getPoints(60);
+  const geom = new THREE.BufferGeometry().setFromPoints(points);
+
+  // Color array gradient
+  const colors = new Float32Array(points.length * 3);
+  for (let i = 0; i < points.length; i++) {
+    const t = i / (points.length - 1);
+    colors[i*3]   = 0.0;
+    colors[i*3+1] = 1.0;
+    colors[i*3+2] = 0.7 - t*0.3;
+  }
+  geom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+  const mat = new THREE.LineBasicMaterial({
+    vertexColors: true, transparent: true, opacity: 0.55,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  const line = new THREE.Line(geom, mat);
+  globeGroup.add(line);
+
+  // Travelling pulse along arc
+  const pulseGeom = new THREE.SphereGeometry(0.8, 8, 8);
+  const pulseMat = new THREE.MeshBasicMaterial({
+    color: 0x00ffaa, transparent: true, opacity: 1,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  const pulse = new THREE.Mesh(pulseGeom, pulseMat);
+  globeGroup.add(pulse);
+
+  return { line, pulse, curve, t: Math.random(), speed: 0.003 + Math.random()*0.005, points };
+}
+
+function rebuildArcs() {
+  // remove old arcs
+  arcs.forEach(a => { globeGroup.remove(a.line); globeGroup.remove(a.pulse);
+    a.line.geometry.dispose(); a.line.material.dispose();
+    a.pulse.geometry.dispose(); a.pulse.material.dispose(); });
+  arcs = [];
+
+  const active = HUBS.filter(h => getHubState(h).isCryptoOpen);
+  // Build arcs between active hubs (network mesh, but limit pairs)
+  for (let i = 0; i < active.length; i++) {
+    for (let j = i+1; j < active.length; j++) {
+      // limit overall: only build if within reasonable count
+      arcs.push(buildArc(active[i], active[j]));
+    }
+  }
+}
+
+// --- ORBITAL RINGS ---
+function buildOrbitalRings() {
+  const ringConfigs = [
+    { r: RADIUS*1.45, opacity: 0.3, color: 0x00ffaa, axis: new THREE.Vector3(1,0.2,0.5).normalize() },
+    { r: RADIUS*1.6,  opacity: 0.2, color: 0x00d4ff, axis: new THREE.Vector3(0.5,1,0.2).normalize() },
+    { r: RADIUS*1.75, opacity: 0.15, color: 0xc59cff, axis: new THREE.Vector3(0.2,0.5,1).normalize() },
+  ];
+  ringConfigs.forEach((cfg, k) => {
+    const pts = [];
+    for (let i = 0; i <= 128; i++) {
+      const a = (i/128) * Math.PI * 2;
+      pts.push(new THREE.Vector3(Math.cos(a)*cfg.r, 0, Math.sin(a)*cfg.r));
+    }
+    const g = new THREE.BufferGeometry().setFromPoints(pts);
+    const m = new THREE.LineBasicMaterial({ color: cfg.color, transparent: true, opacity: cfg.opacity });
+    const ring = new THREE.Line(g, m);
+    // tilt
+    const q = new THREE.Quaternion();
+    q.setFromUnitVectors(new THREE.Vector3(0,1,0), cfg.axis);
+    ring.applyQuaternion(q);
+    scene.add(ring);
+    ring.userData.tilt = q;
+    ring.userData.rotSpeed = 0.0008 * (k+1) * (k%2===0?1:-1);
+    if (!scene.userData.orbits) scene.userData.orbits = [];
+    scene.userData.orbits.push(ring);
+
+    // satellite particle
+    const satG = new THREE.SphereGeometry(1.5, 12, 12);
+    const satM = new THREE.MeshBasicMaterial({
+      color: cfg.color, transparent: true, opacity: 0.9,
+      blending: THREE.AdditiveBlending
+    });
+    const sat = new THREE.Mesh(satG, satM);
+    sat.userData.r = cfg.r;
+    sat.userData.angle = Math.random() * Math.PI * 2;
+    sat.userData.speed = cfg.axis.x > 0 ? 0.012 : 0.008;
+    sat.userData.tilt = q;
+    scene.add(sat);
+    if (!scene.userData.satellites) scene.userData.satellites = [];
+    scene.userData.satellites.push(sat);
+  });
+}
+
+// --- PARTICLE FIELD around globe ---
+function buildParticleField() {
+  const count = 800;
+  const geom = new THREE.BufferGeometry();
+  const positions = new Float32Array(count * 3);
+  const velocities = [];
+  for (let i = 0; i < count; i++) {
+    const r = RADIUS * (1.4 + Math.random() * 1.5);
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    positions[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+    positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+    positions[i*3+2] = r * Math.cos(phi);
+    velocities.push(0.001 + Math.random() * 0.003);
+  }
+  geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const mat = new THREE.PointsMaterial({
+    color: 0x00ffaa, size: 0.8, transparent: true, opacity: 0.5,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  particles = new THREE.Points(geom, mat);
+  particles.userData.velocities = velocities;
+  scene.add(particles);
+}
+
+// ==========================================================================
+// === Interaction =========================================================
+// ==========================================================================
+function setupInteraction() {
+  const canvas = document.getElementById('scene');
+
+  canvas.addEventListener('mousedown', (e) => {
+    isDragging = true; dragX = e.clientX; dragY = e.clientY; autoRotate = false;
+  });
+  window.addEventListener('mouseup', () => { isDragging = false; });
+  window.addEventListener('mousemove', (e) => {
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    if (isDragging) {
+      const dx = e.clientX - dragX;
+      const dy = e.clientY - dragY;
+      rotationVelocityY = dx * 0.005;
+      rotationVelocityX = dy * 0.005;
+      globeGroup.rotation.y += rotationVelocityY;
+      globeGroup.rotation.x += rotationVelocityX;
+      globeGroup.rotation.x = Math.max(-1.0, Math.min(1.0, globeGroup.rotation.x));
+      dragX = e.clientX; dragY = e.clientY;
+    }
+    handleHover(e);
+  });
+
+  // Touch
+  canvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      isDragging = true;
+      dragX = e.touches[0].clientX; dragY = e.touches[0].clientY;
+      autoRotate = false;
+    }
+  }, { passive: true });
+  canvas.addEventListener('touchend', () => { isDragging = false; });
+  canvas.addEventListener('touchmove', (e) => {
+    if (isDragging && e.touches.length === 1) {
+      const dx = e.touches[0].clientX - dragX;
+      const dy = e.touches[0].clientY - dragY;
+      globeGroup.rotation.y += dx * 0.005;
+      globeGroup.rotation.x += dy * 0.005;
+      globeGroup.rotation.x = Math.max(-1.0, Math.min(1.0, globeGroup.rotation.x));
+      dragX = e.touches[0].clientX; dragY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+
+  // Zoom
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    zoomTarget *= (1 + e.deltaY * 0.001);
+    zoomTarget = Math.max(0.6, Math.min(2.5, zoomTarget));
+  }, { passive: false });
+
+  // Resume autorotate after idle
+  let idleTimer;
+  canvas.addEventListener('mousedown', () => {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => { autoRotate = true; }, 6000);
+  });
+}
+
+function handleHover(e) {
+  raycaster.setFromCamera(mouse, camera);
+  const targets = hubMeshes.flatMap(g => [g.userData.dot, g.userData.glow]);
+  const hits = raycaster.intersectObjects(targets);
+  const tt = document.getElementById('tooltip');
+  if (hits.length) {
+    const hubGroup = hits[0].object.parent;
+    const hub = hubGroup.userData.hub;
+    if (hub) {
+      const s = getHubState(hub);
+      tt.querySelector('.tt-name').textContent = hub.flag + ' ' + hub.name.toUpperCase();
+      tt.querySelector('.tt-time').textContent =
+        String(s.localHour).padStart(2,'0') + ':' + String(s.localMin).padStart(2,'0') +
+        '  ·  ' + s.statusText;
+      tt.style.left = e.clientX + 'px';
+      tt.style.top = e.clientY + 'px';
+      tt.classList.add('visible');
+      document.body.style.cursor = 'pointer';
+      return;
+    }
+  }
+  tt.classList.remove('visible');
+  document.body.style.cursor = '';
+}
+
+function focusHub(idx) {
+  const hub = HUBS[idx];
+  // With latLonToVec3: x=r*cos(lat)*sin(lon), y=r*sin(lat), z=r*cos(lat)*cos(lon).
+  // To bring hub to (0,0,+R): rotate around Y by -lon, then around X by +lat.
+  // Pick the SHORTEST angular path (avoid going the long way around).
+  const targetY = -hub.lon * Math.PI / 180;
+  const targetX =  hub.lat * Math.PI / 180;
+  let curY = globeGroup.rotation.y;
+  let curX = globeGroup.rotation.x;
+  // unwrap to nearest equivalent
+  let dy = ((targetY - curY + Math.PI) % (Math.PI * 2));
+  if (dy < 0) dy += Math.PI * 2;
+  dy -= Math.PI;
+  focusTarget = {
+    fromY: curY, fromX: curX,
+    toY: curY + dy,
+    toX: targetX
+  };
+  focusProgress = 0;
+  autoRotate = false;
+}
+
+function onResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+// ==========================================================================
+// === ANIMATION LOOP ======================================================
+// ==========================================================================
+let frame = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  frame++;
+  const t = frame * 0.016;
+
+  // auto-rotate
+  if (autoRotate && !isDragging) {
+    globeGroup.rotation.y += 0.0012;
+  } else if (!isDragging) {
+    rotationVelocityY *= 0.95;
+    rotationVelocityX *= 0.95;
+    globeGroup.rotation.y += rotationVelocityY * 0.3;
+  }
+
+  // Focus easing — animate from start to target over ~1s with ease-in-out
+  if (focusTarget) {
+    focusProgress = Math.min(1, focusProgress + 0.02);
+    const p = focusProgress;
+    // ease-in-out cubic
+    const ease = p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p+2, 3)/2;
+    globeGroup.rotation.y = focusTarget.fromY + (focusTarget.toY - focusTarget.fromY) * ease;
+    globeGroup.rotation.x = focusTarget.fromX + (focusTarget.toX - focusTarget.fromX) * ease;
+    if (p >= 1) { focusTarget = null; }
+  }
+
+  // Zoom (camera distance)
+  const desiredZ = 320 * zoomTarget;
+  camera.position.z += (desiredZ - camera.position.z) * 0.06;
+
+  // Atmosphere shader
+  if (atmosphere) atmosphere.material.uniforms.time.value = t;
+  if (scene.userData.outerAtmosphere) scene.userData.outerAtmosphere.material.uniforms.time.value = t;
+  if (scene.userData.nebula) scene.userData.nebula.material.uniforms.time.value = t;
+
+  // Hub pulses : active hubs pulse strongly, inactive subtle
+  hubMeshes.forEach((g, i) => {
+    const hub = g.userData.hub;
+    const s = getHubState(hub);
+    const pulseSpeed = s.isCryptoOpen ? 2.5 : 0.8;
+    const pulsePhase = i * 0.5;
+    const pulse = 0.5 + Math.sin(t * pulseSpeed + pulsePhase) * 0.5;
+
+    const activeColor = new THREE.Color(0x00ffaa);
+    const cryptoColor = new THREE.Color(0xc59cff);
+    const closedColor = new THREE.Color(0x445566);
+    const weekendColor = new THREE.Color(0xc59cff);
+
+    let col;
+    if (s.isCryptoAlways && hub.type === 'crypto') col = cryptoColor;
+    else if (s.isCryptoOpen) col = activeColor;
+    else if (s.isWeekend) col = weekendColor.clone().multiplyScalar(0.5);
+    else col = closedColor;
+
+    g.userData.beam.material.color.copy(col);
+    g.userData.glow.material.color.copy(col);
+    g.userData.ring.material.color.copy(col);
+
+    if (s.isCryptoOpen) {
+      g.userData.beam.scale.set(1, 1 + pulse * 0.3, 1);
+      g.userData.beam.material.opacity = 0.5 + pulse * 0.4;
+      g.userData.glow.scale.setScalar(1 + pulse * 0.5);
+      g.userData.glow.material.opacity = 0.4 + pulse * 0.4;
+      g.userData.ring.scale.setScalar(1 + pulse * 0.8);
+      g.userData.ring.material.opacity = (1 - pulse) * 0.8;
+      g.userData.dot.material.color.set(0xffffff);
+    } else {
+      g.userData.beam.scale.set(0.5, 0.4, 0.5);
+      g.userData.beam.material.opacity = 0.15;
+      g.userData.glow.scale.setScalar(0.6);
+      g.userData.glow.material.opacity = 0.2;
+      g.userData.ring.scale.setScalar(0.8 + pulse*0.1);
+      g.userData.ring.material.opacity = 0.15;
+      g.userData.dot.material.color.set(0x88aaaa);
+    }
+  });
+
+  // Arcs : travelling pulse
+  arcs.forEach(arc => {
+    arc.t += arc.speed;
+    if (arc.t > 1) arc.t = 0;
+    const pos = arc.curve.getPoint(arc.t);
+    arc.pulse.position.copy(pos);
+    arc.pulse.scale.setScalar(1 + Math.sin(t*5 + arc.t*10)*0.3);
+    // line opacity wave
+    arc.line.material.opacity = 0.4 + Math.sin(t*1.5 + arc.t*2)*0.2;
+  });
+
+  // Stars rotation
+  if (starField) starField.rotation.y += 0.00015;
+  if (scene.userData.nebula) scene.userData.nebula.rotation.y += 0.00008;
+
+  // Orbital rings rotation
+  if (scene.userData.orbits) {
+    scene.userData.orbits.forEach((ring, k) => {
+      ring.rotation.y += ring.userData.rotSpeed;
+    });
+  }
+  if (scene.userData.satellites) {
+    scene.userData.satellites.forEach((sat) => {
+      sat.userData.angle += sat.userData.speed;
+      const a = sat.userData.angle;
+      const r = sat.userData.r;
+      const localPos = new THREE.Vector3(Math.cos(a)*r, 0, Math.sin(a)*r);
+      localPos.applyQuaternion(sat.userData.tilt);
+      sat.position.copy(localPos);
+      sat.scale.setScalar(1 + Math.sin(t*3)*0.2);
+    });
+  }
+
+  // Particles drift
+  if (particles) {
+    const pos = particles.geometry.attributes.position;
+    const v = particles.userData.velocities;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      // rotate around Y
+      const speed = v[i];
+      const cs = Math.cos(speed), sn = Math.sin(speed);
+      const nx = x*cs - z*sn;
+      const nz = x*sn + z*cs;
+      pos.setX(i, nx); pos.setZ(i, nz);
+    }
+    pos.needsUpdate = true;
+  }
+
+  // Camera subtle bob
+  camera.position.y = 50 + Math.sin(t*0.4) * 8;
+  camera.lookAt(0, 0, 0);
+
+  renderer.render(scene, camera);
+}
+
+// ==========================================================================
+// === INIT ================================================================
+// ==========================================================================
+window.addEventListener('load', () => {
+  initThree();
+  refreshAll();
+  rebuildArcs();
+  animate();
+
+  setTimeout(() => {
+    document.getElementById('loader').classList.add('hidden');
+  }, 600);
+
+  // periodic refresh
+  setInterval(() => {
+    updateClock();
+  }, 1000);
+  setInterval(() => {
+    renderHubs();
+    renderTimeline();
+    renderEnergy();
+  }, 5000);
+  // rebuild arcs every minute (when active hubs change)
+  setInterval(() => {
+    rebuildArcs();
+  }, 60000);
+});
+</script>
+</body>
+</html>
