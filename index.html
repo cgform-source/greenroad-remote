@@ -1,0 +1,1756 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<title>GREENROAD Bot</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #02060a;
+    --green: #00ff9c;
+    --cyan: #00d4ff;
+    --violet: #c59cff;
+    --amber: #ffd66b;
+    --text: #e6f3ee;
+    --muted: #7a8a8c;
+  }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: radial-gradient(ellipse at center, #051018 0%, var(--bg) 70%);
+    color: var(--text);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    position: relative;
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+  }
+
+  /* starfield */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+      radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.7), transparent),
+      radial-gradient(1px 1px at 80% 20%, #fff, transparent),
+      radial-gradient(2px 2px at 40% 80%, rgba(0,212,255,0.7), transparent),
+      radial-gradient(1px 1px at 90% 60%, rgba(197,156,255,0.8), transparent),
+      radial-gradient(1px 1px at 15% 85%, #fff, transparent),
+      radial-gradient(1px 1px at 75% 45%, rgba(0,255,156,0.7), transparent),
+      radial-gradient(1px 1px at 35% 15%, #fff, transparent);
+    background-size: 100% 100%;
+    opacity: 0.6;
+    animation: twinkle 8s ease-in-out infinite;
+  }
+  @keyframes twinkle { 0%,100% { opacity: 0.45; } 50% { opacity: 0.75; } }
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.85) 100%);
+  }
+
+  /* ===== LOCK ===== */
+  .lock-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+    backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+    background: rgba(2,6,10,0.7);
+    transition: opacity 0.9s, backdrop-filter 0.9s;
+  }
+  .lock-overlay.unlocked { opacity: 0; pointer-events: none; backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); }
+  .lock-box {
+    width: 100%; max-width: 400px;
+    background: linear-gradient(155deg, rgba(14,28,32,0.92), rgba(8,18,24,0.92));
+    border: 1px solid rgba(0,255,156,0.28);
+    border-radius: 24px;
+    padding: 52px 36px 40px;
+    text-align: center;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 100px rgba(0,255,156,0.12);
+    animation: lockAppear 0.8s cubic-bezier(0.16,1,0.3,1);
+    position: relative; overflow: hidden;
+  }
+  @keyframes lockAppear { from { opacity: 0; transform: translateY(30px) scale(0.94); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  .lock-box::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--green), var(--cyan), transparent);
+    animation: scanLine 3s ease-in-out infinite;
+  }
+  @keyframes scanLine { 0%,100% { transform: scaleX(0.3); opacity: 0.5; } 50% { transform: scaleX(1); opacity: 1; } }
+  .lock-cube-wrap { perspective: 600px; height: 80px; margin-bottom: 20px; display: flex; justify-content: center; }
+  .lock-cube { width: 64px; height: 64px; position: relative; transform-style: preserve-3d; animation: cubeSpin 8s linear infinite; }
+  .lock-cube .face { position: absolute; width: 64px; height: 64px; border: 1px solid rgba(0,255,156,0.5); background: linear-gradient(135deg, rgba(0,255,156,0.12), rgba(0,212,255,0.05)); display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--green); text-shadow: 0 0 12px var(--green); }
+  .lock-cube .f1 { transform: translateZ(32px); }
+  .lock-cube .f2 { transform: rotateY(90deg) translateZ(32px); }
+  .lock-cube .f3 { transform: rotateY(180deg) translateZ(32px); }
+  .lock-cube .f4 { transform: rotateY(-90deg) translateZ(32px); }
+  .lock-cube .f5 { transform: rotateX(90deg) translateZ(32px); }
+  .lock-cube .f6 { transform: rotateX(-90deg) translateZ(32px); }
+  @keyframes cubeSpin { from { transform: rotateX(-15deg) rotateY(0deg);} to { transform: rotateX(-15deg) rotateY(360deg);} }
+  .lock-title { font-size: 38px; font-weight: 900; letter-spacing: 6px; background: linear-gradient(135deg, var(--green), var(--cyan), var(--violet)); background-size: 200% 200%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; animation: gradientShift 6s ease-in-out infinite; }
+  @keyframes gradientShift { 0%,100% {background-position:0% 50%;} 50% {background-position:100% 50%;} }
+  .lock-subtitle { font-size: 11px; color: var(--green); letter-spacing: 5px; text-transform: uppercase; margin-bottom: 36px; font-weight: 600; opacity: 0.85; }
+  .lock-input { width: 100%; padding: 16px 20px; background: rgba(2,6,10,0.85); border: 1px solid rgba(0,255,156,0.25); border-radius: 14px; color: var(--text); font-size: 16px; font-family: inherit; text-align: center; letter-spacing: 4px; outline: none; transition: all 0.3s; margin-bottom: 16px; }
+  .lock-input:focus { border-color: var(--green); box-shadow: 0 0 24px rgba(0,255,156,0.25); }
+  .lock-input.error { border-color: #ff5577; animation: shake 0.4s; }
+  @keyframes shake { 0%,100% {transform:translateX(0);} 25% {transform:translateX(-8px);} 75% {transform:translateX(8px);} }
+  .lock-btn { width: 100%; padding: 16px 20px; background: linear-gradient(135deg, var(--green), var(--cyan)); border: none; border-radius: 14px; color: #050a0c; font-size: 14px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; font-family: inherit; transition: all 0.3s; }
+  .lock-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 36px rgba(0,255,156,0.35); }
+  .lock-error { color: #ff5577; font-size: 12px; letter-spacing: 1px; margin-top: 12px; min-height: 16px; opacity: 0; transition: opacity 0.3s; }
+  .lock-error.show { opacity: 1; }
+
+  /* ===== STAGE ===== */
+  #stage { position: fixed; inset: 0; z-index: 1; }
+  #globe-canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+  #globe-canvas:active { cursor: grabbing; }
+
+  /* ===== HUD HOLOGRAPHIQUE ===== */
+  .hud { position: fixed; z-index: 5; pointer-events: none; }
+  .hud > * { pointer-events: auto; }
+
+  /* Top-left: logo + title */
+  .hud-tl { top: 28px; left: 32px; display: flex; align-items: center; gap: 14px; opacity: 0; animation: fadeIn 1s ease 0.3s forwards; }
+  @keyframes fadeIn { to { opacity: 1; } }
+  .hud-logo {
+    width: 48px; height: 48px; position: relative;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, var(--green), transparent 60%);
+    border: 1.5px solid rgba(0,255,156,0.6);
+    box-shadow: 0 0 20px rgba(0,255,156,0.5), inset 0 0 12px rgba(0,255,156,0.3);
+    animation: corePulse 2.5s ease-in-out infinite;
+  }
+  .hud-logo::before, .hud-logo::after {
+    content: ""; position: absolute; inset: -6px; border-radius: 50%;
+    border: 1px dashed rgba(0,212,255,0.4);
+    animation: spin 12s linear infinite;
+  }
+  .hud-logo::after { inset: -12px; border-color: rgba(197,156,255,0.3); animation: spin 18s linear infinite reverse; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes corePulse { 0%,100% { box-shadow: 0 0 20px rgba(0,255,156,0.5), inset 0 0 12px rgba(0,255,156,0.3); } 50% { box-shadow: 0 0 30px rgba(0,255,156,0.8), inset 0 0 16px rgba(0,255,156,0.5); } }
+  .hud-titles .t1 { font-size: 18px; font-weight: 900; letter-spacing: 4px; color: var(--green); text-shadow: 0 0 12px rgba(0,255,156,0.6); }
+  .hud-titles .t2 { font-size: 9px; letter-spacing: 4px; color: var(--muted); margin-top: 2px; }
+
+  /* Top-right: status panel */
+  .hud-tr { top: 28px; right: 32px; opacity: 0; animation: fadeIn 1s ease 0.5s forwards; }
+  .panel {
+    background: linear-gradient(135deg, rgba(0,40,40,0.55), rgba(0,20,30,0.55));
+    border: 1px solid rgba(0,255,156,0.25);
+    border-radius: 12px; padding: 12px 16px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    font-size: 10px; letter-spacing: 1.5px;
+    box-shadow: 0 0 24px rgba(0,255,156,0.1), inset 0 1px 0 rgba(255,255,255,0.05);
+    position: relative;
+  }
+  .panel::before {
+    content: ""; position: absolute; top: 0; left: 12px; right: 12px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+  }
+  .panel-row { display: flex; justify-content: space-between; gap: 16px; padding: 3px 0; color: var(--muted); }
+  .panel-row b { color: var(--green); font-weight: 700; letter-spacing: 1px; }
+  .panel-row .live { display: inline-flex; align-items: center; gap: 6px; }
+  .panel-row .live::before { content: ""; width: 6px; height: 6px; background: var(--green); border-radius: 50%; box-shadow: 0 0 8px var(--green); animation: blink 1.2s ease-in-out infinite; }
+  @keyframes blink { 0%,100% {opacity:1;} 50% {opacity:0.3;} }
+
+  /* Style selector */
+  .style-selector {
+    position: fixed; top: 90px; right: 32px; z-index: 6;
+    background: linear-gradient(135deg, rgba(0,40,40,0.55), rgba(0,20,30,0.55));
+    border: 1px solid rgba(0,255,156,0.25);
+    border-radius: 12px; padding: 10px 12px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 0 24px rgba(0,255,156,0.1);
+    opacity: 0; animation: fadeIn 1s ease 0.7s forwards;
+  }
+  .style-selector .label { font-size: 9px; letter-spacing: 2px; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; }
+  .style-selector .opts { display: flex; flex-direction: column; gap: 4px; }
+  .style-selector button {
+    background: transparent; border: 1px solid rgba(0,255,156,0.2);
+    color: var(--text); font-family: inherit; font-size: 10px; letter-spacing: 1.5px;
+    padding: 7px 12px; border-radius: 8px; cursor: pointer; text-transform: uppercase;
+    transition: all 0.2s; text-align: left;
+  }
+  .style-selector button:hover { border-color: var(--green); background: rgba(0,255,156,0.08); }
+  .style-selector button.active { border-color: var(--green); background: rgba(0,255,156,0.15); color: var(--green); box-shadow: 0 0 12px rgba(0,255,156,0.25); }
+
+  /* Bottom-center: made with love */
+  .hud-bc {
+    bottom: 22px; left: 50%; transform: translateX(-50%);
+    font-size: 10px; letter-spacing: 4px; color: var(--muted); font-weight: 600;
+    text-transform: uppercase;
+    opacity: 0; animation: fadeIn 1s ease 1.0s forwards;
+    text-align: center;
+  }
+  .hud-bc b { color: var(--green); letter-spacing: 5px; text-shadow: 0 0 12px rgba(0,255,156,0.5); }
+  .hud-bc .heart { display: inline-block; animation: heartBeat 1.4s ease-in-out infinite; filter: drop-shadow(0 0 6px rgba(0,255,156,0.7)); margin: 0 4px; color: var(--green); cursor: pointer; pointer-events: auto; transition: filter 0.2s, transform 0.2s; }
+  .hud-bc .heart:hover { filter: drop-shadow(0 0 14px rgba(255,80,80,0.9)) drop-shadow(0 0 4px #fff); }
+  .hud-bc .heart.armed { color: #ff5050 !important; filter: drop-shadow(0 0 16px rgba(255,80,80,1)) drop-shadow(0 0 6px #fff); }
+  @keyframes heartBeat { 0%,100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+
+  /* Bottom-left: instructions */
+  .hud-bl { bottom: 28px; left: 32px; opacity: 0; animation: fadeIn 1s ease 0.8s forwards; }
+  .hud-bl .panel { font-size: 10px; letter-spacing: 2px; color: var(--muted); display: flex; gap: 18px; }
+  .hud-bl b { color: var(--cyan); }
+
+  /* Bottom-right: version */
+  .hud-br { bottom: 28px; right: 32px; opacity: 0; animation: fadeIn 1s ease 0.8s forwards; font-size: 10px; letter-spacing: 2px; color: var(--muted); font-family: ui-monospace, monospace; }
+  .hud-br .v { color: var(--green); font-weight: 700; }
+
+  /* corner brackets */
+  .corner { position: fixed; width: 28px; height: 28px; z-index: 4; opacity: 0; animation: fadeIn 1s ease 0.2s forwards; }
+  .corner::before, .corner::after { content: ""; position: absolute; background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .corner.tl { top: 18px; left: 18px; }
+  .corner.tr { top: 18px; right: 18px; }
+  .corner.bl { bottom: 18px; left: 18px; }
+  .corner.br { bottom: 18px; right: 18px; }
+  .corner.tl::before, .corner.tr::before, .corner.bl::before, .corner.br::before { width: 18px; height: 1.5px; }
+  .corner.tl::after,  .corner.tr::after,  .corner.bl::after,  .corner.br::after  { width: 1.5px; height: 18px; }
+  .corner.tl::before { top: 0; left: 0; } .corner.tl::after { top: 0; left: 0; }
+  .corner.tr::before { top: 0; right: 0; } .corner.tr::after { top: 0; right: 0; }
+  .corner.bl::before { bottom: 0; left: 0; } .corner.bl::after { bottom: 0; left: 0; }
+  .corner.br::before { bottom: 0; right: 0; } .corner.br::after { bottom: 0; right: 0; }
+
+  /* ===== SATELLITE LABELS (linked to 3D objects via JS) ===== */
+  .sat-label {
+    position: absolute; pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    transition: opacity 0.4s;
+  }
+  .sat-label .badge {
+    pointer-events: auto; cursor: pointer;
+    background: linear-gradient(135deg, rgba(0,40,40,0.7), rgba(0,20,30,0.7));
+    border: 1px solid rgba(0,255,156,0.4);
+    border-radius: 100px;
+    padding: 8px 16px 8px 12px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    display: flex; align-items: center; gap: 10px;
+    white-space: nowrap;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5), 0 0 24px rgba(0,255,156,0.15);
+    transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
+    transform: translateZ(0);
+  }
+  .sat-label.s-cyan .badge   { border-color: rgba(0,212,255,0.45); box-shadow: 0 0 20px rgba(0,0,0,0.5), 0 0 24px rgba(0,212,255,0.15); }
+  .sat-label.s-violet .badge { border-color: rgba(197,156,255,0.45); box-shadow: 0 0 20px rgba(0,0,0,0.5), 0 0 24px rgba(197,156,255,0.15); }
+  .sat-label.s-amber .badge  { border-color: rgba(255,214,107,0.5); box-shadow: 0 0 20px rgba(0,0,0,0.5), 0 0 24px rgba(255,214,107,0.15); }
+
+  .sat-label .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 10px var(--green);
+    animation: blink 1.5s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  .sat-label.s-cyan .dot   { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+  .sat-label.s-violet .dot { background: var(--violet); box-shadow: 0 0 10px var(--violet); }
+  .sat-label.s-amber .dot  { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+
+  .sat-label .name {
+    font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--text);
+  }
+  .sat-label .badge:hover {
+    transform: scale(1.08);
+    background: linear-gradient(135deg, rgba(0,80,80,0.9), rgba(0,40,60,0.9));
+  }
+  .sat-label.s-green .badge:hover  { box-shadow: 0 0 30px rgba(0,255,156,0.5); border-color: var(--green); }
+  .sat-label.s-cyan .badge:hover   { box-shadow: 0 0 30px rgba(0,212,255,0.5); border-color: var(--cyan); }
+  .sat-label.s-violet .badge:hover { box-shadow: 0 0 30px rgba(197,156,255,0.5); border-color: var(--violet); }
+  .sat-label.s-amber .badge:hover  { box-shadow: 0 0 30px rgba(255,214,107,0.5); border-color: var(--amber); }
+
+  /* connector line drawn from badge to satellite center */
+  .sat-label .leader {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 0; height: 1px;
+    transform-origin: 0 50%;
+    background: linear-gradient(90deg, currentColor, transparent);
+    color: rgba(0,255,156,0.4);
+    pointer-events: none;
+  }
+  .sat-label.s-cyan .leader { color: rgba(0,212,255,0.4); }
+  .sat-label.s-violet .leader { color: rgba(197,156,255,0.4); }
+  .sat-label.s-amber .leader { color: rgba(255,214,107,0.4); }
+
+  /* ===== ZOOMING TRANSITION OVERLAY ===== */
+  .zoom-overlay {
+    position: fixed; inset: 0; z-index: 50; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 0%, rgba(0,255,156,0) 60%, rgba(2,6,10,0) 100%);
+    opacity: 0;
+    transition: opacity 0.6s ease, background 1s ease;
+  }
+  .zoom-overlay.active {
+    opacity: 1;
+    background: radial-gradient(ellipse at center, rgba(0,255,156,0.4) 0%, rgba(0,212,255,0.3) 30%, rgba(2,6,10,1) 100%);
+  }
+  .zoom-overlay .scan-flash {
+    position: absolute; inset: 0;
+    background: linear-gradient(transparent 49%, rgba(0,255,156,0.5) 50%, transparent 51%);
+    background-size: 100% 6px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .zoom-overlay.active .scan-flash { opacity: 0.4; animation: scanFlash 1.4s linear; }
+  @keyframes scanFlash { from { background-position: 0 -100vh; } to { background-position: 0 100vh; } }
+
+  .zoom-status {
+    position: absolute; left: 50%; top: 60%; transform: translateX(-50%);
+    color: var(--green); font-size: 14px; letter-spacing: 6px; font-weight: 800; text-transform: uppercase;
+    text-shadow: 0 0 16px var(--green);
+    opacity: 0;
+    font-family: ui-monospace, monospace;
+  }
+  .zoom-overlay.active .zoom-status { opacity: 1; animation: statusBlink 0.5s steps(2) infinite; }
+  @keyframes statusBlink { 50% { opacity: 0.4; } }
+
+  /* center reticle on France */
+  .reticle {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 60px; height: 60px;
+    opacity: 0; transition: opacity 0.4s;
+  }
+  .zoom-overlay.active .reticle { opacity: 1; animation: reticleZoom 1.4s ease-in forwards; }
+  @keyframes reticleZoom {
+    0% { width: 600px; height: 600px; opacity: 0; }
+    20% { opacity: 1; }
+    100% { width: 30px; height: 30px; opacity: 1; }
+  }
+  .reticle::before, .reticle::after {
+    content: ""; position: absolute; inset: 0;
+    border: 2px solid var(--green);
+    box-shadow: 0 0 20px var(--green);
+  }
+  .reticle::before { border-radius: 50%; }
+  .reticle::after { border: none; background: linear-gradient(var(--green), var(--green)) center/100% 1px no-repeat, linear-gradient(var(--green), var(--green)) center/1px 100% no-repeat; }
+
+  @media (max-width: 720px) {
+    .hud-tl { top: 12px; left: 30px; gap: 8px; }
+    .hud-tr { top: 12px; right: 12px; }
+    .hud-bl, .hud-br { bottom: 16px; }
+    .hud-bl { left: 16px; right: 16px; }
+    .hud-br { display: none; }
+    .hud-titles .t1 { font-size: 12px; letter-spacing: 2px; }
+    .hud-titles .t2 { font-size: 7px; letter-spacing: 2px; }
+    .hud-logo { width: 28px; height: 28px; }
+    .hud-tr .panel { font-size: 8px; padding: 6px 8px; }
+    .panel-row { gap: 8px; padding: 1px 0; }
+    .corner { width: 16px; height: 16px; }
+    .corner.tl, .corner.tr { top: 8px; }
+    .corner.tl { left: 8px; }
+    .corner.tr { right: 8px; }
+    .corner.bl, .corner.br { bottom: 8px; }
+    .sat-label .badge { padding: 6px 12px 6px 10px; }
+    .sat-label .name { font-size: 9px; letter-spacing: 1px; }
+
+    /* lock screen mobile */
+    .lock-card { padding: 32px 22px; max-width: calc(100vw - 32px); }
+    .lock-title { font-size: 26px; letter-spacing: 3px; line-height: 1.05; }
+    .lock-subtitle { font-size: 9px; letter-spacing: 3px; margin-bottom: 24px; }
+    .lock-input { font-size: 15px; padding: 13px 16px; }
+    .lock-btn { font-size: 12px; padding: 13px 16px; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- LOCK SCREEN -->
+  <div class="lock-overlay" id="lockOverlay">
+    <div class="lock-box">
+      <div class="lock-cube-wrap">
+        <div class="lock-cube">
+          <div class="face f1">⚡</div>
+          <div class="face f2">◆</div>
+          <div class="face f3">⚡</div>
+          <div class="face f4">◆</div>
+          <div class="face f5">⚡</div>
+          <div class="face f6">◆</div>
+        </div>
+      </div>
+      <div class="lock-title">GREENROAD</div>
+      <div class="lock-subtitle">TRADING BOT</div>
+      <input type="password" class="lock-input" id="lockInput" placeholder="••••••••" autocomplete="off" autofocus>
+      <button class="lock-btn" id="lockBtn">DEVERROUILLER</button>
+      <div class="lock-error" id="lockError">Mot de passe incorrect</div>
+    </div>
+  </div>
+
+  <!-- 3D STAGE -->
+  <div id="stage">
+    <canvas id="globe-canvas"></canvas>
+  </div>
+
+  <!-- HUD -->
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+
+  <div class="hud hud-tl">
+    <div class="hud-titles">
+      <div class="t1">GREENROAD</div>
+      <div class="t2">TRADING BOT · HYPERLIQUID</div>
+    </div>
+  </div>
+
+  <div class="hud hud-tr">
+    <div class="panel">
+      <div class="panel-row"><span>STATUS</span><b class="live">OPERATIONNEL</b></div>
+    </div>
+  </div>
+
+  <div class="hud hud-bl" style="display:none">
+    <div class="panel">
+      <span><b>DRAG</b> ROTATE</span>
+      <span><b>WHEEL</b> ZOOM</span>
+      <span><b>CLIC SAT</b> OPEN</span>
+    </div>
+  </div>
+
+  <div class="hud hud-bc">MADE WITH <span class="heart" id="loveHeart" title="don't.">♥</span> by <b>GREENROAD</b></div>
+
+  <div class="hud hud-br" style="display:none">
+    v2.0 · <span class="v">0x4911...64e7</span>
+  </div>
+
+  <!-- ZOOM TRANSITION -->
+  <div class="zoom-overlay" id="zoomOverlay">
+    <div class="scan-flash"></div>
+    <div class="reticle"></div>
+    <div class="zoom-status" id="zoomStatus">LOCKING ON FRANCE</div>
+  </div>
+
+  <!-- Satellite labels (filled by JS) -->
+  <div id="labels"></div>
+
+<!-- Three.js -->
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script src="https://unpkg.com/topojson-client@3"></script>
+<script>
+(function () {
+  // ============== CONFIG ==============
+  const SATELLITES = [
+    { id: 'live',     name: 'Trading Live',  color: 0x00ff9c, theme: 'green',  url: 'https://delicate-cuchufli-86f0de.netlify.app/', orbitR: 1.55, tilt: 0.10, speed: 0.20, phase: 1.2 },
+    { id: 'pilot',    name: 'Pilotage',      color: 0x00d4ff, theme: 'cyan',   url: 'https://cgform-source.github.io/greenroad-remote/remotev2.html', orbitR: 1.75, tilt: 0.45, speed: -0.16, phase: 0.8 },
+    { id: 'sim',      name: 'Simulateur',    color: 0xc59cff, theme: 'violet', url: 'https://cgform-source.github.io/greenroad-remote/srbs.html', orbitR: 1.95, tilt: 0.85, speed: 0.13, phase: 1.6 },
+    { id: 'scratch',  name: 'Scratch',       color: 0xffd66b, theme: 'amber',  url: 'https://cgform-source.github.io/greenroad-remote/scratch.html', orbitR: 1.65, tilt: -0.30, speed: 0.18, phase: 2.4 },
+    { id: 'target',   name: 'Target',        color: 0x00ff9c, theme: 'green',  url: 'https://cgform-source.github.io/greenroad-remote/target.html', orbitR: 1.85, tilt: -0.65, speed: -0.14, phase: 3.2 },
+    { id: 'const',    name: 'Constellation', color: 0xc59cff, theme: 'violet', url: 'https://cgform-source.github.io/greenroad-remote/constellation.html', orbitR: 2.10, tilt: 0.30, speed: 0.11, phase: 4.0 },
+    { id: 'world',    name: 'Carte Monde',   color: 0x00d4ff, theme: 'cyan',   url: 'https://cgform-source.github.io/greenroad-remote/worldmap.html', orbitR: 2.25, tilt: -0.20, speed: -0.09, phase: 4.8 },
+    { id: 'sobre',    name: 'No Spoil',      color: 0x00ff9c, theme: 'green',  url: 'https://cgform-source.github.io/greenroad-remote/sobre.html', orbitR: 2.40, tilt: -1.10, speed: -0.07, phase: 5.6 },
+  ];
+
+  // ============== THREE BASIC ==============
+  const canvas = document.getElementById('globe-canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.05, 100);
+  camera.position.set(0, 0.6, 4.2);
+  camera.lookAt(0, 0, 0);
+
+  // ============== STARS BG ==============
+  let starsTwinkleMat = null;
+  (() => {
+    const N = 1500;
+    const pos = new Float32Array(N*3);
+    const seed = new Float32Array(N);
+    const baseSize = new Float32Array(N);
+    for (let i=0;i<N;i++){
+      const r = 30 + Math.random()*30;
+      const t = Math.random()*Math.PI*2;
+      const p = Math.acos(2*Math.random()-1);
+      pos[i*3]   = r*Math.sin(p)*Math.cos(t);
+      pos[i*3+1] = r*Math.sin(p)*Math.sin(t);
+      pos[i*3+2] = r*Math.cos(p);
+      seed[i] = Math.random()*100;
+      // most stars small, a few big bright twinklers
+      baseSize[i] = (Math.random() < 0.06) ? (0.55 + Math.random()*0.45) : (0.10 + Math.random()*0.18);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos,3));
+    g.setAttribute('aSeed',    new THREE.BufferAttribute(seed,1));
+    g.setAttribute('aSize',    new THREE.BufferAttribute(baseSize,1));
+    const m = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      uniforms: { uTime: { value: 0 }, uPxRatio: { value: window.devicePixelRatio || 1 } },
+      vertexShader: `
+        attribute float aSeed;
+        attribute float aSize;
+        uniform float uTime;
+        uniform float uPxRatio;
+        varying float vAlpha;
+        void main(){
+          // gentle twinkle: 30% of stars sparkle, others stay calm
+          float fast = sin(uTime * (0.6 + fract(aSeed)*1.4) + aSeed * 6.28);
+          float slow = sin(uTime * 0.15 + aSeed * 1.7);
+          float sparkleMask = step(0.7, fract(aSeed * 13.37));
+          float twinkle = mix(0.85, 0.55 + 0.45 * (0.5+0.5*fast), sparkleMask);
+          twinkle *= 0.85 + 0.15 * slow;
+          vAlpha = clamp(twinkle, 0.15, 1.0);
+          vec4 mv = modelViewMatrix * vec4(position, 1.0);
+          gl_Position = projectionMatrix * mv;
+          float sizePx = aSize * (300.0 / -mv.z) * uPxRatio;
+          // slight size flicker for sparklers
+          sizePx *= (sparkleMask > 0.5) ? (0.85 + 0.3*twinkle) : 1.0;
+          gl_PointSize = sizePx;
+        }
+      `,
+      fragmentShader: `
+        varying float vAlpha;
+        void main(){
+          vec2 uv = gl_PointCoord - 0.5;
+          float d = length(uv);
+          float a = smoothstep(0.5, 0.0, d) * vAlpha;
+          // soft radial cross gleam for big stars
+          float cross = max(0.0, 1.0 - abs(uv.x)*8.0) + max(0.0, 1.0 - abs(uv.y)*8.0);
+          a += cross * 0.06 * vAlpha;
+          gl_FragColor = vec4(0.95, 0.97, 1.0, a);
+        }
+      `,
+    });
+    starsTwinkleMat = m;
+    scene.add(new THREE.Points(g, m));
+  })();
+
+  // ============== EARTH ==============
+  // Procedural earth: dot pattern continents on dark sphere using shader
+  const earthGroup = new THREE.Group();
+  scene.add(earthGroup);
+
+  // Continent dot map: latitude/longitude grid sampled against a procedural noise = approximate continents.
+  // Instead, we place dots only where land would roughly be, via a built-in low-res mask.
+  // We'll generate the dot mesh by sampling a canvas-painted simplified world map.
+
+  // Draw a stylized world map onto a 2D canvas, then sample it for dot placement.
+  const mapCanvas = document.createElement('canvas');
+  mapCanvas.width = 1024; mapCanvas.height = 512;
+  const mctx = mapCanvas.getContext('2d');
+  mctx.fillStyle = '#000'; mctx.fillRect(0,0,1024,512);
+  mctx.fillStyle = '#fff';
+  // Very rough continents (ellipses) - approximate, stylized
+  function blob(cx, cy, rx, ry, rot=0) {
+    mctx.save();
+    mctx.translate(cx, cy);
+    mctx.rotate(rot);
+    mctx.beginPath();
+    mctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI*2);
+    mctx.fill();
+    mctx.restore();
+  }
+  // Eurasia
+  blob(620, 180, 200, 70, 0.05);
+  blob(700, 210, 90, 50);
+  blob(780, 240, 70, 50, -0.2);
+  blob(550, 195, 60, 35);
+  // Africa
+  blob(560, 290, 55, 90, -0.05);
+  blob(545, 350, 35, 50);
+  // North America
+  blob(230, 180, 110, 60, -0.1);
+  blob(280, 230, 50, 40);
+  blob(200, 130, 80, 35);
+  // South America
+  blob(310, 330, 35, 70, 0.2);
+  blob(305, 390, 22, 30);
+  // Australia
+  blob(840, 360, 50, 30);
+  // Greenland / arctic blobs
+  blob(380, 90, 50, 30);
+  // India
+  blob(700, 270, 30, 30);
+  // SE Asia / archipelago
+  blob(820, 300, 35, 18, 0.1);
+  blob(860, 320, 22, 14);
+
+  const mapImg = mctx.getImageData(0,0,1024,512).data;
+  function isLand(u, v) {
+    const x = Math.floor(u * 1024);
+    const y = Math.floor(v * 512);
+    const idx = (y*1024 + x)*4;
+    return mapImg[idx] > 128;
+  }
+
+  // Globe: dark base sphere
+  const globeR = 1.0;
+  const baseGeo = new THREE.SphereGeometry(globeR*0.998, 64, 64);
+  const baseMat = new THREE.MeshBasicMaterial({ color: 0x051820, transparent: true, opacity: 0.95 });
+  const earthClickMesh = new THREE.Mesh(baseGeo, baseMat);
+  earthClickMesh.userData.isEarth = true;
+  earthGroup.add(earthClickMesh);
+
+  // glow rim
+  const glowGeo = new THREE.SphereGeometry(globeR*1.06, 48, 48);
+  const glowMat = new THREE.ShaderMaterial({
+    transparent: true, side: THREE.BackSide, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: { c1: { value: new THREE.Color(0x00ff9c) }, c2: { value: new THREE.Color(0x00d4ff) } },
+    vertexShader: `varying vec3 vN; void main(){ vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+    fragmentShader: `varying vec3 vN; uniform vec3 c1; uniform vec3 c2; void main(){ float i = pow(0.55 - dot(vN, vec3(0,0,1.0)), 2.5); vec3 col = mix(c1, c2, smoothstep(0.0,1.0,vN.y*0.5+0.5)); gl_FragColor = vec4(col, clamp(i,0.0,1.0)*0.85);} `
+  });
+  earthGroup.add(new THREE.Mesh(glowGeo, glowMat));
+
+  // outer atmosphere bigger faint
+  const atmGeo = new THREE.SphereGeometry(globeR*1.18, 48, 48);
+  const atmMat = new THREE.ShaderMaterial({
+    transparent: true, side: THREE.BackSide, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: { c1: { value: new THREE.Color(0x00d4ff) } },
+    vertexShader: `varying vec3 vN; void main(){ vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+    fragmentShader: `varying vec3 vN; uniform vec3 c1; void main(){ float i = pow(0.45 - dot(vN, vec3(0,0,1.0)), 3.0); gl_FragColor = vec4(c1, clamp(i,0.0,1.0)*0.5);} `
+  });
+  earthGroup.add(new THREE.Mesh(atmGeo, atmMat));
+
+  // continent dots - now with style switching
+  // Load a high-resolution Earth land mask for accurate country shapes
+  const STYLES = ['dots-fine', 'dots-dense', 'wireframe', 'hex', 'glow-borders'];
+  let CURRENT_STYLE = localStorage.getItem('globeStyle') || 'dots-fine';
+
+  // Try to load a real Earth equirectangular land mask
+  const earthImg = new Image();
+  earthImg.crossOrigin = 'anonymous';
+  let earthMaskReady = false;
+  let realMapImg = null;
+
+  earthImg.onload = function() {
+    const c2 = document.createElement('canvas');
+    c2.width = 2048; c2.height = 1024;
+    const x2 = c2.getContext('2d');
+    x2.drawImage(earthImg, 0, 0, 2048, 1024);
+    realMapImg = x2.getImageData(0, 0, 2048, 1024).data;
+    earthMaskReady = true;
+    rebuildLandLayer();
+  };
+  earthImg.onerror = function() {
+    // fallback: keep using stylized blobs
+    rebuildLandLayer();
+  };
+  earthImg.src = 'https://unpkg.com/three-globe@2.31.0/example/img/earth-topology.png';
+
+  function isLandReal(u, v) {
+    if (!realMapImg) return isLand(u, v);
+    // Flip longitude so dots align with country-border GeoJSON convention
+    // (dots' atan2(z,x) increases east-to-west; texture is west-to-east)
+    const uu = (1.0 - u + 1.0) % 1.0;
+    const x = Math.floor(uu * 2048);
+    const y = Math.floor(v * 1024);
+    const idx = (y * 2048 + x) * 4;
+    // earth-topology: land has brightness > 0; ocean is dark
+    return realMapImg[idx] > 30;
+  }
+
+  let landLayer = null;
+  function rebuildLandLayer() {
+    if (landLayer) {
+      earthGroup.remove(landLayer);
+      landLayer.traverse(o => {
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) o.material.dispose();
+      });
+    }
+    landLayer = new THREE.Group();
+
+    if (CURRENT_STYLE === 'dots-fine' || CURRENT_STYLE === 'dots-dense') {
+      const samples = CURRENT_STYLE === 'dots-dense' ? 25000 : 14000;
+      const pos = [], col = [];
+      for (let i = 0; i < samples; i++) {
+        const phi = Math.acos(1 - 2*(i+0.5)/samples);
+        const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+        const x = Math.sin(phi)*Math.cos(theta);
+        const y = Math.cos(phi);
+        const z = Math.sin(phi)*Math.sin(theta);
+        const u = 0.5 + Math.atan2(z, x)/(2*Math.PI);
+        const v = 0.5 - Math.asin(y)/Math.PI;
+        if (isLandReal(u, v)) {
+          const r = globeR * 1.005;
+          pos.push(x*r, y*r, z*r);
+          const c = Math.abs(y) > 0.6 ? new THREE.Color(0x00d4ff) : new THREE.Color(0x00ff9c);
+          col.push(c.r, c.g, c.b);
+        }
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+      const m = new THREE.PointsMaterial({
+        size: CURRENT_STYLE === 'dots-dense' ? 0.012 : 0.016,
+        vertexColors: true, transparent: true, opacity: 0.95,
+        depthWrite: false, blending: THREE.AdditiveBlending,
+      });
+      const pts = new THREE.Points(g, m);
+      pts.renderOrder = 5;
+      pts.frustumCulled = false;
+      landLayer.add(pts);
+    }
+    else if (CURRENT_STYLE === 'wireframe') {
+      // many small triangles only on land
+      const samples = 18000;
+      const pos = [], col = [];
+      for (let i = 0; i < samples; i++) {
+        const phi = Math.acos(1 - 2*(i+0.5)/samples);
+        const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+        const x = Math.sin(phi)*Math.cos(theta);
+        const y = Math.cos(phi);
+        const z = Math.sin(phi)*Math.sin(theta);
+        const u = 0.5 + Math.atan2(z, x)/(2*Math.PI);
+        const v = 0.5 - Math.asin(y)/Math.PI;
+        if (isLandReal(u, v)) {
+          const r = globeR * 1.005;
+          pos.push(x*r, y*r, z*r);
+          col.push(0, 1, 0.6);
+        }
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+      const m = new THREE.PointsMaterial({ size: 0.008, vertexColors: true, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending });
+      landLayer.add(new THREE.Points(g, m));
+      // overlay an actual wireframe
+      const wG = new THREE.SphereGeometry(globeR*1.002, 64, 48);
+      const wM = new THREE.MeshBasicMaterial({ color: 0x00ff9c, wireframe: true, transparent: true, opacity: 0.15 });
+      landLayer.add(new THREE.Mesh(wG, wM));
+    }
+    else if (CURRENT_STYLE === 'hex') {
+      // hexagonal-ish grid: use icosahedron-subdivided dots
+      const ico = new THREE.IcosahedronGeometry(globeR*1.005, 5);
+      const verts = ico.attributes.position;
+      const seen = new Set();
+      const pos = [], col = [];
+      for (let i = 0; i < verts.count; i++) {
+        const x = verts.getX(i), y = verts.getY(i), z = verts.getZ(i);
+        const key = `${x.toFixed(3)}_${y.toFixed(3)}_${z.toFixed(3)}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const u = 0.5 + Math.atan2(z, x)/(2*Math.PI);
+        const v = 0.5 - Math.asin(y/globeR/1.005)/Math.PI;
+        if (isLandReal(u, v)) {
+          pos.push(x, y, z);
+          const c = Math.abs(y) > 0.6 * globeR ? new THREE.Color(0x00d4ff) : new THREE.Color(0x00ff9c);
+          col.push(c.r, c.g, c.b);
+        }
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+      const m = new THREE.PointsMaterial({ size: 0.022, vertexColors: true, transparent: true, opacity: 1, blending: THREE.AdditiveBlending });
+      landLayer.add(new THREE.Points(g, m));
+      ico.dispose();
+    }
+    else if (CURRENT_STYLE === 'glow-borders') {
+      // Detect coastlines: land pixels next to ocean -> stronger glow
+      const samples = 22000;
+      const posInner = [], colInner = [];
+      const posBorder = [], colBorder = [];
+      const eps = 0.004;
+      for (let i = 0; i < samples; i++) {
+        const phi = Math.acos(1 - 2*(i+0.5)/samples);
+        const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+        const x = Math.sin(phi)*Math.cos(theta);
+        const y = Math.cos(phi);
+        const z = Math.sin(phi)*Math.sin(theta);
+        const u = 0.5 + Math.atan2(z, x)/(2*Math.PI);
+        const v = 0.5 - Math.asin(y)/Math.PI;
+        if (!isLandReal(u, v)) continue;
+        // check neighbors
+        const isBorder = !isLandReal((u+eps)%1, v) || !isLandReal((u-eps+1)%1, v)
+                      || !isLandReal(u, Math.min(0.999, v+eps)) || !isLandReal(u, Math.max(0.001, v-eps));
+        const r = globeR * 1.005;
+        if (isBorder) {
+          posBorder.push(x*r, y*r, z*r);
+          colBorder.push(0, 1, 0.6);
+        } else {
+          posInner.push(x*r, y*r, z*r);
+          colInner.push(0.0, 0.4, 0.5);
+        }
+      }
+      const gI = new THREE.BufferGeometry();
+      gI.setAttribute('position', new THREE.Float32BufferAttribute(posInner, 3));
+      gI.setAttribute('color', new THREE.Float32BufferAttribute(colInner, 3));
+      landLayer.add(new THREE.Points(gI, new THREE.PointsMaterial({ size: 0.010, vertexColors: true, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending })));
+
+      const gB = new THREE.BufferGeometry();
+      gB.setAttribute('position', new THREE.Float32BufferAttribute(posBorder, 3));
+      gB.setAttribute('color', new THREE.Float32BufferAttribute(colBorder, 3));
+      landLayer.add(new THREE.Points(gB, new THREE.PointsMaterial({ size: 0.018, vertexColors: true, transparent: true, opacity: 1, blending: THREE.AdditiveBlending })));
+    }
+
+    earthGroup.add(landLayer);
+  }
+
+  // initial build with stylized blobs (will be rebuilt when real image loads)
+  rebuildLandLayer();
+
+  // ============== COUNTRY BORDERS ==============
+  // Loaded from world-atlas TopoJSON; rendered as glowing line segments on the sphere.
+  let bordersGroup = null;
+  function buildBordersFromGeoJSON(geo) {
+    if (bordersGroup) {
+      earthGroup.remove(bordersGroup);
+      bordersGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+    }
+    bordersGroup = new THREE.Group();
+    const r = globeR * 1.022;
+    const positions = [];
+
+    function addRing(ring) {
+      // ring: array of [lon, lat]
+      for (let i = 0; i < ring.length - 1; i++) {
+        const a = ring[i], b = ring[i+1];
+        const va = lonLatToXYZ(a[0], a[1], r);
+        const vb = lonLatToXYZ(b[0], b[1], r);
+        positions.push(va.x, va.y, va.z, vb.x, vb.y, vb.z);
+      }
+    }
+    function lonLatToXYZ(lon, lat, R) {
+      const phi = (90 - lat) * Math.PI/180;
+      const theta = (lon + 180) * Math.PI/180;
+      return new THREE.Vector3(
+        -R * Math.sin(phi) * Math.cos(theta),
+         R * Math.cos(phi),
+         R * Math.sin(phi) * Math.sin(theta)
+      );
+    }
+
+    geo.features.forEach(f => {
+      const g = f.geometry;
+      if (!g) return;
+      if (g.type === 'Polygon') {
+        g.coordinates.forEach(addRing);
+      } else if (g.type === 'MultiPolygon') {
+        g.coordinates.forEach(poly => poly.forEach(addRing));
+      }
+    });
+
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    const mat = new THREE.LineBasicMaterial({
+      color: 0x00ff9c, transparent: true, opacity: 0.7,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    });
+    const lines = new THREE.LineSegments(geom, mat);
+    lines.renderOrder = 10;
+    bordersGroup.add(lines);
+
+    // subtle outer glow pass
+    const matGlow = new THREE.LineBasicMaterial({
+      color: 0x00d4ff, transparent: true, opacity: 0.22,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    });
+    const glowLines = new THREE.LineSegments(geom.clone(), matGlow);
+    glowLines.scale.setScalar(1.003);
+    glowLines.renderOrder = 11;
+    bordersGroup.add(glowLines);
+
+    earthGroup.add(bordersGroup);
+  }
+
+  // Fetch world borders. Try countries first, then fall back to land outlines.
+  fetch('https://unpkg.com/world-atlas@2/countries-50m.json')
+    .then(r => r.json())
+    .then(topo => {
+      if (!window.topojson) return;
+      const geo = window.topojson.feature(topo, topo.objects.countries);
+      buildBordersFromGeoJSON(geo);
+    })
+    .catch(err => console.warn('borders load failed', err));
+
+  // expose for UI
+  window.__setGlobeStyle = function(style) {
+    CURRENT_STYLE = style;
+    localStorage.setItem('globeStyle', style);
+    rebuildLandLayer();
+  };
+
+
+  // wireframe over sphere
+  const wireGeo = new THREE.SphereGeometry(globeR*1.001, 36, 24);
+  const wireMat = new THREE.MeshBasicMaterial({ color: 0x00ff9c, wireframe: true, transparent: true, opacity: 0.08 });
+  earthGroup.add(new THREE.Mesh(wireGeo, wireMat));
+
+  // ============== FRANCE MARKER ==============
+  // approx Paris lat 48.85, lon 2.35
+  function latLonToVec3(lat, lon, r) {
+    const phi = (90 - lat) * Math.PI/180;
+    const theta = (lon + 180) * Math.PI/180;
+    return new THREE.Vector3(
+      -r * Math.sin(phi) * Math.cos(theta),
+       r * Math.cos(phi),
+       r * Math.sin(phi) * Math.sin(theta)
+    );
+  }
+  const FRANCE_LAT = 46.5, FRANCE_LON = 2.5;
+  const francePos = latLonToVec3(FRANCE_LAT, FRANCE_LON, globeR);
+
+  // pin pulse
+  const pinGroup = new THREE.Group();
+  const pinPos = latLonToVec3(FRANCE_LAT, FRANCE_LON, globeR*1.005);
+  pinGroup.position.copy(pinPos);
+  pinGroup.lookAt(pinPos.clone().multiplyScalar(2));
+  earthGroup.add(pinGroup);
+
+  // ring rings
+  const ringGeo1 = new THREE.RingGeometry(0.025, 0.032, 32);
+  const ringMat1 = new THREE.MeshBasicMaterial({ color: 0x00ff9c, transparent: true, opacity: 0.9, side: THREE.DoubleSide });
+  pinGroup.add(new THREE.Mesh(ringGeo1, ringMat1));
+  const pulseRing = new THREE.Mesh(new THREE.RingGeometry(0.03, 0.04, 32), new THREE.MeshBasicMaterial({ color: 0x00ff9c, transparent: true, opacity: 0.8, side: THREE.DoubleSide }));
+  pinGroup.add(pulseRing);
+  // central dot
+  const pinDot = new THREE.Mesh(new THREE.CircleGeometry(0.015, 16), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+  pinGroup.add(pinDot);
+
+  // Beam
+  const beamGeo = new THREE.CylinderGeometry(0.005, 0.001, 0.4, 8, 1, true);
+  const beamMat = new THREE.MeshBasicMaterial({ color: 0x00ff9c, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+  const beam = new THREE.Mesh(beamGeo, beamMat);
+  beam.position.copy(pinPos.clone().multiplyScalar(1.18));
+  beam.lookAt(pinPos.clone().multiplyScalar(3));
+  beam.rotateX(Math.PI/2);
+  earthGroup.add(beam);
+
+  // ============== ARCS (random data flows on globe) ==============
+  const arcs = [];
+  function randomLatLon() { return [ Math.random()*160 - 80, Math.random()*360 - 180 ]; }
+  function makeArc(latA, lonA, latB, lonB, color) {
+    const a = latLonToVec3(latA, lonA, globeR*1.005);
+    const b = latLonToVec3(latB, lonB, globeR*1.005);
+    const mid = a.clone().add(b).multiplyScalar(0.5);
+    const len = a.distanceTo(b);
+    mid.normalize().multiplyScalar(globeR + len*0.3);
+    const curve = new THREE.QuadraticBezierCurve3(a, mid, b);
+    const points = curve.getPoints(40);
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending });
+    const line = new THREE.Line(geo, mat);
+    earthGroup.add(line);
+
+    // moving particle
+    const pGeo = new THREE.SphereGeometry(0.02, 8, 8);
+    const pMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1, blending: THREE.AdditiveBlending });
+    const particle = new THREE.Mesh(pGeo, pMat);
+    earthGroup.add(particle);
+
+    return { curve, line, mat, particle, t: Math.random(), speed: 0.2 + Math.random()*0.4, life: 1.0 };
+  }
+  const colors = [0x00ff9c, 0x00d4ff, 0xc59cff, 0xffd66b];
+  for (let i = 0; i < 14; i++) {
+    // half from france
+    const fromFrance = i < 7;
+    const [latA, lonA] = fromFrance ? [FRANCE_LAT, FRANCE_LON] : randomLatLon();
+    const [latB, lonB] = randomLatLon();
+    arcs.push(makeArc(latA, lonA, latB, lonB, colors[i % colors.length]));
+  }
+
+  // ============== POWER WAVES (from Trading Live satellite to globe) ==============
+  // Concentric rings expanding on the globe surface from France (Trading Live's pulse target).
+  const POWER_WAVES = [];
+  const POWER_TARGET = francePos.clone(); // ground impact point on globe
+  const POWER_NORMAL = POWER_TARGET.clone().normalize();
+
+  // Ring mesh factory
+  function makePowerRing() {
+    const geo = new THREE.RingGeometry(0.02, 0.045, 64);
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0x00ff9c, transparent: true, opacity: 0.0,
+      side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const m = new THREE.Mesh(geo, mat);
+    // orient ring tangent to sphere at target point — push out beyond borders layer
+    m.position.copy(POWER_TARGET.clone().multiplyScalar(1.03));
+    m.lookAt(POWER_TARGET.clone().multiplyScalar(2));
+    m.renderOrder = 20;
+    earthGroup.add(m);
+    return m;
+  }
+
+  // beam from live satellite to france (impact bolt)
+  const impactBeamGeo = new THREE.BufferGeometry();
+  impactBeamGeo.setAttribute('position', new THREE.Float32BufferAttribute([0,0,0, 0,0,0], 3));
+  const impactBeamMat = new THREE.LineBasicMaterial({
+    color: 0x00ff9c, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending, depthWrite: false, linewidth: 2,
+  });
+  const impactBeam = new THREE.Line(impactBeamGeo, impactBeamMat);
+  impactBeam.renderOrder = 21;
+  scene.add(impactBeam);
+
+  // central impact flash on france
+  const flashGeo = new THREE.SphereGeometry(0.04, 16, 16);
+  const flashMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+  const impactFlash = new THREE.Mesh(flashGeo, flashMat);
+  impactFlash.position.copy(POWER_TARGET.clone().multiplyScalar(1.03));
+  impactFlash.renderOrder = 22;
+  earthGroup.add(impactFlash);
+
+  function triggerPowerWave() {
+    // phase 1: charge beam from satellite to france (handled in animate by checking wave.t)
+    // phase 2: 3 rings spawn with delay
+    for (let i = 0; i < 3; i++) {
+      const ring = makePowerRing();
+      POWER_WAVES.push({
+        mesh: ring,
+        t: 0,
+        delay: i * 0.25,
+        life: 2.4,
+        startTime: performance.now() / 1000 + 0.6, // after beam arrives
+      });
+    }
+    // beam + flash
+    POWER_WAVES.beamActive = performance.now() / 1000;
+  }
+
+  // schedule: every 15s after intro
+  setInterval(() => { if (introDone) triggerPowerWave(); }, 15000);
+  // first wave 4s after intro completes
+  setTimeout(() => { if (introDone) triggerPowerWave(); }, 6500);
+
+  // ============== SATELLITES ==============
+  const satObjects = [];
+  const satGroup = new THREE.Group();
+  scene.add(satGroup);
+
+  // ============== SHOOTING STARS ==============
+  const shootingStars = [];
+  const SHOOT_MAX = 6;
+  function spawnShootingStar() {
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(2 * 3);
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const colors = new Float32Array(2 * 3);
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const mat = new THREE.LineBasicMaterial({
+      vertexColors: true, transparent: true, opacity: 1,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    });
+    const line = new THREE.Line(geo, mat);
+    line.frustumCulled = false;
+    scene.add(line);
+
+    // random start far behind globe, random direction
+    const angle = Math.random() * Math.PI * 2;
+    const elev = (Math.random() - 0.5) * 0.6;
+    const dist = 7 + Math.random() * 4;
+    const start = new THREE.Vector3(
+      Math.cos(angle) * dist,
+      elev * dist,
+      Math.sin(angle) * dist
+    );
+    // direction: roughly across sky, with slight downward bias
+    const dirAng = angle + Math.PI + (Math.random()-0.5)*0.6;
+    const dir = new THREE.Vector3(
+      Math.cos(dirAng), -0.1 + (Math.random()-0.5)*0.4, Math.sin(dirAng)
+    ).normalize();
+
+    shootingStars.push({
+      line, mat, geo,
+      pos: start,
+      dir,
+      speed: 6 + Math.random() * 5,
+      life: 0,
+      maxLife: 1.4 + Math.random() * 0.6,
+      tailLen: 1.2 + Math.random() * 1.0,
+      hue: Math.random() < 0.5 ? new THREE.Color(0x9cffe6) : new THREE.Color(0xffffff)
+    });
+  }
+  // initial spawn schedule
+  let nextShootAt = 0;
+  function updateShootingStars(t, dt) {
+    if (t > nextShootAt && shootingStars.length < SHOOT_MAX) {
+      spawnShootingStar();
+      nextShootAt = t + 1.2 + Math.random() * 2.5;
+    }
+    for (let i = shootingStars.length - 1; i >= 0; i--) {
+      const s = shootingStars[i];
+      s.life += dt;
+      s.pos.addScaledVector(s.dir, s.speed * dt);
+      const tail = s.pos.clone().addScaledVector(s.dir, -s.tailLen);
+      const arr = s.geo.attributes.position.array;
+      arr[0] = s.pos.x; arr[1] = s.pos.y; arr[2] = s.pos.z;
+      arr[3] = tail.x;  arr[4] = tail.y;  arr[5] = tail.z;
+      s.geo.attributes.position.needsUpdate = true;
+      const carr = s.geo.attributes.color.array;
+      carr[0] = s.hue.r; carr[1] = s.hue.g; carr[2] = s.hue.b;
+      carr[3] = 0; carr[4] = 0; carr[5] = 0;
+      s.geo.attributes.color.needsUpdate = true;
+      const lifeT = s.life / s.maxLife;
+      s.mat.opacity = lifeT < 0.2 ? lifeT/0.2 : (1 - (lifeT-0.2)/0.8);
+      if (s.life >= s.maxLife) {
+        scene.remove(s.line);
+        s.geo.dispose(); s.mat.dispose();
+        shootingStars.splice(i, 1);
+      }
+    }
+  }
+
+  satGroup.visible = false;
+  SATELLITES.forEach((s, i) => {
+    const group = new THREE.Group();
+    // orbit ring (visible)
+    const ringSeg = 128;
+    const ringG = new THREE.BufferGeometry();
+    const rPts = [];
+    for (let k = 0; k <= ringSeg; k++) {
+      const a = (k/ringSeg) * Math.PI*2;
+      rPts.push(Math.cos(a)*s.orbitR, 0, Math.sin(a)*s.orbitR);
+    }
+    ringG.setAttribute('position', new THREE.Float32BufferAttribute(rPts, 3));
+    const ringM = new THREE.LineBasicMaterial({ color: s.color, transparent: true, opacity: 0.18 });
+    const ring = new THREE.Line(ringG, ringM);
+    ring.rotation.x = s.tilt;
+    ring.rotation.z = s.tilt * 0.5;
+    satGroup.add(ring);
+
+    // satellite mesh group, rotates around with same tilt
+    const orbiter = new THREE.Group();
+    orbiter.rotation.x = s.tilt;
+    orbiter.rotation.z = s.tilt * 0.5;
+    satGroup.add(orbiter);
+
+    // satellite body: octahedron + ring
+    const bodyGeo = new THREE.OctahedronGeometry(0.07, 0);
+    const bodyMat = new THREE.MeshBasicMaterial({ color: s.color, transparent: true, opacity: 0.9 });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+
+    const bodyWireGeo = new THREE.OctahedronGeometry(0.085, 0);
+    const bodyWireMat = new THREE.MeshBasicMaterial({ color: s.color, wireframe: true, transparent: true, opacity: 0.7 });
+    const bodyWire = new THREE.Mesh(bodyWireGeo, bodyWireMat);
+
+    // glow sprite (billboard)
+    const haloGeo = new THREE.RingGeometry(0.10, 0.18, 24);
+    const haloMat = new THREE.MeshBasicMaterial({ color: s.color, transparent: true, opacity: 0.35, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
+    const halo = new THREE.Mesh(haloGeo, haloMat);
+
+    const inst = new THREE.Group();
+    inst.add(body); inst.add(bodyWire); inst.add(halo);
+    orbiter.add(inst);
+
+    // connector line from globe center to satellite (pulses)
+    const lineGeo = new THREE.BufferGeometry();
+    lineGeo.setAttribute('position', new THREE.Float32BufferAttribute([0,0,0, 0,0,0], 3));
+    const lineMat = new THREE.LineBasicMaterial({ color: s.color, transparent: true, opacity: 0.25, blending: THREE.AdditiveBlending });
+    const line = new THREE.Line(lineGeo, lineMat);
+    satGroup.add(line);
+
+    satObjects.push({
+      cfg: s,
+      orbiter, inst, body, bodyWire, halo, line, lineGeo, lineMat,
+      angle: s.phase,
+      isLive: s.id === 'live',
+    });
+  });
+
+  // ============== HTML LABELS ==============
+  const labelsRoot = document.getElementById('labels');
+  satObjects.forEach((sat, i) => {
+    const el = document.createElement('div');
+    el.className = `sat-label s-${sat.cfg.theme}`;
+    el.innerHTML = `
+      <div class="badge" data-id="${sat.cfg.id}">
+        <div class="dot"></div>
+        <div class="name">${sat.cfg.name}</div>
+      </div>
+    `;
+    el.style.opacity = '0';
+    el.style.transition = 'opacity 0.6s ease';
+    labelsRoot.appendChild(el);
+    sat.label = el;
+    sat.badge = el.querySelector('.badge');
+    sat.badge.addEventListener('click', () => triggerZoom(sat));
+  });
+
+  // ============== INTRO ZOOM (camera flies in from far) ==============
+  function runIntroZoom() {
+    const t0 = performance.now();
+    const dur = 2600;
+    const startDist = 14, endDist = window.innerWidth < 720 ? 5.6 : 4.2;
+    // target rotation: France facing camera at end of intro
+    const fp = francePos.clone();
+    const sol = solveCenterRotation(francePos, 0.3, endDist);
+    const desiredRotY = sol.rY;
+    const desiredRotX = sol.rX;
+    const startRotY = 0, startRotX = view.rotX;
+    function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+    function step() {
+      const t = Math.min(1, (performance.now() - t0) / dur);
+      const e = easeOut(t);
+      target.dist = view.dist = startDist + (endDist - startDist) * e;
+      target.rotY = view.rotY = startRotY + (desiredRotY - startRotY) * e;
+      target.rotX = view.rotX = startRotX + (desiredRotX - startRotX) * e;
+      if (t < 1) requestAnimationFrame(step);
+      else {
+        introDone = true;
+        // reveal satellites + labels with stagger
+        satGroup.visible = true;
+        satObjects.forEach((sat, i) => {
+          // pop-in scale animation
+          sat.inst.scale.setScalar(0.001);
+          setTimeout(() => {
+            const tStart = performance.now();
+            const dPop = 600;
+            (function pop() {
+              const tt = Math.min(1, (performance.now() - tStart) / dPop);
+              const ee = 1 - Math.pow(1 - tt, 4);
+              const overshoot = ee < 0.7 ? ee * 1.4 : 1.0 + (1 - ee) * 0.3;
+              sat.inst.scale.setScalar(Math.max(0.01, overshoot));
+              if (tt < 1) requestAnimationFrame(pop);
+              else sat.inst.scale.setScalar(1);
+            })();
+            sat.label.style.opacity = '1';
+          }, i * 110);
+        });
+      }
+    }
+    step();
+  }
+
+  // ============== INTERACTION : drag to rotate ==============
+  const target = { rotX: 0.25, rotY: 0, dist: 14 };
+  const view  = { rotX: 0.25, rotY: 0, dist: 14 };
+  let dragging = false, lastX = 0, lastY = 0, downX = 0, downY = 0, downT = 0;
+  let introDone = false;
+  let earthAutoSpin = 0;   // accumulated radians, applied on top of view.rotY (earth only)
+  let clusterMode = false; // when true, satellites snap to screen grid
+  let clusterT = 0;        // 0..1 transition value
+  canvas.addEventListener('pointerdown', (e) => {
+    dragging = true; lastX = e.clientX; lastY = e.clientY;
+    downX = e.clientX; downY = e.clientY; downT = performance.now();
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    target.rotY += dx * 0.005;
+    target.rotX = Math.max(-1.2, Math.min(1.2, target.rotX + dy * 0.005));
+    lastX = e.clientX; lastY = e.clientY;
+  });
+  canvas.addEventListener('pointerup', (e) => {
+    dragging = false;
+    // tap detection: short, no big movement
+    const dt = performance.now() - downT;
+    const dx = e.clientX - downX, dy = e.clientY - downY;
+    if (introDone && dt < 350 && Math.hypot(dx, dy) < 8) {
+      // raycast against earth
+      const rect = canvas.getBoundingClientRect();
+      const ndc = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      );
+      const ray = new THREE.Raycaster();
+      ray.setFromCamera(ndc, camera);
+      const hits = ray.intersectObject(earthClickMesh, false);
+      if (hits.length > 0) {
+        clusterMode = !clusterMode;
+      }
+    }
+  });
+  canvas.addEventListener('pointercancel', () => { dragging = false; });
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    target.dist = Math.max(2.6, Math.min(7, target.dist + e.deltaY * 0.003));
+  }, { passive: false });
+
+  // ----- TOUCH: prevent page pinch-zoom + implement pinch-to-zoom on the globe -----
+  let pinchStartDist = 0;
+  let pinchStartCamDist = 0;
+  function touchDistance(t) {
+    const dx = t[0].clientX - t[1].clientX;
+    const dy = t[0].clientY - t[1].clientY;
+    return Math.hypot(dx, dy);
+  }
+  canvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      dragging = false;
+      pinchStartDist = touchDistance(e.touches);
+      pinchStartCamDist = target.dist;
+    }
+  }, { passive: false });
+  canvas.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2 && pinchStartDist > 0) {
+      e.preventDefault();
+      const d = touchDistance(e.touches);
+      const ratio = pinchStartDist / d; // bigger gap = zoom in (smaller dist)
+      target.dist = Math.max(2.6, Math.min(7, pinchStartCamDist * ratio));
+    }
+  }, { passive: false });
+  canvas.addEventListener('touchend', (e) => {
+    if (e.touches.length < 2) pinchStartDist = 0;
+  });
+  // Block double-tap zoom on the canvas
+  canvas.addEventListener('gesturestart', (e) => e.preventDefault());
+  canvas.addEventListener('dblclick', (e) => e.preventDefault());
+
+  // ============== ZOOM TO FRANCE ==============
+  let zooming = false;
+  const zoomOverlay = document.getElementById('zoomOverlay');
+  const zoomStatus  = document.getElementById('zoomStatus');
+
+  // Compute the (rotX, rotY) Euler-XYZ on earthGroup such that local point p lands at screen center,
+  // accounting for camera at (0, camY, camZ) looking at origin. Three.js XYZ order applies Rx·Ry·Rz
+  // to a vector, so with rZ=0: world(p) = Rx(rotX) · Ry(rotY) · p. We want world(p) ∝ (0, camY, camZ).
+  function solveCenterRotation(p, camY, camZ) {
+    const px = p.x, py = p.y, pz = p.z;
+    // Step 1: choose rotY so that (Ry·p).x = 0, with the rotated z positive (France toward camera).
+    const rY = Math.atan2(-px, pz);
+    const qz = -px * Math.sin(rY) + pz * Math.cos(rY); // = sqrt(px²+pz²), positive
+    // Step 2: choose rotX so that Rx applied to (py, qz) lands at angle atan2(camY, camZ) from +Z.
+    const beta  = Math.atan2(py, qz);
+    const alpha = Math.atan2(camY, camZ);
+    const rX = beta - alpha;
+    return { rX, rY };
+  }
+
+  function triggerZoom(sat) {
+    if (zooming) return;
+    zooming = true;
+    zoomStatus.textContent = `LOCKING ${sat.cfg.name.toUpperCase()}`;
+
+    // animate camera distance + rotation toward France-on-screen orientation
+    // We want France facing camera. France local position is `francePos`. We need earthGroup rotated such that francePos rotated -> lies on +Z axis (toward camera).
+    // We'll directly animate target.rotY/rotX to align.
+    // Simpler: snap-rotate earthGroup into place via dedicated tween of view rotation.
+    const startDist = view.dist, endDist = 1.55;
+    const startRotX = view.rotX, startRotY = view.rotY;
+    // desired camera rotation so France (= power-wave epicenter) sits at screen center.
+    // earthGroup actually rotates by (view.rotY + earthAutoSpin), so subtract autoSpin
+    // from the solver's rY to compensate.
+    const sol = solveCenterRotation(francePos, 0.3, endDist);
+    let desiredRotY = sol.rY - earthAutoSpin;
+    let desiredRotX = sol.rX;
+    // pick the equivalent angle closest to startRotY to avoid long unwinds
+    const TWO_PI = Math.PI*2;
+    while (desiredRotY - startRotY > Math.PI)  desiredRotY -= TWO_PI;
+    while (desiredRotY - startRotY < -Math.PI) desiredRotY += TWO_PI;
+    const t0 = performance.now();
+    const dur = 1400;
+    function easeInOut(t) { return t<0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2; }
+
+    setTimeout(() => zoomOverlay.classList.add('active'), 100);
+
+    function step() {
+      const t = Math.min(1, (performance.now()-t0)/dur);
+      const e = easeInOut(t);
+      target.dist = view.dist = startDist + (endDist-startDist)*e;
+      target.rotY = view.rotY = startRotY + (desiredRotY-startRotY)*e;
+      target.rotX = view.rotX = startRotX + (desiredRotX-startRotX)*e;
+      if (t < 1) requestAnimationFrame(step);
+      else {
+        // open the link
+        setTimeout(() => {
+          window.location.href = sat.cfg.url;
+        }, 300);
+      }
+    }
+    step();
+  }
+
+  // ============== RESIZE ==============
+  function onResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+  window.addEventListener('resize', onResize);
+
+  // ============== UPTIME ==============
+  const startedAt = Date.now();
+  const uptimeEl = document.getElementById('uptime');
+  if (uptimeEl) setInterval(() => {
+    const s = Math.floor((Date.now()-startedAt)/1000);
+    const hh = String(Math.floor(s/3600)).padStart(2,'0');
+    const mm = String(Math.floor((s%3600)/60)).padStart(2,'0');
+    const ss = String(s%60).padStart(2,'0');
+    uptimeEl.textContent = `${hh}:${mm}:${ss}`;
+  }, 1000);
+
+  // ============== ANIMATE ==============
+  const clock = new THREE.Clock();
+  const tmpV = new THREE.Vector3();
+
+  function animate() {
+    const dt = Math.min(0.05, clock.getDelta());
+    const t = clock.getElapsedTime();
+
+    // smooth view
+    view.rotX += (target.rotX - view.rotX) * 0.08;
+    view.rotY += (target.rotY - view.rotY) * 0.08;
+    view.dist += (target.dist - view.dist) * 0.08;
+
+    // earth slow auto-rotate (only if user not dragging) — actually rotate earthGroup intrinsically
+    if (!dragging && !zooming) target.rotY += dt * 0.04;
+
+    // earth slowly auto-rotates after intro (satellites orbit independently)
+    if (introDone && !zooming) earthAutoSpin += dt * 0.06;
+
+    // apply view to earth + sat groups (sat group stays anchored to user view; earth adds auto spin)
+    earthGroup.rotation.x = view.rotX;
+    earthGroup.rotation.y = view.rotY + earthAutoSpin;
+    satGroup.rotation.x = view.rotX;
+    satGroup.rotation.y = view.rotY;
+
+    // twinkle stars
+    if (starsTwinkleMat) starsTwinkleMat.uniforms.uTime.value = t;
+
+    // camera distance
+    camera.position.set(0, 0.3, view.dist);
+    camera.lookAt(0, 0, 0);
+
+    // pulse pin
+    pulseRing.scale.setScalar(1 + Math.sin(t*2)*0.6 + 0.6);
+    pulseRing.material.opacity = 0.6 - (Math.sin(t*2)*0.3 + 0.3);
+
+    // arcs particles
+    // ---- POWER WAVES ----
+    const liveSat = satObjects.find(s => s.isLive);
+    if (liveSat) {
+      const liveWP = new THREE.Vector3();
+      liveSat.inst.getWorldPosition(liveWP);
+
+      // beam: from live sat to france (in world coords) — animate over a short window
+      if (POWER_WAVES.beamActive !== undefined) {
+        const beamElapsed = (performance.now()/1000) - POWER_WAVES.beamActive;
+        const beamDur = 0.6;
+        if (beamElapsed < beamDur) {
+          const k = beamElapsed / beamDur;
+          // france world pos
+          const fwp = POWER_TARGET.clone().applyMatrix4(earthGroup.matrixWorld);
+          // travel: line grows from satellite to france
+          const cur = liveWP.clone().lerp(fwp, Math.min(1, k * 1.4));
+          const arr = impactBeamGeo.attributes.position.array;
+          arr[0]=liveWP.x; arr[1]=liveWP.y; arr[2]=liveWP.z;
+          arr[3]=cur.x;    arr[4]=cur.y;    arr[5]=cur.z;
+          impactBeamGeo.attributes.position.needsUpdate = true;
+          impactBeamMat.opacity = (k < 0.7) ? 0.9 : (1 - k) * 3;
+        } else {
+          impactBeamMat.opacity = 0;
+          // flash on france
+          const fk = (beamElapsed - beamDur) / 0.4;
+          if (fk < 1) {
+            impactFlash.material.opacity = (1 - fk) * 0.9;
+            impactFlash.scale.setScalar(0.5 + fk * 2.5);
+          } else {
+            impactFlash.material.opacity = 0;
+            POWER_WAVES.beamActive = undefined;
+          }
+        }
+      }
+    }
+
+    // expanding rings
+    const now = performance.now() / 1000;
+    for (let i = POWER_WAVES.length - 1; i >= 0; i--) {
+      const w = POWER_WAVES[i];
+      const elapsed = now - w.startTime - w.delay;
+      if (elapsed < 0) continue;
+      const k = Math.min(1, elapsed / w.life);
+      // ring expands as a spherical cap; we approximate by scaling its world size
+      // since geometry is a flat ring at france tangent, scaling pushes it outward visually
+      const scale = 1 + k * 18;
+      w.mesh.scale.setScalar(scale);
+      // fade out
+      const fade = Math.pow(1 - k, 1.6) * 0.85;
+      w.mesh.material.opacity = fade;
+      // shift outward slightly so it stays above surface as it expands
+      w.mesh.position.copy(POWER_TARGET.clone().multiplyScalar(1.005 + k * 0.04));
+      if (k >= 1) {
+        earthGroup.remove(w.mesh);
+        w.mesh.geometry.dispose();
+        w.mesh.material.dispose();
+        POWER_WAVES.splice(i, 1);
+      }
+    }
+
+    arcs.forEach(a => {
+      a.t += dt * a.speed;
+      if (a.t > 1) {
+        a.t = 0;
+        a.life = 1.0;
+      }
+      const p = a.curve.getPoint(a.t);
+      a.particle.position.copy(p);
+      const e = Math.sin(a.t * Math.PI);
+      a.particle.material.opacity = e;
+      a.particle.scale.setScalar(0.6 + e*0.8);
+      a.mat.opacity = 0.2 + e*0.5;
+    });
+
+    // cluster transition: smoothly approach 0 or 1
+    const targetCluster = clusterMode ? 1 : 0;
+    clusterT += (targetCluster - clusterT) * Math.min(1, dt * 6);
+
+    // satellites
+    satObjects.forEach((sat, i) => {
+      sat.angle += dt * sat.cfg.speed;
+      const x = Math.cos(sat.angle) * sat.cfg.orbitR;
+      const z = Math.sin(sat.angle) * sat.cfg.orbitR;
+      sat.inst.position.set(x, 0, z);
+      sat.inst.rotation.y += dt * 0.8;
+      sat.inst.rotation.x += dt * 0.4;
+      // halo always face camera-ish
+      sat.halo.lookAt(camera.position);
+      // fade satellite 3D body when clustering (handled in body materials)
+      const meshAlpha = 1 - clusterT * 0.85;
+      sat.body.material.opacity = 0.9 * meshAlpha;
+      sat.bodyWire.material.opacity = 0.7 * meshAlpha;
+      sat.halo.material.opacity = (0.3 + Math.sin(t*3+i)*0.1) * meshAlpha;
+      sat.lineMat.opacity = Math.max(0.05, (0.18 + Math.sin(t*1.5 + i)*0.12)) * meshAlpha;
+
+      // connector line from origin to satellite world position
+      sat.inst.updateMatrixWorld();
+      tmpV.setFromMatrixPosition(sat.inst.matrixWorld);
+      // line is in satGroup local, so convert tmpV from world back to satGroup local
+      const localPos = sat.orbiter.parent.worldToLocal(tmpV.clone());
+      const arr = sat.lineGeo.attributes.position.array;
+      arr[0]=0; arr[1]=0; arr[2]=0;
+      arr[3]=localPos.x; arr[4]=localPos.y; arr[5]=localPos.z;
+      sat.lineGeo.attributes.position.needsUpdate = true;
+      const pulse = 0.18 + Math.sin(t*1.5 + i)*0.12;
+      sat.lineMat.opacity = Math.max(0.05, pulse);
+
+      // project world position to screen for label
+      const worldPos = new THREE.Vector3();
+      sat.inst.getWorldPosition(worldPos);
+      const screen = worldPos.clone().project(camera);
+      const sx = (screen.x * 0.5 + 0.5) * window.innerWidth;
+      const sy = (-screen.y * 0.5 + 0.5) * window.innerHeight;
+      // offset label outward from globe center on screen
+      const cx = window.innerWidth/2, cy = window.innerHeight/2;
+      const dxL = sx - cx, dyL = sy - cy;
+      const dLen = Math.max(40, Math.hypot(dxL, dyL));
+      const off = 50;
+      const lx = sx + (dxL/dLen)*off;
+      const ly = sy + (dyL/dLen)*off;
+
+      // hide if behind globe (z > some threshold means farther) — using projected z
+      const behind = screen.z > 1 || screen.z < -1;
+      const camDir = new THREE.Vector3(0,0,view.dist).sub(worldPos);
+      const occluded = worldPos.length() < globeR && camDir.dot(worldPos) > 0; // never; we always have orbit > globe
+      // Use dot of normalized worldPos with camera direction to detect "facing away"
+      const camToOrigin = camera.position.clone().normalize();
+      const wpDir = worldPos.clone().normalize();
+      const facing = wpDir.dot(camToOrigin); // ~1 when on near side
+      // if satellite is behind globe (closer to far side AND inside silhouette) hide
+      // approximate: hide if z component (in camera space) is far AND distance from screen center small
+      const distFromCenter = Math.hypot(dxL, dyL);
+      const hidden = (facing < -0.05) && (distFromCenter < window.innerHeight*0.3);
+
+      // grid layout positions when clustering: 1 column of 8 stacked vertically
+      const W = window.innerWidth, H = window.innerHeight;
+      const rows = 8;
+      const gridX = W * 0.5;
+      const gridY = H * (0.12 + (i / (rows-1)) * 0.76);
+
+      const finalX = lx * (1 - clusterT) + gridX * clusterT;
+      const finalY = ly * (1 - clusterT) + gridY * clusterT;
+
+      sat.label.style.left = finalX + 'px';
+      sat.label.style.top  = finalY + 'px';
+      if (introDone) sat.label.style.opacity = (hidden && clusterT < 0.3) ? '0' : '1';
+
+      // pulse halo
+      const haloPulse = 1 + Math.sin(t*3 + i)*0.15;
+      sat.halo.scale.setScalar(haloPulse);
+      sat.halo.material.opacity = 0.3 + Math.sin(t*3+i)*0.1;
+    });
+
+    updateExplosion();
+    updateShootingStars(t, dt);
+    if (cameraShake > 0) {
+      camera.position.x += (Math.random()-0.5) * cameraShake * 0.2;
+      camera.position.y += (Math.random()-0.5) * cameraShake * 0.2;
+    }
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+  // forward decls so animate() can reference them before block below executes
+  var cameraShake = 0;
+  var updateExplosion = function(){};
+  animate();
+  let exploding = false;
+  let explodeT0 = 0;
+  const EXPL_DUR = 3.2;
+  const explosionDebris = new THREE.Group();
+  scene.add(explosionDebris);
+
+  function buildDebris() {
+    // pull all positions from landLayer points + atmosphere shell shards
+    const pieces = [];
+    landLayer.traverse(o => {
+      if (o.isPoints && o.geometry && o.geometry.attributes.position) {
+        const arr = o.geometry.attributes.position.array;
+        for (let i = 0; i < arr.length; i += 3) {
+          if (Math.random() > 0.35) continue; // sample subset for perf
+          pieces.push([arr[i], arr[i+1], arr[i+2]]);
+        }
+      }
+    });
+    // add some core fragments
+    for (let i = 0; i < 600; i++) {
+      const u = Math.random()*Math.PI*2, v = Math.acos(2*Math.random()-1);
+      pieces.push([Math.sin(v)*Math.cos(u), Math.cos(v), Math.sin(v)*Math.sin(u)]);
+    }
+    const N = pieces.length;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(N*3);
+    const vel = new Float32Array(N*3);
+    const col = new Float32Array(N*3);
+    const seed = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      const p = pieces[i];
+      pos[i*3] = p[0]; pos[i*3+1] = p[1]; pos[i*3+2] = p[2];
+      const n = Math.hypot(p[0], p[1], p[2]) || 1;
+      const speed = 0.8 + Math.random()*2.2;
+      vel[i*3]   = (p[0]/n) * speed + (Math.random()-0.5)*0.3;
+      vel[i*3+1] = (p[1]/n) * speed + (Math.random()-0.5)*0.3;
+      vel[i*3+2] = (p[2]/n) * speed + (Math.random()-0.5)*0.3;
+      const t = Math.random();
+      // green-yellow-orange gradient
+      col[i*3]   = 0.2 + t*0.8;
+      col[i*3+1] = 0.9 + Math.random()*0.1;
+      col[i*3+2] = 0.4 - t*0.4;
+      seed[i] = Math.random();
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+    geo._velocity = vel;
+    geo._origPos  = pos.slice();
+    geo._seed     = seed;
+    const mat = new THREE.PointsMaterial({ size: 0.025, vertexColors: true, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false });
+    return new THREE.Points(geo, mat);
+  }
+
+  let debrisPts = null;
+  let shockwaveMesh = null;
+  let flashSphere = null;
+
+  function triggerExplosion() {
+    if (exploding) return;
+    exploding = true;
+    explodeT0 = clock.getElapsedTime();
+    // hide globe layers
+    earthGroup.visible = false;
+    satGroup.visible = false;
+    // build debris in earth-local space, then put under earthGroup so rotation is preserved visually
+    debrisPts = buildDebris();
+    debrisPts.frustumCulled = false;
+    // copy earthGroup current rotation so debris fly out from current orientation
+    debrisPts.rotation.copy(earthGroup.rotation);
+    explosionDebris.add(debrisPts);
+    // big flash sphere
+    const fGeo = new THREE.SphereGeometry(0.2, 32, 24);
+    const fMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false });
+    flashSphere = new THREE.Mesh(fGeo, fMat);
+    explosionDebris.add(flashSphere);
+    // shockwave ring expanding
+    const sGeo = new THREE.RingGeometry(0.2, 0.25, 96);
+    const sMat = new THREE.MeshBasicMaterial({ color: 0x00ff9c, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false });
+    shockwaveMesh = new THREE.Mesh(sGeo, sMat);
+    shockwaveMesh.lookAt(camera.position);
+    explosionDebris.add(shockwaveMesh);
+    // shake camera
+    cameraShake = 1;
+  }
+
+  updateExplosion = function() {
+    if (!exploding) return;
+    const t = clock.getElapsedTime() - explodeT0;
+    const k = Math.min(1, t / EXPL_DUR);
+    if (debrisPts) {
+      const arr = debrisPts.geometry.attributes.position.array;
+      const orig = debrisPts.geometry._origPos;
+      const vel  = debrisPts.geometry._velocity;
+      const seed = debrisPts.geometry._seed;
+      for (let i = 0; i < arr.length; i += 3) {
+        const idx = i/3;
+        const s = seed[idx];
+        // outward + slow gravity-ish drift
+        arr[i]   = orig[i]   + vel[i]   * t * (0.7 + s*0.6);
+        arr[i+1] = orig[i+1] + vel[i+1] * t * (0.7 + s*0.6) - 0.3*t*t*(0.5+s);
+        arr[i+2] = orig[i+2] + vel[i+2] * t * (0.7 + s*0.6);
+      }
+      debrisPts.geometry.attributes.position.needsUpdate = true;
+      debrisPts.material.opacity = 1 - Math.pow(k, 2.5);
+      debrisPts.material.size = 0.025 * (1 + k*1.5);
+    }
+    if (flashSphere) {
+      const fk = Math.min(1, t/0.6);
+      flashSphere.scale.setScalar(0.2 + fk*5);
+      flashSphere.material.opacity = Math.max(0, 1 - fk*1.1);
+    }
+    if (shockwaveMesh) {
+      const sk = Math.min(1, t/1.6);
+      shockwaveMesh.scale.setScalar(1 + sk*22);
+      shockwaveMesh.material.opacity = Math.max(0, 1 - sk);
+      shockwaveMesh.lookAt(camera.position);
+    }
+    if (cameraShake > 0) cameraShake = Math.max(0, cameraShake - 0.03);
+    if (k >= 1) {
+      // reset everything
+      exploding = false;
+      explosionDebris.clear();
+      debrisPts = null; flashSphere = null; shockwaveMesh = null;
+      earthGroup.visible = true;
+      satGroup.visible   = true;
+    }
+  }
+
+  // ============== HEART → BOOM ==============
+  {
+    const heart = document.getElementById('loveHeart');
+    if (heart) {
+      let armed = false, armTimer = null;
+      heart.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (exploding) return;
+        if (!armed) {
+          armed = true;
+          heart.classList.add('armed');
+          heart.textContent = '☠';
+          clearTimeout(armTimer);
+          armTimer = setTimeout(function() { armed = false; heart.classList.remove('armed'); heart.textContent = '♥'; }, 2200);
+          return;
+        }
+        clearTimeout(armTimer);
+        armed = false;
+        heart.classList.remove('armed');
+        heart.textContent = '♥';
+        triggerExplosion();
+      });
+    }
+  }
+
+  // ============== LOCK ==============
+  const PASSWORD_HASH="571c8cced6b923a298c8ab03b5641492624d1940d1c9d1ad46b61f5dc466cd57";
+  const STORAGE_KEY="greenroad_unlocked";
+  const overlay=document.getElementById("lockOverlay");
+  const input=document.getElementById("lockInput");
+  const btn=document.getElementById("lockBtn");
+  const errorEl=document.getElementById("lockError");
+
+  function reveal() {
+    overlay.classList.add("unlocked");
+    setTimeout(()=>overlay.style.display="none", 900);
+    runIntroZoom();
+  }
+  if (sessionStorage.getItem(STORAGE_KEY) === "1") {
+    overlay.style.display = "none";
+    runIntroZoom();
+  }
+  async function sha256(t){
+    const b=new TextEncoder().encode(t);
+    const h=await crypto.subtle.digest("SHA-256",b);
+    return Array.from(new Uint8Array(h)).map(x=>x.toString(16).padStart(2,"0")).join("");
+  }
+  async function tryUnlock(){
+    const v=input.value;
+    if(!v) return;
+    if(await sha256(v) === PASSWORD_HASH){
+      sessionStorage.setItem(STORAGE_KEY,"1");
+      reveal();
+    } else {
+      input.classList.add("error");
+      errorEl.classList.add("show");
+      input.value="";
+      setTimeout(()=>input.classList.remove("error"),400);
+      setTimeout(()=>errorEl.classList.remove("show"),2500);
+    }
+  }
+  btn.addEventListener("click", tryUnlock);
+  input.addEventListener("keydown", e => { if(e.key==="Enter") tryUnlock(); });
+})();
+</script>
+
+</body>
+</html>
